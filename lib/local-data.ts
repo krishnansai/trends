@@ -20,12 +20,32 @@ async function readJsonArray<T>(fileName: string): Promise<T[]> {
   }
 }
 
+function dedupeById<T extends { id: string }>(items: T[]) {
+  const itemMap = new Map<string, T>();
+
+  for (const item of items) {
+    itemMap.set(item.id, item);
+  }
+
+  return Array.from(itemMap.values());
+}
+
 export async function getLocalGarments() {
-  return readJsonArray<Garment>("garments.json");
+  const garmentSets = await Promise.all([
+    readJsonArray<Garment>("garments.json"),
+    readJsonArray<Garment>("garments-sourced.json")
+  ]);
+
+  return dedupeById(garmentSets.flat());
 }
 
 export async function getLocalTrends() {
-  return readJsonArray<Trend>("trends.json");
+  const trendSets = await Promise.all([
+    readJsonArray<Trend>("trends.json"),
+    readJsonArray<Trend>("trends-sourced.json")
+  ]);
+
+  return dedupeById(trendSets.flat());
 }
 
 export async function getLocalGroomingTrends() {
@@ -33,11 +53,5 @@ export async function getLocalGroomingTrends() {
     readJsonArray<GroomingTrend>("grooming-seed.json"),
     readJsonArray<GroomingTrend>("grooming-seed-v2.json")
   ]);
-  const groomingTrendMap = new Map<string, GroomingTrend>();
-
-  for (const groomingTrend of groomingSets.flat()) {
-    groomingTrendMap.set(groomingTrend.id, groomingTrend);
-  }
-
-  return Array.from(groomingTrendMap.values());
+  return dedupeById(groomingSets.flat());
 }

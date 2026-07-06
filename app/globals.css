@@ -3,15 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --background: 42 30% 97%;
-  --foreground: 0 0% 8%;
-  --muted: 42 14% 91%;
-  --muted-foreground: 0 0% 38%;
-  --accent: 145 18% 32%;
-  --accent-foreground: 42 30% 97%;
-  --border: 38 12% 80%;
-  --input: 38 12% 74%;
-  --ring: 0 0% 8%;
+  --background: 220 24% 97%;
+  --foreground: 222 47% 9%;
+  --muted: 220 20% 93%;
+  --muted-foreground: 224 12% 42%;
+  --accent: 162 72% 32%;
+  --accent-foreground: 0 0% 100%;
+  --border: 220 16% 84%;
+  --input: 220 16% 78%;
+  --ring: 42 88% 48%;
+  --surface: 0 0% 100%;
+  --surface-2: 220 22% 96%;
+  --premium: 42 88% 48%;
 }
 
 * {
@@ -24,10 +27,25 @@ html {
 }
 
 body {
+  position: relative;
   min-height: 100%;
   margin: 0;
-  background: hsl(var(--background));
+  background:
+    linear-gradient(180deg, hsl(220 30% 99%) 0%, hsl(var(--background)) 45%, hsl(220 28% 94%) 100%);
   color: hsl(var(--foreground));
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(hsl(var(--foreground) / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--foreground) / 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(180deg, black, transparent 76%);
 }
 
 img {
@@ -35,8 +53,30 @@ img {
 }
 
 ::selection {
-  background: hsl(var(--foreground));
-  color: hsl(var(--background));
+  background: hsl(var(--premium));
+  color: hsl(var(--foreground));
+}
+
+.border.bg-background,
+.border.bg-muted\/35 {
+  border-radius: 0.5rem;
+  background:
+    linear-gradient(145deg, hsl(var(--surface) / 0.98), hsl(var(--surface-2) / 0.92));
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.85) inset,
+    0 18px 48px -36px hsl(var(--foreground) / 0.35);
+}
+
+.border.bg-muted {
+  border-radius: 0.5rem;
+}
+
+.bg-background\/95 {
+  background-color: hsl(var(--surface) / 0.86);
+}
+
+input[type="range"] {
+  accent-color: hsl(var(--accent));
 }
 
 .masonry {

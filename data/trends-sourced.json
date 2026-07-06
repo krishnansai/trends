@@ -1,0 +1,101 @@
+[
+  {
+    "id": "trend-src-2026-straight-pleated-trousers",
+    "title": "Straight and Pleated Trouser Reset",
+    "description": "Menswear pants are moving toward cleaner straight-leg proportions, deeper pleats, and tailored trousers that can carry the whole outfit.",
+    "forecast_year": 2026,
+    "confidence_score": 89,
+    "season": "Spring 2026",
+    "forecast_image_url": "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=1200",
+    "source_url": "https://www.gq.com/story/pant-trends-spring-2026",
+    "created_at": "2026-07-07T00:00:00.000Z"
+  },
+  {
+    "id": "trend-src-2026-technical-trousers",
+    "title": "Tailored Technical Pants",
+    "description": "Performance fabrics, resin-coated cotton, and nylon blends are being cut like proper trousers instead of old gym track pants.",
+    "forecast_year": 2026,
+    "confidence_score": 82,
+    "season": "Spring 2026",
+    "forecast_image_url": "https://images.unsplash.com/photo-1517445312882-bc9910d016b7?w=1200",
+    "source_url": "https://www.gq.com/story/pant-trends-spring-2026",
+    "created_at": "2026-07-07T00:00:00.000Z"
+  },
+  {
+    "id": "trend-src-2026-denim-range",
+    "title": "Expanded Denim Proportions",
+    "description": "The 2026 denim cycle spans rinse-wash, tailored jeans, winter whites, long shorts, straight legs, and wider experimental shapes.",
+    "forecast_year": 2026,
+    "confidence_score": 86,
+    "season": "All-Season 2026",
+    "forecast_image_url": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=1200",
+    "source_url": "https://www.vogue.com/article/runway-denim-trends-spring-2026",
+    "created_at": "2026-07-07T00:00:00.000Z"
+  },
+  {
+    "id": "trend-src-2026-pinterest-accessories",
+    "title": "Brooches, Icy Blue, and Glamoratti",
+    "description": "Pinterest-backed signals point to sculptural brooches, icy blue color stories, and chunkier glam accessories entering polished menswear looks.",
+    "forecast_year": 2026,
+    "confidence_score": 78,
+    "season": "All-Season 2026",
+    "forecast_image_url": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=1200",
+    "source_url": "https://www.whowhatwear.com/fashion/trends/pinterest-fashion-trend-predictions-2026",
+    "created_at": "2026-07-07T00:00:00.000Z"
+  },
+  {
+    "id": "trend-src-2025-fisherman-core",
+    "title": "Fisherman Utility Prep",
+    "description": "Breton stripes, cable knits, boat shoes, fisherman sandals, barn jackets, mesh bags, and weather-ready textures define the 2025 nautical utility stack.",
+    "forecast_year": 2025,
+    "confidence_score": 84,
+    "season": "Summer/Fall 2025",
+    "forecast_image_url": "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=1200",
+    "source_url": "https://www.townandcountrymag.com/style/fashion-trends/a65618263/fisherman-aesthetic-trend-explained-2025/",
+    "created_at": "2026-07-07T00:00:00.000Z"
+  },
+  {
+    "id": "trend-src-2024-oversized-inflation",
+    "title": "Menswear Inflation",
+    "description": "Coats, trousers, shirts, and sneakers grew in scale through 2024, pushing oversized proportions into everyday mall and office wardrobes.",
+    "forecast_year": 2024,
+    "confidence_score": 81,
+    "season": "All-Season 2024",
+    "forecast_image_url": "https://images.unsplash.com/photo-1610652492500-ded49ceeb378?w=1200",
+    "source_url": "https://www.gq.com/story/gq-style-questionnaire-2024",
+    "created_at": "2026-07-07T00:00:00.000Z"
+  },
+  {
+    "id": "trend-src-2024-practical-gorp-reset",
+    "title": "Practical Gorp Reset",
+    "description": "After peak gorpcore, waterproof shells, trail runners, nylon side bags, fleece vests, and cargo pants remain useful but less costume-driven.",
+    "forecast_year": 2024,
+    "confidence_score": 74,
+    "season": "All-Season 2024",
+    "forecast_image_url": "https://images.unsplash.com/photo-1544441893-675973e31985?w=1200",
+    "source_url": "https://www.gq.com/story/rip-gorpcore",
+    "created_at": "2026-07-07T00:00:00.000Z"
+  },
+  {
+    "id": "trend-src-2027-sheer-and-skinny",
+    "title": "Sheer Tailoring and Slim Return",
+    "description": "Spring 2027 runway reporting shows sheer tailored separates, shrunken trousers, skinny pants, and waist adornment entering the next cycle.",
+    "forecast_year": 2027,
+    "confidence_score": 70,
+    "season": "Spring 2027",
+    "forecast_image_url": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1200",
+    "source_url": "https://www.harpersbazaar.com/fashion/a71773822/mens-fashion-week-spring-2027-trends/",
+    "created_at": "2026-07-07T00:00:00.000Z"
+  },
+  {
+    "id": "trend-src-2027-shorts-as-pants",
+    "title": "Shorts as Main-Look Menswear",
+    "description": "Runway shorts expand beyond resort wear into tailored, athletic, leather, mesh, and culotte-like proportions for high-heat menswear.",
+    "forecast_year": 2027,
+    "confidence_score": 73,
+    "season": "Spring/Summer 2027",
+    "forecast_image_url": "https://images.unsplash.com/photo-1565084888279-aca607ecce0c?w=1200",
+    "source_url": "https://www.gq.com/story/shorts-are-the-new-pants-paris-fashion-week-ss27",
+    "created_at": "2026-07-07T00:00:00.000Z"
+  }
+]
