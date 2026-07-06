@@ -1,0 +1,194 @@
+[
+  {
+    "id": "groom-2026-hair-001",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "The Textured Crop with Low Skin Fade",
+    "description": "Low-maintenance 2026 staple with choppy, piece-y texture on top and a clean low skin fade at the sides.",
+    "face_shapes": ["oval", "square", "round"],
+    "style_tags": ["textured-crop", "low-fade", "low-maintenance", "matte-finish"],
+    "recommended_products": [
+      {
+        "name": "Matte Clay / Styling Powder",
+        "search_query": "men matte clay styling powder textured crop"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800"
+  },
+  {
+    "id": "groom-2026-hair-002",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Modern Burr Cut with Taper Fade",
+    "description": "Minimalist, sharp, 1.5-inch buzzed look with a soft taper fade for clean structure and easy upkeep.",
+    "face_shapes": ["square", "oval", "diamond"],
+    "style_tags": ["burr-cut", "taper-fade", "minimalist", "sharp"],
+    "recommended_products": [
+      {
+        "name": "Scalp Moisturizer / Light Texture Cream",
+        "search_query": "men scalp moisturizer light texture cream burr cut"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=800"
+  },
+  {
+    "id": "groom-2026-hair-003",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Medium Bro Flow / Shaggy Layers",
+    "description": "Natural pushed-back waves skimming the collar with airy shaggy layers and controlled movement.",
+    "face_shapes": ["rectangle", "heart", "oval"],
+    "style_tags": ["bro-flow", "shaggy-layers", "medium-length", "natural-wave"],
+    "recommended_products": [
+      {
+        "name": "Sea Salt Texturizing Spray",
+        "search_query": "men sea salt texturizing spray medium bro flow"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800"
+  },
+  {
+    "id": "groom-2026-beard-001",
+    "year": 2026,
+    "category": "beard",
+    "title": "The Precise Fade Beard",
+    "description": "Sideburns seamlessly blended into a fuller chin structure to sculpt jawline definition.",
+    "face_shapes": ["round", "oval", "square"],
+    "style_tags": ["fade-beard", "jawline-definition", "precision", "structured"],
+    "recommended_products": [
+      {
+        "name": "Precision T-Blade Beard Trimmer",
+        "search_query": "precision t blade beard trimmer fade beard"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800"
+  },
+  {
+    "id": "groom-2026-beard-002",
+    "year": 2026,
+    "category": "beard",
+    "title": "The Short Boxed Revival",
+    "description": "Structured, low cheek-line corporate stubble and short beard shape for a polished profile.",
+    "face_shapes": ["square", "heart", "oval"],
+    "style_tags": ["short-boxed", "corporate-stubble", "structured", "low-cheek-line"],
+    "recommended_products": [
+      {
+        "name": "Organic Sandalwood Beard Oil",
+        "search_query": "organic sandalwood beard oil short boxed beard"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1520975661595-6453be3f7070?w=800"
+  },
+  {
+    "id": "groom-2026-beard-003",
+    "year": 2026,
+    "category": "beard",
+    "title": "The Beardstache",
+    "description": "Prominent heavy moustache paired with 3-day designer stubble for strong mid-face emphasis.",
+    "face_shapes": ["oblong", "diamond", "square"],
+    "style_tags": ["beardstache", "designer-stubble", "heavy-moustache", "barber-finish"],
+    "recommended_products": [
+      {
+        "name": "Moustache Styling Wax",
+        "search_query": "men moustache styling wax beardstache"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1530268729831-4b0b9e170218?w=800"
+  },
+  {
+    "id": "groom-2026-hair-004",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Low Taper Curly Fringe",
+    "description": "Natural curl volume pushed forward with a low taper that keeps width controlled around the temples.",
+    "face_shapes": ["oval", "diamond", "heart"],
+    "style_tags": ["curly-fringe", "low-taper", "natural-texture", "volume-control"],
+    "recommended_products": [
+      {
+        "name": "Curl Defining Cream",
+        "search_query": "men curl defining cream low taper fringe"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1520975661595-6453be3f7070?w=800"
+  },
+  {
+    "id": "groom-2026-hair-005",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Soft Slick-Back Flow",
+    "description": "Medium-length brushed-back hair with natural movement, low shine, and enough height to elongate compact faces.",
+    "face_shapes": ["round", "oval", "square"],
+    "style_tags": ["slick-back", "flow", "medium-length", "low-shine"],
+    "recommended_products": [
+      {
+        "name": "Flexible Hold Styling Cream",
+        "search_query": "men flexible hold styling cream slick back flow"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800"
+  },
+  {
+    "id": "groom-2026-hair-006",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Modern Mod Cut",
+    "description": "Rounded mod-inspired fringe with softened sides and controlled crown volume for balanced facial framing.",
+    "face_shapes": ["rectangle", "oval", "heart"],
+    "style_tags": ["mod-cut", "fringe", "soft-volume", "retro-modern"],
+    "recommended_products": [
+      {
+        "name": "Lightweight Texture Paste",
+        "search_query": "men lightweight texture paste modern mod cut"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800"
+  },
+  {
+    "id": "groom-2026-beard-004",
+    "year": 2026,
+    "category": "beard",
+    "title": "Faded Goatee Anchor",
+    "description": "Sharper chin-focused beard with faded side growth that lengthens round faces without adding cheek width.",
+    "face_shapes": ["round", "oval", "heart"],
+    "style_tags": ["goatee", "anchor-beard", "fade", "chin-focus"],
+    "recommended_products": [
+      {
+        "name": "Detail Beard Shaping Razor",
+        "search_query": "detail beard shaping razor faded goatee anchor beard"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1530268729831-4b0b9e170218?w=800"
+  },
+  {
+    "id": "groom-2026-beard-005",
+    "year": 2026,
+    "category": "beard",
+    "title": "Natural Full Beard with Clean Neckline",
+    "description": "Fuller natural beard mass with a crisp neckline and lightly squared base for mature winter styling.",
+    "face_shapes": ["rectangle", "oval", "diamond"],
+    "style_tags": ["full-beard", "clean-neckline", "natural-density", "winter"],
+    "recommended_products": [
+      {
+        "name": "Boar Bristle Beard Brush",
+        "search_query": "boar bristle beard brush natural full beard"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800"
+  },
+  {
+    "id": "groom-2026-beard-006",
+    "year": 2026,
+    "category": "beard",
+    "title": "Ultra-Short Shadow Stubble",
+    "description": "Even 1-2mm shadow stubble with a clean upper cheek boundary for low-maintenance professional grooming.",
+    "face_shapes": ["square", "oval", "heart", "diamond"],
+    "style_tags": ["stubble", "professional", "low-maintenance", "clean-lines"],
+    "recommended_products": [
+      {
+        "name": "Adjustable Stubble Trimmer",
+        "search_query": "adjustable stubble trimmer ultra short shadow beard"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=800"
+  }
+]

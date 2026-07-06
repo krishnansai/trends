@@ -1,0 +1,196 @@
+[
+  {
+    "id": "groom-hair-2026-01",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Textured Crop with Low Skin Fade",
+    "description": "Short, choppy, piece-y texture on top paired with a seamless low skin fade on the sides. Effortless, low-maintenance, and designed to add structure without heavy shine.",
+    "face_shapes": ["oval", "round", "square", "heart"],
+    "style_tags": ["streetwear", "casual", "low-maintenance", "modern"],
+    "maintenance_level": "Low (Trim every 3-4 weeks)",
+    "recommended_products": [
+      {
+        "name": "Matte Texture Styling Powder",
+        "search_query": "mens hair styling volume powder matte finish"
+      },
+      {
+        "name": "Sea Salt Spray",
+        "search_query": "sea salt texturizing hair spray for men"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=800"
+  },
+  {
+    "id": "groom-hair-2026-02",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Modern Burr Cut with Taper Fade",
+    "description": "An evolved, sharp buzz cut leaving slightly more length (#3 or #4 guard) on the crown, contrasted with a crisp temple taper and soft lineup.",
+    "face_shapes": ["square", "oval", "diamond", "rectangle"],
+    "style_tags": ["minimalist", "athletic", "clean", "quiet-luxury"],
+    "maintenance_level": "Medium (Trim every 2 weeks)",
+    "recommended_products": [
+      {
+        "name": "Daily Scalp Moisturizer",
+        "search_query": "mens lightweight scalp moisturizer SPF"
+      },
+      {
+        "name": "Professional Cordless Taper Clipper",
+        "search_query": "professional cordless hair clipper taper fade"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800"
+  },
+  {
+    "id": "groom-hair-2026-03",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Medium Bro Flow & Soft Shaggy Layers",
+    "description": "Natural, pushed-back medium-length waves skimming the collar with soft layered movement. Perfect for naturally wavy or coarse hair types.",
+    "face_shapes": ["oval", "rectangle", "heart", "diamond"],
+    "style_tags": ["resort", "old-money", "casual", "poet-core"],
+    "maintenance_level": "Low (Trim every 6-8 weeks)",
+    "recommended_products": [
+      {
+        "name": "Lightweight Styling Cream",
+        "search_query": "lightweight medium hold hair styling cream men"
+      },
+      {
+        "name": "Argan Leave-In Conditioner",
+        "search_query": "argan oil leave in conditioner frizz control men"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800"
+  },
+  {
+    "id": "groom-hair-2026-04",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Textured Quiff / Evolved Ivy League",
+    "description": "Slightly longer top swept upward and back with dry texture, paired with clean tapered sides. Delivers professional height without stiff gel.",
+    "face_shapes": ["round", "oval", "square"],
+    "style_tags": ["office", "smart-casual", "tailoring"],
+    "maintenance_level": "Medium (Trim every 4 weeks)",
+    "recommended_products": [
+      {
+        "name": "Matte Styling Clay",
+        "search_query": "high hold matte clay hair styling men"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800"
+  },
+  {
+    "id": "groom-hair-2026-05",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Modern Textured Mullet / Shaggy Fringe",
+    "description": "Short buzzed sides with a heavy forward-flowing textured fringe and slightly extended nape. A staple for urban and gorpcore aesthetics.",
+    "face_shapes": ["oval", "diamond", "heart"],
+    "style_tags": ["streetwear", "gorpcore", "y2k", "urban"],
+    "maintenance_level": "Medium (Trim every 4-5 weeks)",
+    "recommended_products": [
+      {
+        "name": "Texturizing Paste",
+        "search_query": "choppy texture hair paste matte men"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1552058544-f2b08422138a?w=800"
+  },
+  {
+    "id": "groom-beard-2026-06",
+    "year": 2026,
+    "category": "beard",
+    "title": "The Precise Fade Beard",
+    "description": "Sideburns seamlessly blended from a skin fade into denser facial hair along the jawline. Instantly creates sharp facial architecture and jaw definition.",
+    "face_shapes": ["round", "oval", "square", "heart"],
+    "style_tags": ["modern", "sharp", "streetwear", "smart-casual"],
+    "maintenance_level": "High (Touch-up every 7-10 days)",
+    "recommended_products": [
+      {
+        "name": "Precision T-Blade Beard Trimmer",
+        "search_query": "precision zero gap t blade beard trimmer zero foil"
+      },
+      {
+        "name": "Sandalwood Beard Conditioning Oil",
+        "search_query": "organic beard softening conditioning oil men"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"
+  },
+  {
+    "id": "groom-beard-2026-07",
+    "year": 2026,
+    "category": "beard",
+    "title": "The Short Boxed Revival",
+    "description": "Structured corporate stubble/short beard with slightly lowered cheek lines and softened natural contours. Professional, highly tailored, and versatile.",
+    "face_shapes": ["square", "heart", "oval", "rectangle"],
+    "style_tags": ["office", "tailoring", "quiet-luxury", "smart-casual"],
+    "maintenance_level": "Medium (Weekly edging)",
+    "recommended_products": [
+      {
+        "name": "Transparent Shaving Gel for Edging",
+        "search_query": "clear precision shaving gel beard edging"
+      },
+      {
+        "name": "Beard Balm Softener",
+        "search_query": "light hold nourishing beard balm butter"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800"
+  },
+  {
+    "id": "groom-beard-2026-08",
+    "year": 2026,
+    "category": "beard",
+    "title": "The Beardstache (Heavy Chevron + Stubble)",
+    "description": "A prominent, well-groomed chevron moustache contrasted against 3-day designer stubble across the cheeks and chin. High personality and bold contrast.",
+    "face_shapes": ["oblong", "diamond", "square", "oval"],
+    "style_tags": ["streetwear", "vintage", "resort", "bold"],
+    "maintenance_level": "Medium (Frequent moustache shaping)",
+    "recommended_products": [
+      {
+        "name": "Moustache Styling Wax",
+        "search_query": "medium hold natural moustache styling wax"
+      },
+      {
+        "name": "Adjustable Stubble Trimmer",
+        "search_query": "0.5mm precision dial stubble beard trimmer"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1541577141970-eebc83ebe30e?w=800"
+  },
+  {
+    "id": "groom-beard-2026-09",
+    "year": 2026,
+    "category": "beard",
+    "title": "Model Designer Stubble (Heavy Shadow)",
+    "description": "An even 2mm-3mm facial shadow with impeccably cleaned neck and cheek lines. Enhances bone structure without heavy maintenance.",
+    "face_shapes": ["round", "oval", "square", "heart", "diamond"],
+    "style_tags": ["casual", "minimalist", "universal"],
+    "maintenance_level": "Low (Trim every 3 days)",
+    "recommended_products": [
+      {
+        "name": "Exfoliating Face Scrub",
+        "search_query": "mens exfoliating salicylic face scrub ingrown hair"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800"
+  },
+  {
+    "id": "groom-beard-2026-10",
+    "year": 2026,
+    "category": "beard",
+    "title": "Sculpted Goatee / Balbo Revival",
+    "description": "Clean cheeks paired with a structured, lean goatee and disconnected moustache. Ideal for men with patchy cheek growth wanting strong chin definition.",
+    "face_shapes": ["round", "diamond", "heart"],
+    "style_tags": ["modern", "sharp", "athletic"],
+    "maintenance_level": "Medium (Weekly contouring)",
+    "recommended_products": [
+      {
+        "name": "Foil Detail Shaver",
+        "search_query": "mini electric foil detail shaver clean cheek lines"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=800"
+  }
+]

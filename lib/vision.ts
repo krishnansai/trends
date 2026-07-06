@@ -1,0 +1,133 @@
+import {
+  isFaceShape,
+  type Demographic,
+  type FaceShape,
+  type FitProfile
+} from "@/lib/types";
+
+export type VisionDemographic = Extract<Demographic, "menswear" | "unisex">;
+export type VisionUndertone = "warm" | "cool" | "neutral";
+export type VisionFitProfile = Extract<FitProfile, "relaxed" | "oversized" | "straight" | "slim">;
+
+export type VisionProfile = {
+  demographic: VisionDemographic;
+  detected_face_shape: Exclude<FaceShape, "heart" | "oblong">;
+  primary_color_undertone: VisionUndertone;
+  suggested_fit_profile: VisionFitProfile;
+  recommended_color_palette: [string, string, string];
+};
+
+export const VISION_IMAGE_ANALYZER_SYSTEM_PROMPT = `You are the core computer vision engine for a premium men's fashion and grooming platform. Analyze the uploaded user image and return a strict, minified JSON object. Do not include any markdown formatting, code blocks, or conversational text. Only return the JSON object.
+
+Analyze and extract these exact keys:
+
+demographic: Value must strictly be either "menswear" or "unisex". (Look at the user's presentation. Based on our guardrails, do not return womenswear items).
+
+detected_face_shape: Choose exactly one from: ["oval", "square", "round", "rectangle", "diamond"]. Base this on their jawline, cheekbones, and facial proportions.
+
+primary_color_undertone: Analyze the user's skin, hair, and existing clothing tones. Classify as "warm", "cool", or "neutral".
+
+suggested_fit_profile: Based on their physical frame, determine if they look best in "relaxed", "oversized", "straight", or "slim" garments.
+
+recommended_color_palette: Provide an array of 3 hex color codes that would look exceptionally flattering on them based on their undertone.
+
+Example JSON Output:
+{"demographic":"menswear","detected_face_shape":"square","primary_color_undertone":"warm","suggested_fit_profile":"relaxed","recommended_color_palette":["#1A1A1A","#4F5D4E","#D8C3A5"]}`;
+
+export const visionDemographics = ["menswear", "unisex"] as const satisfies readonly VisionDemographic[];
+export const visionFaceShapes = ["oval", "square", "round", "rectangle", "diamond"] as const satisfies readonly VisionProfile["detected_face_shape"][];
+export const visionUndertones = ["warm", "cool", "neutral"] as const satisfies readonly VisionUndertone[];
+export const visionFitProfiles = ["relaxed", "oversized", "straight", "slim"] as const satisfies readonly VisionFitProfile[];
+
+const undertonePalettes: Record<VisionUndertone, [string, string, string]> = {
+  cool: ["#111111", "#C7D0D8", "#0057B8"],
+  neutral: ["#222222", "#D9D0C1", "#7B1F2A"],
+  warm: ["#1A1A1A", "#4F5D4E", "#D8C3A5"]
+};
+
+function isVisionDemographic(value: unknown): value is VisionDemographic {
+  return typeof value === "string" && visionDemographics.includes(value as VisionDemographic);
+}
+
+function isVisionFaceShape(value: unknown): value is VisionProfile["detected_face_shape"] {
+  return typeof value === "string" && visionFaceShapes.includes(value as VisionProfile["detected_face_shape"]);
+}
+
+function isVisionUndertone(value: unknown): value is VisionUndertone {
+  return typeof value === "string" && visionUndertones.includes(value as VisionUndertone);
+}
+
+function isVisionFitProfile(value: unknown): value is VisionFitProfile {
+  return typeof value === "string" && visionFitProfiles.includes(value as VisionFitProfile);
+}
+
+function isHexColor(value: unknown): value is string {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
+}
+
+function normalizePalette(value: unknown, undertone: VisionUndertone): [string, string, string] {
+  if (Array.isArray(value) && value.length === 3 && value.every(isHexColor)) {
+    return value as [string, string, string];
+  }
+
+  return undertonePalettes[undertone];
+}
+
+function normalizeFaceShape(value: unknown): VisionProfile["detected_face_shape"] {
+  if (isVisionFaceShape(value)) {
+    return value;
+  }
+
+  if (isFaceShape(value) && value === "oblong") {
+    return "rectangle";
+  }
+
+  return "oval";
+}
+
+export function createVisionProfile(input: {
+  demographic?: unknown;
+  detected_face_shape?: unknown;
+  faceShape?: unknown;
+  primary_color_undertone?: unknown;
+  profileId?: unknown;
+  recommended_color_palette?: unknown;
+  suggested_fit_profile?: unknown;
+}): VisionProfile {
+  const demographic = isVisionDemographic(input.demographic) ? input.demographic : "menswear";
+  const primary_color_undertone = isVisionUndertone(input.primary_color_undertone)
+    ? input.primary_color_undertone
+    : isVisionUndertone(input.profileId)
+      ? input.profileId
+      : "neutral";
+  const suggested_fit_profile = isVisionFitProfile(input.suggested_fit_profile)
+    ? input.suggested_fit_profile
+    : "relaxed";
+
+  return {
+    demographic,
+    detected_face_shape: normalizeFaceShape(input.detected_face_shape ?? input.faceShape),
+    primary_color_undertone,
+    recommended_color_palette: normalizePalette(
+      input.recommended_color_palette,
+      primary_color_undertone
+    ),
+    suggested_fit_profile
+  };
+}
+
+export function parseVisionProfile(value: unknown, fallback: VisionProfile): VisionProfile {
+  if (!value || typeof value !== "object") {
+    return fallback;
+  }
+
+  const payload = value as Partial<VisionProfile>;
+
+  return createVisionProfile({
+    demographic: payload.demographic,
+    detected_face_shape: payload.detected_face_shape,
+    primary_color_undertone: payload.primary_color_undertone,
+    recommended_color_palette: payload.recommended_color_palette,
+    suggested_fit_profile: payload.suggested_fit_profile
+  });
+}

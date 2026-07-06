@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 42 30% 97%;
+  --foreground: 0 0% 8%;
+  --muted: 42 14% 91%;
+  --muted-foreground: 0 0% 38%;
+  --accent: 145 18% 32%;
+  --accent-foreground: 42 30% 97%;
+  --border: 38 12% 80%;
+  --input: 38 12% 74%;
+  --ring: 0 0% 8%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: hsl(var(--background));
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+img {
+  max-width: 100%;
+}
+
+::selection {
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+}
+
+.masonry {
+  column-gap: 1rem;
+}
+
+.masonry > * {
+  break-inside: avoid;
+  margin-bottom: 1rem;
+}
+
+@keyframes scan-sweep {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(620px);
+    opacity: 0;
+  }
+}
+
+.scan-sweep {
+  animation: scan-sweep 1.45s ease-in-out infinite;
+}
