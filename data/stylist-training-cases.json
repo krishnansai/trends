@@ -1,0 +1,92 @@
+[
+  {
+    "id": "mens-mall-summer-relaxed",
+    "demographic": "menswear",
+    "occasion": "mall",
+    "season": "summer",
+    "fit_profile": "relaxed",
+    "face_shape": "square",
+    "minimum_categories": 2
+  },
+  {
+    "id": "mens-beach-summer-regular",
+    "demographic": "menswear",
+    "occasion": "beach",
+    "season": "summer",
+    "fit_profile": "regular",
+    "face_shape": "oval",
+    "minimum_categories": 2
+  },
+  {
+    "id": "mens-gym-all-season-slim",
+    "demographic": "menswear",
+    "occasion": "gym",
+    "season": "all-season",
+    "fit_profile": "slim",
+    "face_shape": "round",
+    "minimum_categories": 2
+  },
+  {
+    "id": "mens-office-winter-straight",
+    "demographic": "menswear",
+    "occasion": "formal",
+    "season": "winter",
+    "fit_profile": "straight",
+    "face_shape": "diamond",
+    "minimum_categories": 2
+  },
+  {
+    "id": "womens-mall-summer-straight",
+    "demographic": "womenswear",
+    "occasion": "mall",
+    "season": "summer",
+    "fit_profile": "straight",
+    "face_shape": "oval",
+    "minimum_categories": 2
+  },
+  {
+    "id": "womens-beach-summer-regular",
+    "demographic": "womenswear",
+    "occasion": "beach",
+    "season": "summer",
+    "fit_profile": "regular",
+    "face_shape": "heart",
+    "minimum_categories": 2
+  },
+  {
+    "id": "womens-office-all-season-regular",
+    "demographic": "womenswear",
+    "occasion": "formal",
+    "season": "all-season",
+    "fit_profile": "regular",
+    "face_shape": "diamond",
+    "minimum_categories": 2
+  },
+  {
+    "id": "womens-travel-winter-straight",
+    "demographic": "womenswear",
+    "occasion": "travel",
+    "season": "winter",
+    "fit_profile": "straight",
+    "face_shape": "rectangle",
+    "minimum_categories": 2
+  },
+  {
+    "id": "unisex-travel-all-season-regular",
+    "demographic": "unisex",
+    "occasion": "travel",
+    "season": "all-season",
+    "fit_profile": "regular",
+    "face_shape": "oval",
+    "minimum_categories": 2
+  },
+  {
+    "id": "mens-outdoor-winter-relaxed",
+    "demographic": "menswear",
+    "occasion": "outdoor",
+    "season": "winter",
+    "fit_profile": "relaxed",
+    "face_shape": "rectangle",
+    "minimum_categories": 2
+  }
+]

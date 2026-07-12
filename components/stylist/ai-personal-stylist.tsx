@@ -18,11 +18,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ARCHIVE_END_YEAR } from "@/lib/archive-window";
+import { analyzeStylistPhoto } from "@/lib/photo-analysis";
 import {
-  detectFaceShapeFromImageSignal,
-  detectDemographicFromImageSignal,
   getStyleProfile,
-  pickStyleProfileId,
   type GroomingRecommendation,
   type GroomingRecommendationSet,
   type OutfitRecommendation,
@@ -33,7 +31,6 @@ import { cn } from "@/lib/utils";
 import {
   createVisionProfile,
   type VisionDemographic,
-  type VisionFitProfile,
   type VisionProfile
 } from "@/lib/vision";
 
@@ -47,8 +44,7 @@ const demographicLabels: Record<Demographic, string> = {
   unisex: "Unisex"
 };
 
-const stylistDemographics = ["menswear", "unisex"] as const satisfies readonly VisionDemographic[];
-const visionFitProfiles = ["relaxed", "oversized", "straight", "slim"] as const satisfies readonly VisionFitProfile[];
+const stylistDemographics = ["menswear", "womenswear", "unisex"] as const satisfies readonly VisionDemographic[];
 
 const occasionOptions: { label: string; value: StylingOccasion }[] = [
   { label: "Mall / Street", value: "mall" },
@@ -97,7 +93,10 @@ export function AIPersonalStylist({
     hairstyle: null
   });
   const [recommendationError, setRecommendationError] = useState("");
-  const scanTimerRef = useRef<number | null>(null);
+  const [photoSeed, setPhotoSeed] = useState("");
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const photoFileRef = useRef<File | null>(null);
+  const scanRunRef = useRef(0);
 
   const profile = useMemo(() => getStyleProfile(profileId), [profileId]);
   const profilePalette = visionProfile?.recommended_color_palette ?? [
@@ -118,14 +117,6 @@ export function AIPersonalStylist({
       }
     };
   }, [previewUrl]);
-
-  useEffect(() => {
-    return () => {
-      if (scanTimerRef.current) {
-        window.clearTimeout(scanTimerRef.current);
-      }
-    };
-  }, []);
 
   async function loadRecommendations(
     nextVisionProfile: VisionProfile,
@@ -172,50 +163,40 @@ export function AIPersonalStylist({
     }
   }
 
-  function pickFitProfileFromImageSignal(seed: string): VisionFitProfile {
-    const hash = seed.split("").reduce((total, char) => total + char.charCodeAt(0), 0);
-    return visionFitProfiles[hash % visionFitProfiles.length];
-  }
-
-  function clampVisionDemographic(demographic: Demographic): VisionDemographic {
-    return demographic === "unisex" ? "unisex" : "menswear";
-  }
-
-  function paletteForProfile(nextProfileId: StyleProfileId): [string, string, string] {
-    const nextProfile = getStyleProfile(nextProfileId);
-    return [nextProfile.palette[0], nextProfile.palette[1], nextProfile.palette[2]];
-  }
-
-  function startScan(seed: string) {
-    if (scanTimerRef.current) {
-      window.clearTimeout(scanTimerRef.current);
-    }
-
-    const nextProfileId = pickStyleProfileId(seed);
-    const nextDemographic = clampVisionDemographic(
-      detectDemographicFromImageSignal(seed, selectedDemographic)
-    );
-    const nextFaceShape = detectFaceShapeFromImageSignal(seed);
-    const nextVisionProfile = createVisionProfile({
-      demographic: nextDemographic,
-      detected_face_shape: nextFaceShape,
-      primary_color_undertone: nextProfileId,
-      recommended_color_palette: paletteForProfile(nextProfileId),
-      suggested_fit_profile: pickFitProfileFromImageSignal(seed)
-    });
-
-    setProfileId(nextProfileId);
-    setDetectedDemographic(nextDemographic);
-    setDetectedFaceShape(nextFaceShape);
-    setVisionProfile(nextVisionProfile);
+  async function startScan(file: File, nextPreviewUrl = previewUrl) {
+    const scanRun = scanRunRef.current + 1;
+    scanRunRef.current = scanRun;
     setRecommendations([]);
     setGrooming({ beard: null, hairstyle: null });
+    setRecommendationError("");
     setIsReady(false);
     setIsScanning(true);
 
-    scanTimerRef.current = window.setTimeout(() => {
-      void loadRecommendations(nextVisionProfile, selectedOccasion, selectedSeason);
-    }, 1600);
+    try {
+      const nextVisionProfile = await analyzeStylistPhoto(file, nextPreviewUrl, selectedDemographic);
+
+      if (scanRun !== scanRunRef.current) {
+        return;
+      }
+
+      setProfileId(nextVisionProfile.primary_color_undertone);
+      setDetectedDemographic(nextVisionProfile.demographic);
+      setDetectedFaceShape(nextVisionProfile.detected_face_shape);
+      setVisionProfile(nextVisionProfile);
+      await loadRecommendations(nextVisionProfile, selectedOccasion, selectedSeason);
+    } catch (error) {
+      console.error(error);
+
+      if (scanRun !== scanRunRef.current) {
+        return;
+      }
+
+      setRecommendationError("Photo analysis could not read this image. Try a clearer portrait or full-body photo.");
+      setRecommendations([]);
+      setGrooming({ beard: null, hairstyle: null });
+      setIsReady(false);
+      setIsScanning(false);
+    }
   }
 
   function handleUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -225,18 +206,26 @@ export function AIPersonalStylist({
       return;
     }
 
-    setPreviewUrl(URL.createObjectURL(file));
+    const nextPreviewUrl = URL.createObjectURL(file);
+    const nextPhotoSeed = `${file.name}-${file.size}-${file.lastModified}`;
+
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    setPreviewUrl(nextPreviewUrl);
     setUploadName(file.name);
-    startScan(`${file.name}-${file.size}-${file.lastModified}`);
+    setPhotoSeed(nextPhotoSeed);
+    photoFileRef.current = file;
+    void startScan(file, nextPreviewUrl);
   }
 
   function handleReset() {
-    if (scanTimerRef.current) {
-      window.clearTimeout(scanTimerRef.current);
-    }
-
     setPreviewUrl("");
     setUploadName("");
+    setPhotoSeed("");
+    photoFileRef.current = null;
+    scanRunRef.current += 1;
     setIsScanning(false);
     setIsReady(false);
     setProfileId("neutral");
@@ -249,6 +238,10 @@ export function AIPersonalStylist({
     setRecommendations([]);
     setGrooming({ beard: null, hairstyle: null });
     setRecommendationError("");
+
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
   }
 
   function handleDemographicOverride(nextDemographic: VisionDemographic) {
@@ -323,7 +316,7 @@ export function AIPersonalStylist({
           <div className="mt-6">
             <div className="mb-5">
               <Label>Wardrobe profile</Label>
-              <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
                 {stylistDemographics.map((demographic) => (
                   <Button
                     key={demographic}
@@ -340,10 +333,17 @@ export function AIPersonalStylist({
             </div>
 
             <Label htmlFor="stylist-photo">Full-body or portrait photo</Label>
-            <label
-              htmlFor="stylist-photo"
+            <input
+              id="stylist-photo"
+              type="file"
+              accept="image/*"
+              ref={photoInputRef}
+              className="mt-2 block w-full rounded-md border border-input bg-background text-sm text-foreground shadow-[0_1px_0_hsl(0_0%_100%/0.9)_inset,0_10px_26px_-24px_hsl(var(--foreground)/0.45)] file:mr-3 file:h-11 file:border-0 file:border-r file:border-border file:bg-muted file:px-4 file:text-sm file:font-semibold file:text-foreground"
+              onChange={handleUpload}
+            />
+            <div
               className={cn(
-                "relative mt-2 flex min-h-[520px] cursor-pointer flex-col items-center justify-center overflow-hidden border border-dashed border-input bg-muted/45 p-5 text-center transition-colors hover:border-foreground hover:bg-muted",
+                "relative mt-3 flex min-h-[420px] flex-col items-center justify-center overflow-hidden border border-dashed border-input bg-muted/45 p-5 text-center transition-colors",
                 previewUrl ? "border-solid bg-background" : ""
               )}
             >
@@ -358,8 +358,8 @@ export function AIPersonalStylist({
                   <span className="grid size-12 place-items-center border border-border bg-background">
                     <Upload className="size-5" />
                   </span>
-                  <span className="mt-3 text-sm font-medium">Upload profile photo</span>
-                  <span className="mt-1 text-xs text-muted-foreground">JPG, PNG, or WebP</span>
+                  <span className="mt-3 text-sm font-medium">Select a photo above</span>
+                  <span className="mt-1 text-xs text-muted-foreground">Native file picker works best on mobile</span>
                 </>
               )}
 
@@ -377,14 +377,7 @@ export function AIPersonalStylist({
                   </div>
                 </div>
               ) : null}
-            </label>
-            <input
-              id="stylist-photo"
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={handleUpload}
-            />
+            </div>
 
             <div className="mt-5 grid gap-4">
               <div>
@@ -428,10 +421,36 @@ export function AIPersonalStylist({
               <p className="truncate text-sm text-muted-foreground">
                 {uploadName || "No profile photo selected"}
               </p>
-              <Button type="button" variant="outline" onClick={handleReset}>
-                <RotateCcw className="size-4" />
-                Reset
-              </Button>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isScanning}
+                  onClick={() => {
+                    if (photoSeed) {
+                      if (photoFileRef.current) {
+                        void startScan(photoFileRef.current);
+                      }
+                      return;
+                    }
+
+                    photoInputRef.current?.click();
+                  }}
+                >
+                  {isScanning ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : photoSeed ? (
+                    <Sparkles className="size-4" />
+                  ) : (
+                    <Upload className="size-4" />
+                  )}
+                  {photoSeed ? "Analyze photo" : "Choose photo"}
+                </Button>
+                <Button type="button" variant="outline" onClick={handleReset}>
+                  <RotateCcw className="size-4" />
+                  Reset
+                </Button>
+              </div>
             </div>
 
             {recommendationError ? (
@@ -494,7 +513,7 @@ export function AIPersonalStylist({
                 <p className="mt-3 text-base leading-7">
                   {detectedDemographic ? demographicLabels[detectedDemographic] : "Unclassified"}
                 </p>
-                <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
                   {stylistDemographics.map((demographic) => (
                     <Button
                       key={demographic}

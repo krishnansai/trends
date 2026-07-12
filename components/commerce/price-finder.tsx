@@ -25,6 +25,8 @@ type PriceMatch = {
   retailer: string;
   logoMark: string;
   logoTone: string;
+  matchConfidence?: "Exact" | "Similar" | "Search";
+  priceBasis?: "extracted" | "estimated";
   productTitle: string;
   price: number | null;
   productUrl: string;
@@ -89,9 +91,15 @@ export function PriceFinder() {
     });
   }, [matches]);
 
-  const canSearch = imageUrl.trim().length > 0 || previewUrl.length > 0;
   const trimmedInputUrl = imageUrl.trim();
   const visiblePreview = previewUrl || (isLikelyImageUrl(trimmedInputUrl) ? trimmedInputUrl : "");
+  const pricedMatches = sortedMatches.filter((match) => match.price !== null);
+  const bestMatch = pricedMatches[0];
+  const highestPrice = pricedMatches.at(-1)?.price ?? null;
+  const savings =
+    bestMatch?.price !== null && bestMatch?.price !== undefined && highestPrice !== null
+      ? Math.max(0, highestPrice - bestMatch.price)
+      : 0;
 
   useEffect(() => {
     return () => {
@@ -119,7 +127,13 @@ export function PriceFinder() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!canSearch) {
+    const formData = new FormData(event.currentTarget);
+    const submittedInput = String(formData.get("product-input") ?? "").trim();
+    const effectiveInput = submittedInput || trimmedInputUrl;
+
+    if (!effectiveInput && !previewUrl && !uploadName) {
+      setWarning("Paste a product link, enter a clothing search term, or upload a photo first.");
+      setHasSearched(false);
       return;
     }
 
@@ -134,8 +148,9 @@ export function PriceFinder() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          imageUrl: trimmedInputUrl || undefined,
-          productUrl: trimmedInputUrl || undefined
+          imageUrl: effectiveInput || undefined,
+          productUrl: effectiveInput || undefined,
+          query: effectiveInput || uploadName || "mens clothing item"
         })
       });
 
@@ -181,7 +196,7 @@ export function PriceFinder() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-        <form className="border border-border bg-background p-5" onSubmit={handleSubmit}>
+        <form className="border border-border bg-background p-5" onSubmit={handleSubmit} noValidate>
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Source Item</p>
@@ -198,9 +213,11 @@ export function PriceFinder() {
               <div className="mt-2 flex gap-2">
                 <Input
                   id="product-image-url"
-                  type="url"
+                  name="product-input"
+                  type="text"
+                  inputMode="url"
                   value={imageUrl}
-                  placeholder="https://retailer.com/product-page"
+                  placeholder="Paste product link, e.g. amazon.in/dp/..."
                   onChange={(event) => {
                     setImageUrl(event.target.value);
                     setPreviewUrl("");
@@ -258,7 +275,7 @@ export function PriceFinder() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-              <Button type="submit" disabled={!canSearch || isLoading}>
+              <Button type="submit" disabled={isLoading}>
                 {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
                 Find lowest price
               </Button>
@@ -276,7 +293,7 @@ export function PriceFinder() {
               <p className="text-sm text-muted-foreground">Retailer Matches</p>
               <h2 className="mt-1 text-2xl font-semibold">Lowest price first</h2>
             </div>
-            {hasSearched ? <Badge>Sorted by price</Badge> : null}
+            {hasSearched ? <Badge>{pricedMatches.length} websites compared</Badge> : null}
           </div>
 
           {isLoading ? (
@@ -296,6 +313,74 @@ export function PriceFinder() {
                   {warning}
                 </div>
               ) : null}
+
+              {bestMatch ? (
+                <div className="grid gap-3 border border-foreground bg-muted/30 p-4 lg:grid-cols-[1fr_auto]">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Best price found</p>
+                    <div className="mt-2 flex flex-wrap items-end gap-3">
+                      <p className="text-3xl font-semibold">{formatPrice(bestMatch)}</p>
+                      <Badge>{bestMatch.retailer}</Badge>
+                      {savings > 0 ? <Badge>Save up to {currencyFormatter.format(savings)}</Badge> : null}
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Compared on this page across {pricedMatches.length} retailer websites.
+                    </p>
+                  </div>
+                  <a
+                    href={bestMatch.buyNowUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={buttonVariants({ className: "self-end" })}
+                  >
+                    Open lowest price
+                    <ExternalLink className="size-4" />
+                  </a>
+                </div>
+              ) : null}
+
+              {pricedMatches.length ? (
+                <div className="overflow-hidden border border-border">
+                  <div className="grid grid-cols-[1.1fr_0.8fr_0.9fr] bg-muted/45 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground sm:grid-cols-[1.1fr_0.8fr_0.8fr_0.9fr]">
+                    <span>Website</span>
+                    <span>Price</span>
+                    <span className="hidden sm:block">Type</span>
+                    <span className="text-right">Link</span>
+                  </div>
+                  {pricedMatches.map((match, index) => (
+                    <div
+                      key={`row-${match.id}`}
+                      className="grid grid-cols-[1.1fr_0.8fr_0.9fr] items-center gap-2 border-t border-border px-3 py-3 text-sm sm:grid-cols-[1.1fr_0.8fr_0.8fr_0.9fr]"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className="grid size-8 shrink-0 place-items-center text-xs font-semibold text-white"
+                          style={{ backgroundColor: match.logoTone }}
+                        >
+                          {match.logoMark}
+                        </span>
+                        <span className="min-w-0 truncate font-medium">
+                          {index === 0 ? "Lowest - " : ""}
+                          {match.retailer}
+                        </span>
+                      </div>
+                      <span className="font-semibold">{formatPrice(match)}</span>
+                      <span className="hidden text-muted-foreground sm:block">
+                        {match.matchConfidence ?? (match.sourceType === "exact" ? "Exact" : "Similar")}
+                      </span>
+                      <a
+                        href={match.buyNowUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="justify-self-end text-sm font-medium underline underline-offset-4"
+                      >
+                        View
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
               {sortedMatches.map((match, index) => (
                 <article
                   key={match.id}
@@ -326,6 +411,7 @@ export function PriceFinder() {
                       <h3 className="text-base font-semibold">{match.productTitle}</h3>
                       {index === 0 && match.price !== null ? <Badge>Best price</Badge> : null}
                       {match.sourceType === "exact" ? <Badge>Exact URL</Badge> : null}
+                      {match.priceBasis === "estimated" ? <Badge className="bg-muted">Estimated</Badge> : null}
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">{match.retailer}</p>
                     {match.sku ? (

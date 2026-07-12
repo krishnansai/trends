@@ -5,7 +5,7 @@ import {
   type FitProfile
 } from "@/lib/types";
 
-export type VisionDemographic = Extract<Demographic, "menswear" | "unisex">;
+export type VisionDemographic = Demographic;
 export type VisionUndertone = "warm" | "cool" | "neutral";
 export type VisionFitProfile = Extract<FitProfile, "relaxed" | "oversized" | "straight" | "slim">;
 
@@ -17,11 +17,11 @@ export type VisionProfile = {
   recommended_color_palette: [string, string, string];
 };
 
-export const VISION_IMAGE_ANALYZER_SYSTEM_PROMPT = `You are the core computer vision engine for a premium men's fashion and grooming platform. Analyze the uploaded user image and return a strict, minified JSON object. Do not include any markdown formatting, code blocks, or conversational text. Only return the JSON object.
+export const VISION_IMAGE_ANALYZER_SYSTEM_PROMPT = `You are the core computer vision engine for a premium fashion and grooming platform. Analyze the uploaded user image and return a strict, minified JSON object. Do not include any markdown formatting, code blocks, or conversational text. Only return the JSON object.
 
 Analyze and extract these exact keys:
 
-demographic: Value must strictly be either "menswear" or "unisex". (Look at the user's presentation. Based on our guardrails, do not return womenswear items).
+demographic: Value must strictly be one of "menswear", "womenswear", or "unisex". Classify the requested wardrobe presentation, then keep recommendations inside that wardrobe category plus unisex items only.
 
 detected_face_shape: Choose exactly one from: ["oval", "square", "round", "rectangle", "diamond"]. Base this on their jawline, cheekbones, and facial proportions.
 
@@ -32,9 +32,9 @@ suggested_fit_profile: Based on their physical frame, determine if they look bes
 recommended_color_palette: Provide an array of 3 hex color codes that would look exceptionally flattering on them based on their undertone.
 
 Example JSON Output:
-{"demographic":"menswear","detected_face_shape":"square","primary_color_undertone":"warm","suggested_fit_profile":"relaxed","recommended_color_palette":["#1A1A1A","#4F5D4E","#D8C3A5"]}`;
+{"demographic":"womenswear","detected_face_shape":"oval","primary_color_undertone":"warm","suggested_fit_profile":"relaxed","recommended_color_palette":["#1A1A1A","#4F5D4E","#D8C3A5"]}`;
 
-export const visionDemographics = ["menswear", "unisex"] as const satisfies readonly VisionDemographic[];
+export const visionDemographics = ["menswear", "womenswear", "unisex"] as const satisfies readonly VisionDemographic[];
 export const visionFaceShapes = ["oval", "square", "round", "rectangle", "diamond"] as const satisfies readonly VisionProfile["detected_face_shape"][];
 export const visionUndertones = ["warm", "cool", "neutral"] as const satisfies readonly VisionUndertone[];
 export const visionFitProfiles = ["relaxed", "oversized", "straight", "slim"] as const satisfies readonly VisionFitProfile[];

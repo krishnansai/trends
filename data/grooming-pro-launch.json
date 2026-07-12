@@ -1,0 +1,174 @@
+[
+  {
+    "id": "groom-pro-hair-2026-01",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Beachy Shoulder-Length Waves",
+    "description": "Natural shoulder-length waves with soft face framing and controlled movement for a relaxed resort profile.",
+    "face_shapes": ["oval", "rectangle", "heart", "diamond"],
+    "style_tags": ["long-hair", "resort", "natural-texture", "low-maintenance"],
+    "maintenance_level": "Low (Shape every 8-10 weeks)",
+    "recommended_products": [
+      { "name": "Sea Salt Wave Spray", "search_query": "mens sea salt wave spray natural texture" },
+      { "name": "Light Hold Curl Cream", "search_query": "light hold curl cream for men natural waves" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800"
+  },
+  {
+    "id": "groom-pro-hair-2026-02",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Grown-Out Natural Curl Shape",
+    "description": "Full natural curls shaped around the crown with clean perimeter control and moisture focused definition.",
+    "face_shapes": ["oval", "square", "round", "heart"],
+    "style_tags": ["natural-curls", "volume", "modern", "low-maintenance"],
+    "maintenance_level": "Medium (Hydrate weekly and shape monthly)",
+    "recommended_products": [
+      { "name": "Curl Defining Leave-In Cream", "search_query": "mens curl defining leave in cream natural hair" },
+      { "name": "Hydrating Scalp Oil", "search_query": "lightweight scalp oil for curly hair men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1522556189639-b150ed9c4330?w=800"
+  },
+  {
+    "id": "groom-pro-hair-2026-03",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Soft Punk Layered Fringe",
+    "description": "Layered fringe with controlled edge and soft punk movement that frames cheekbones without heavy styling.",
+    "face_shapes": ["diamond", "heart", "oval", "rectangle"],
+    "style_tags": ["soft-punk", "fringe", "streetwear", "editorial"],
+    "maintenance_level": "Medium (Trim every 4-6 weeks)",
+    "recommended_products": [
+      { "name": "Matte Texture Paste", "search_query": "matte texture paste messy fringe men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1552058544-f2b08422138a?w=800"
+  },
+  {
+    "id": "groom-pro-hair-2026-04",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Baby Mullet with Tapered Sides",
+    "description": "Subtle mullet shape with gentle nape length and tapered sides for a wearable streetwear profile.",
+    "face_shapes": ["oval", "diamond", "heart", "square"],
+    "style_tags": ["mullet", "streetwear", "y2k", "modern"],
+    "maintenance_level": "Medium (Taper every 3-4 weeks)",
+    "recommended_products": [
+      { "name": "Dry Texture Spray", "search_query": "dry texture spray mens mullet shag hair" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=800"
+  },
+  {
+    "id": "groom-pro-hair-2026-05",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Curly Low Taper Crop",
+    "description": "Low taper fade with curl volume left on top to create height and soften facial proportions.",
+    "face_shapes": ["round", "square", "oval"],
+    "style_tags": ["curly", "low-taper", "clean", "casual"],
+    "maintenance_level": "Medium (Taper every 2-3 weeks)",
+    "recommended_products": [
+      { "name": "Curl Sponge and Cream Kit", "search_query": "curl sponge cream kit men low taper" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800"
+  },
+  {
+    "id": "groom-pro-hair-2026-06",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Slick Back Executive Flow",
+    "description": "Medium-length brushed back hair with natural shine for professional and formal contexts.",
+    "face_shapes": ["oval", "square", "rectangle", "diamond"],
+    "style_tags": ["office", "formal", "old-money", "smart-casual"],
+    "maintenance_level": "Medium (Shape every 5-6 weeks)",
+    "recommended_products": [
+      { "name": "Natural Finish Styling Cream", "search_query": "natural finish styling cream slick back men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800"
+  },
+  {
+    "id": "groom-pro-beard-2026-01",
+    "year": 2026,
+    "category": "beard",
+    "title": "Low Shadow Beard Fade",
+    "description": "Short shadow beard blended into the sideburn area for jawline definition without a heavy beard profile.",
+    "face_shapes": ["round", "oval", "square", "heart"],
+    "style_tags": ["sharp", "minimalist", "fade", "modern"],
+    "maintenance_level": "Medium (Edge twice weekly)",
+    "recommended_products": [
+      { "name": "Zero Gap Detail Trimmer", "search_query": "zero gap detail trimmer beard fade men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800"
+  },
+  {
+    "id": "groom-pro-beard-2026-02",
+    "year": 2026,
+    "category": "beard",
+    "title": "Corporate Goatee Frame",
+    "description": "Clean cheek area with a controlled goatee and moustache frame to sharpen the chin line.",
+    "face_shapes": ["round", "heart", "diamond", "oval"],
+    "style_tags": ["office", "sharp", "minimalist", "corporate"],
+    "maintenance_level": "Medium (Contour weekly)",
+    "recommended_products": [
+      { "name": "Clear Precision Shave Gel", "search_query": "clear precision shaving gel goatee edging" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=800"
+  },
+  {
+    "id": "groom-pro-beard-2026-03",
+    "year": 2026,
+    "category": "beard",
+    "title": "Natural Full Beard Soft Square",
+    "description": "Fuller beard with softened square edges and conditioned texture for balanced mature structure.",
+    "face_shapes": ["oval", "rectangle", "diamond", "square"],
+    "style_tags": ["full-beard", "natural", "quiet-luxury", "mature"],
+    "maintenance_level": "Medium (Shape every 2 weeks)",
+    "recommended_products": [
+      { "name": "Boar Bristle Beard Brush", "search_query": "boar bristle beard brush natural full beard" },
+      { "name": "Sandalwood Beard Balm", "search_query": "sandalwood beard balm soft hold men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"
+  },
+  {
+    "id": "groom-pro-beard-2026-04",
+    "year": 2026,
+    "category": "beard",
+    "title": "Clean Shave Polished Frame",
+    "description": "No-beard grooming profile with precise skin prep and clean neckline for formal and minimalist wardrobes.",
+    "face_shapes": ["oval", "square", "diamond", "rectangle"],
+    "style_tags": ["clean-shave", "formal", "minimalist", "office"],
+    "maintenance_level": "High (Shave every 1-2 days)",
+    "recommended_products": [
+      { "name": "Sensitive Skin Safety Razor", "search_query": "sensitive skin safety razor men clean shave" },
+      { "name": "Post Shave Repair Balm", "search_query": "post shave repair balm men sensitive skin" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"
+  },
+  {
+    "id": "groom-pro-beard-2026-05",
+    "year": 2026,
+    "category": "beard",
+    "title": "Chevron Moustache with Clean Cheeks",
+    "description": "Bold moustache emphasis with clean cheeks for a confident vintage inspired frame.",
+    "face_shapes": ["oblong", "diamond", "square", "oval"],
+    "style_tags": ["moustache", "vintage", "bold", "resort"],
+    "maintenance_level": "Medium (Wax and trim weekly)",
+    "recommended_products": [
+      { "name": "Natural Moustache Wax", "search_query": "natural moustache wax chevron style men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1541577141970-eebc83ebe30e?w=800"
+  },
+  {
+    "id": "groom-pro-beard-2026-06",
+    "year": 2026,
+    "category": "beard",
+    "title": "Extended Designer Stubble",
+    "description": "Even 4mm to 5mm stubble with precise cheek cleanup for texture without beard bulk.",
+    "face_shapes": ["round", "oval", "heart", "square", "diamond"],
+    "style_tags": ["stubble", "casual", "universal", "low-maintenance"],
+    "maintenance_level": "Low (Trim twice weekly)",
+    "recommended_products": [
+      { "name": "Adjustable Stubble Trimmer", "search_query": "adjustable stubble trimmer 4mm 5mm men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800"
+  }
+]

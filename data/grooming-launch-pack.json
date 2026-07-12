@@ -1,0 +1,138 @@
+[
+  {
+    "id": "groom-launch-hair-2026-01",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Clean Side-Part Taper",
+    "description": "Professional side-part haircut with a soft taper, natural shine, and controlled volume for office and formal styling.",
+    "face_shapes": ["oval", "square", "rectangle"],
+    "style_tags": ["office", "smart-casual", "professional", "minimalist"],
+    "maintenance_level": "Medium (Trim every 3-4 weeks)",
+    "recommended_products": [
+      {
+        "name": "Light Hold Grooming Cream",
+        "search_query": "light hold grooming cream natural shine men"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800"
+  },
+  {
+    "id": "groom-launch-hair-2026-02",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Curly Low-Taper Shape-Up",
+    "description": "Natural curl volume shaped with a low taper and clean edges to preserve texture while sharpening the frame.",
+    "face_shapes": ["round", "oval", "heart"],
+    "style_tags": ["curly", "streetwear", "natural", "modern"],
+    "maintenance_level": "Medium (Shape-up every 2-3 weeks)",
+    "recommended_products": [
+      {
+        "name": "Curl Defining Cream",
+        "search_query": "mens curl defining cream low hold"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800"
+  },
+  {
+    "id": "groom-launch-hair-2026-03",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Long Layered Middle-Part Flow",
+    "description": "Longer layered hair with a natural middle part and soft movement for resort, old-money, and casual wardrobes.",
+    "face_shapes": ["oval", "diamond", "rectangle"],
+    "style_tags": ["resort", "old-money", "casual", "long-hair"],
+    "maintenance_level": "Low (Trim every 8-10 weeks)",
+    "recommended_products": [
+      {
+        "name": "Leave-In Conditioning Cream",
+        "search_query": "mens leave in conditioner long hair frizz control"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800"
+  },
+  {
+    "id": "groom-launch-hair-2026-04",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Short Textured French Crop",
+    "description": "Compact textured crop with a short fringe, suited to low-maintenance streetwear and casual looks.",
+    "face_shapes": ["round", "square", "oval"],
+    "style_tags": ["streetwear", "low-maintenance", "short-hair", "modern"],
+    "maintenance_level": "Low (Trim every 4 weeks)",
+    "recommended_products": [
+      {
+        "name": "Matte Fiber Paste",
+        "search_query": "matte fiber paste short textured crop men"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1552058544-f2b08422138a?w=800"
+  },
+  {
+    "id": "groom-launch-beard-2026-05",
+    "year": 2026,
+    "category": "beard",
+    "title": "Low-Maintenance Short Stubble",
+    "description": "Even short stubble with clean neck edges for a polished but casual profile.",
+    "face_shapes": ["oval", "square", "round", "diamond"],
+    "style_tags": ["casual", "minimalist", "low-maintenance", "office"],
+    "maintenance_level": "Low (Trim every 2-3 days)",
+    "recommended_products": [
+      {
+        "name": "Adjustable Stubble Trimmer",
+        "search_query": "adjustable stubble trimmer 0.5mm precision"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800"
+  },
+  {
+    "id": "groom-launch-beard-2026-06",
+    "year": 2026,
+    "category": "beard",
+    "title": "Natural Full Beard with Soft Cheek Line",
+    "description": "Fuller natural beard with softened cheek lines and light conditioning for winter and utility wardrobes.",
+    "face_shapes": ["rectangle", "oval", "heart", "square"],
+    "style_tags": ["winter", "natural", "utility", "mature"],
+    "maintenance_level": "Medium (Shape weekly)",
+    "recommended_products": [
+      {
+        "name": "Beard Wash and Conditioner",
+        "search_query": "mens beard wash conditioner soft full beard"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"
+  },
+  {
+    "id": "groom-launch-beard-2026-07",
+    "year": 2026,
+    "category": "beard",
+    "title": "Corporate Tapered Beard",
+    "description": "Short tapered beard with clean lower cheek lines for office and tailored outfits.",
+    "face_shapes": ["square", "oval", "rectangle"],
+    "style_tags": ["office", "tailoring", "professional", "sharp"],
+    "maintenance_level": "High (Edge every 5-7 days)",
+    "recommended_products": [
+      {
+        "name": "Clear Beard Line Shaving Gel",
+        "search_query": "clear shaving gel beard line edging men"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800"
+  },
+  {
+    "id": "groom-launch-beard-2026-08",
+    "year": 2026,
+    "category": "beard",
+    "title": "Clean Shave with Defined Sideburns",
+    "description": "Clean-shaven profile with maintained sideburns for sharp minimalist and formal wardrobes.",
+    "face_shapes": ["diamond", "oval", "round", "heart"],
+    "style_tags": ["minimalist", "formal", "clean", "low-maintenance"],
+    "maintenance_level": "Medium (Shave every 1-2 days)",
+    "recommended_products": [
+      {
+        "name": "Sensitive Skin Safety Razor Kit",
+        "search_query": "sensitive skin safety razor kit men"
+      }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=800"
+  }
+]

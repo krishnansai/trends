@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 :root {
-  --background: 220 24% 97%;
+  --background: 216 30% 97%;
   --foreground: 222 47% 9%;
-  --muted: 220 20% 93%;
+  --muted: 216 24% 92%;
   --muted-foreground: 224 12% 42%;
   --accent: 162 72% 32%;
   --accent-foreground: 0 0% 100%;
-  --border: 220 16% 84%;
+  --border: 216 18% 82%;
   --input: 220 16% 78%;
   --ring: 42 88% 48%;
   --surface: 0 0% 100%;
@@ -24,6 +24,7 @@
 html {
   min-height: 100%;
   background: hsl(var(--background));
+  scroll-behavior: smooth;
 }
 
 body {
@@ -31,8 +32,9 @@ body {
   min-height: 100%;
   margin: 0;
   background:
-    linear-gradient(180deg, hsl(220 30% 99%) 0%, hsl(var(--background)) 45%, hsl(220 28% 94%) 100%);
+    linear-gradient(180deg, hsl(216 38% 99%) 0%, hsl(var(--background)) 42%, hsl(216 26% 94%) 100%);
   color: hsl(var(--foreground));
+  text-rendering: geometricPrecision;
 }
 
 body::before {
@@ -42,14 +44,19 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background-image:
-    linear-gradient(hsl(var(--foreground) / 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--foreground) / 0.035) 1px, transparent 1px);
-  background-size: 44px 44px;
+    linear-gradient(hsl(var(--foreground) / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--foreground) / 0.028) 1px, transparent 1px);
+  background-size: 48px 48px;
   mask-image: linear-gradient(180deg, black, transparent 76%);
 }
 
 img {
   max-width: 100%;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
 }
 
 ::selection {
@@ -64,7 +71,7 @@ img {
     linear-gradient(145deg, hsl(var(--surface) / 0.98), hsl(var(--surface-2) / 0.92));
   box-shadow:
     0 1px 0 hsl(0 0% 100% / 0.85) inset,
-    0 18px 48px -36px hsl(var(--foreground) / 0.35);
+    0 18px 48px -36px hsl(var(--foreground) / 0.42);
 }
 
 .border.bg-muted {
@@ -86,6 +93,10 @@ input[type="range"] {
 .masonry > * {
   break-inside: avoid;
   margin-bottom: 1rem;
+}
+
+.masonry > button {
+  transform: translateZ(0);
 }
 
 @keyframes scan-sweep {

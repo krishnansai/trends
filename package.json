@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "validate:data": "node --experimental-strip-types scripts/validate-local-data.ts",
+    "train:stylist": "node --experimental-strip-types scripts/train-stylist-engine.ts",
     "ingest:kaggle": "node --experimental-strip-types scripts/ingest-kaggle-data.ts",
     "ingest:trends": "node --experimental-strip-types scripts/ingest-trend-data.ts",
     "ingest:grooming": "node --experimental-strip-types scripts/ingest-grooming-data.ts"

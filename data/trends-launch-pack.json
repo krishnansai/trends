@@ -1,0 +1,90 @@
+[
+  {
+    "id": "trend-launch-2026-womens-office-soft-tailoring",
+    "title": "Womenswear Soft Office Tailoring",
+    "description": "Soft blouses, structured midi skirts, relaxed blazers, and neutral bags create a practical office-to-mall wardrobe lane.",
+    "forecast_year": 2026,
+    "confidence_score": 84,
+    "season": "All-Season 2026",
+    "forecast_image_url": "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=1200",
+    "source_url": "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f",
+    "created_at": "2026-07-12T00:00:00.000Z"
+  },
+  {
+    "id": "trend-launch-2026-resort-fluidity",
+    "title": "Resort Fluidity",
+    "description": "Beach and vacation looks lean into linen shirts, floral midi dresses, raffia textures, and relaxed silhouettes.",
+    "forecast_year": 2026,
+    "confidence_score": 82,
+    "season": "Summer 2026",
+    "forecast_image_url": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1200",
+    "source_url": "https://images.unsplash.com/photo-1496747611176-843222e1e57c",
+    "created_at": "2026-07-12T00:00:00.000Z"
+  },
+  {
+    "id": "trend-launch-2026-gym-to-street",
+    "title": "Gym-to-Street Performance Basics",
+    "description": "Compression tops, low-profile runners, technical bags, and clean black layers move from gym sessions into everyday mall outfits.",
+    "forecast_year": 2026,
+    "confidence_score": 80,
+    "season": "All-Season 2026",
+    "forecast_image_url": "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200",
+    "source_url": "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b",
+    "created_at": "2026-07-12T00:00:00.000Z"
+  },
+  {
+    "id": "trend-launch-2026-black-minimal-uniform",
+    "title": "Black Minimal Uniform",
+    "description": "Black tees, leather jackets, rectangular eyewear, and compact bags continue as high-conversion essentials across genders.",
+    "forecast_year": 2026,
+    "confidence_score": 87,
+    "season": "All-Season 2026",
+    "forecast_image_url": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=1200",
+    "source_url": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518",
+    "created_at": "2026-07-12T00:00:00.000Z"
+  },
+  {
+    "id": "trend-launch-2026-compact-accessories",
+    "title": "Compact Functional Accessories",
+    "description": "Crossbody bags, shoulder bags, watches, and sunglasses become recommendation multipliers because they fit every occasion context.",
+    "forecast_year": 2026,
+    "confidence_score": 79,
+    "season": "All-Season 2026",
+    "forecast_image_url": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=1200",
+    "source_url": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62",
+    "created_at": "2026-07-12T00:00:00.000Z"
+  },
+  {
+    "id": "trend-launch-2026-denim-layering",
+    "title": "Denim Layering Reset",
+    "description": "Straight denim, relaxed trucker jackets, and crisp white shirts make denim a flexible base for both casual and smart-casual journeys.",
+    "forecast_year": 2026,
+    "confidence_score": 83,
+    "season": "All-Season 2026",
+    "forecast_image_url": "https://images.unsplash.com/photo-1512353087810-25dfcd100962?w=1200",
+    "source_url": "https://images.unsplash.com/photo-1512353087810-25dfcd100962",
+    "created_at": "2026-07-12T00:00:00.000Z"
+  },
+  {
+    "id": "trend-launch-2027-polished-athleisure",
+    "title": "Polished Athleisure",
+    "description": "Athletic tops and technical sneakers move toward cleaner colors and sharper proportions for gym, travel, and streetwear.",
+    "forecast_year": 2027,
+    "confidence_score": 72,
+    "season": "Spring 2027",
+    "forecast_image_url": "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=1200",
+    "source_url": "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e",
+    "created_at": "2026-07-12T00:00:00.000Z"
+  },
+  {
+    "id": "trend-launch-2027-soft-volume-blouses",
+    "title": "Soft Volume Blouses",
+    "description": "Romantic but office-ready blouses give womenswear recommendations more polish without feeling too formal.",
+    "forecast_year": 2027,
+    "confidence_score": 70,
+    "season": "Spring 2027",
+    "forecast_image_url": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1200",
+    "source_url": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b",
+    "created_at": "2026-07-12T00:00:00.000Z"
+  }
+]

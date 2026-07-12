@@ -1,21 +1,27 @@
 "use client";
 
-import { X } from "lucide-react";
+import { Filter, Layers3, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { ARCHIVE_END_YEAR, ARCHIVE_START_YEAR } from "@/lib/archive-window";
-import type { Garment } from "@/lib/types";
+import type { Demographic, Garment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const yearMin = ARCHIVE_START_YEAR;
 const yearMax = ARCHIVE_END_YEAR;
 
 function titleCase(value: string) {
-  return value.replace(/\b\w/g, (char) => char.toUpperCase());
+  return value.replace(/[-_]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
+
+const demographicLabels: Record<Demographic, string> = {
+  menswear: "Menswear",
+  unisex: "Unisex",
+  womenswear: "Womenswear"
+};
 
 export function HistoricalArchive({
   garments,
@@ -28,6 +34,7 @@ export function HistoricalArchive({
   const [toYear, setToYear] = useState(yearMax);
   const [ageGroup, setAgeGroup] = useState("all");
   const [category, setCategory] = useState("all");
+  const [demographic, setDemographic] = useState("all");
   const [selected, setSelected] = useState<Garment | null>(null);
 
   const categoryOptions = useMemo(
@@ -40,6 +47,11 @@ export function HistoricalArchive({
     [garments]
   );
 
+  const demographicOptions = useMemo(
+    () => Array.from(new Set(garments.map((garment) => garment.demographic))).sort(),
+    [garments]
+  );
+
   const filteredGarments = useMemo(() => {
     const lowerYear = Math.min(fromYear, toYear);
     const upperYear = Math.max(fromYear, toYear);
@@ -48,25 +60,87 @@ export function HistoricalArchive({
       const inYear = garment.year >= lowerYear && garment.year <= upperYear;
       const inAge = ageGroup === "all" || garment.age_group === ageGroup;
       const inCategory = category === "all" || garment.category === category;
+      const inDemographic = demographic === "all" || garment.demographic === demographic;
 
-      return inYear && inAge && inCategory;
+      return inYear && inAge && inCategory && inDemographic;
     });
-  }, [ageGroup, category, fromYear, garments, toYear]);
+  }, [ageGroup, category, demographic, fromYear, garments, toYear]);
+
+  const demographicCounts = useMemo(() => {
+    return garments.reduce<Record<string, number>>(
+      (counts, garment) => ({
+        ...counts,
+        [garment.demographic]: (counts[garment.demographic] ?? 0) + 1
+      }),
+      {}
+    );
+  }, [garments]);
 
   return (
     <section className="mx-auto max-w-7xl">
-      <div className="flex flex-col justify-between gap-4 border-b border-border pb-6 md:flex-row md:items-end">
-        <div>
-          <p className="text-sm text-muted-foreground">Historical Archive</p>
-          <h1 className="mt-2 text-3xl font-semibold md:text-4xl">Five years of visual signals</h1>
+      <div className="overflow-hidden border border-border bg-background">
+        <div className="grid gap-6 p-5 md:grid-cols-[1fr_auto] md:p-6">
+          <div>
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Layers3 className="size-4 text-accent" />
+              Historical Archive
+            </p>
+            <h1 className="mt-3 max-w-3xl text-3xl font-semibold tracking-normal md:text-5xl">
+              Five years of visual signals
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
+              Filter original menswear, womenswear, and unisex looks by year, category, age band, season, and context.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 md:min-w-72">
+            <div className="border border-border bg-muted/35 p-4">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Visible</p>
+              <p className="mt-2 text-3xl font-semibold">{filteredGarments.length}</p>
+            </div>
+            <div className="border border-border bg-muted/35 p-4">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Total</p>
+              <p className="mt-2 text-3xl font-semibold">{garments.length}</p>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
+      </div>
+
+      <div className="mt-5 flex flex-col justify-between gap-4 border-b border-border pb-5 md:flex-row md:items-center">
+        <div>
+          <p className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Filter className="size-4" />
+            Archive controls
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
           {isUsingSampleData ? <Badge>Sample data</Badge> : <Badge>Original data</Badge>}
           <Badge>{filteredGarments.length} looks</Badge>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 border border-border bg-background p-4 md:grid-cols-[minmax(260px,1.2fr)_1fr_1fr]">
+      <div className="mt-6 grid gap-2 sm:grid-cols-4">
+        <Button
+          type="button"
+          variant={demographic === "all" ? "default" : "outline"}
+          onClick={() => setDemographic("all")}
+        >
+          All Sections
+          <span className="text-xs opacity-75">{garments.length}</span>
+        </Button>
+        {demographicOptions.map((option) => (
+          <Button
+            key={option}
+            type="button"
+            variant={demographic === option ? "default" : "outline"}
+            onClick={() => setDemographic(option)}
+          >
+            {demographicLabels[option]}
+            <span className="text-xs opacity-75">{demographicCounts[option] ?? 0}</span>
+          </Button>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-4 border border-border bg-background p-4 md:grid-cols-[minmax(260px,1.2fr)_1fr_1fr]">
         <div>
           <div className="flex items-center justify-between">
             <Label>Year Range</Label>
@@ -157,16 +231,24 @@ export function HistoricalArchive({
             className="group w-full overflow-hidden border border-border bg-background text-left transition-colors hover:border-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground"
             onClick={() => setSelected(garment)}
           >
-            <img
-              src={garment.image_url}
-              alt={garment.description}
-              className="w-full bg-muted object-cover transition duration-500 group-hover:scale-[1.02]"
-              loading="lazy"
-            />
+            <div className="relative overflow-hidden bg-muted">
+              <img
+                src={garment.image_url}
+                alt={garment.description}
+                className="w-full bg-muted object-cover transition duration-500 group-hover:scale-[1.03]"
+                loading="lazy"
+              />
+              <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                <Badge className="border-background/50 bg-background/90">{garment.year}</Badge>
+                <Badge className="border-background/50 bg-background/90">
+                  {demographicLabels[garment.demographic]}
+                </Badge>
+              </div>
+            </div>
             <div className="space-y-3 p-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold">{garment.year}</span>
                 <span className="text-xs text-muted-foreground">{titleCase(garment.category)}</span>
+                <span className="text-xs font-medium text-accent">{titleCase(garment.fit_profile)}</span>
               </div>
               <h2 className="text-base font-semibold leading-tight">{garment.title}</h2>
               <p className="text-sm text-muted-foreground">{garment.description}</p>

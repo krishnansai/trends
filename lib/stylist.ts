@@ -6,6 +6,7 @@ import {
   isAllowedForDemographic,
   type Demographic,
   type FaceShape,
+  type FitProfile,
   type Garment,
   type GroomingCategory,
   type GroomingProduct,
@@ -57,6 +58,11 @@ export type GroomingRecommendationSet = {
 type StylingContext = {
   occasion?: StylingOccasion;
   season?: StylingSeason;
+};
+
+type RecommendationScoringInput = {
+  recommendedColorPalette?: string[];
+  suggestedFitProfile?: FitProfile;
 };
 
 const visionFaceShapes = ["oval", "square", "round", "rectangle", "diamond"] as const satisfies readonly FaceShape[];
@@ -199,6 +205,110 @@ function scoreContext(garment: Garment, context?: StylingContext) {
   return occasionScore + seasonScore;
 }
 
+function hexToRgb(hex: string) {
+  const normalized = hex.replace("#", "");
+
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) {
+    return null;
+  }
+
+  return {
+    b: Number.parseInt(normalized.slice(4, 6), 16),
+    g: Number.parseInt(normalized.slice(2, 4), 16),
+    r: Number.parseInt(normalized.slice(0, 2), 16)
+  };
+}
+
+type RgbColor = NonNullable<ReturnType<typeof hexToRgb>>;
+
+function isRgbColor(value: ReturnType<typeof hexToRgb>): value is RgbColor {
+  return value !== null;
+}
+
+function rgbDistance(first: RgbColor, second: RgbColor) {
+  return Math.sqrt(
+    (first.r - second.r) ** 2 + (first.g - second.g) ** 2 + (first.b - second.b) ** 2
+  );
+}
+
+function scorePaletteMatch(garment: Garment, preferredPalette?: string[]) {
+  if (!preferredPalette?.length || garment.color_palette.length === 0) {
+    return 0;
+  }
+
+  const garmentColors = garment.color_palette.map(hexToRgb).filter(isRgbColor);
+  const preferredColors = preferredPalette.map(hexToRgb).filter(isRgbColor);
+
+  if (garmentColors.length === 0 || preferredColors.length === 0) {
+    return 0;
+  }
+
+  const averageClosestDistance =
+    preferredColors.reduce((total, preferred) => {
+      const closest = Math.min(...garmentColors.map((color) => rgbDistance(preferred, color)));
+      return total + closest;
+    }, 0) / preferredColors.length;
+
+  return Math.max(0, 34 - (averageClosestDistance / 441) * 34);
+}
+
+function scoreFitMatch(garment: Garment, preferredFit?: FitProfile) {
+  if (!preferredFit) {
+    return 0;
+  }
+
+  if (garment.fit_profile === preferredFit) {
+    return 36;
+  }
+
+  const compatibleFits: Record<FitProfile, FitProfile[]> = {
+    boxy: ["oversized", "relaxed", "straight"],
+    oversized: ["boxy", "relaxed", "straight"],
+    regular: ["straight", "relaxed", "slim"],
+    relaxed: ["straight", "boxy", "regular", "oversized"],
+    slim: ["straight", "regular"],
+    straight: ["regular", "relaxed", "slim", "boxy"]
+  };
+
+  const index = compatibleFits[preferredFit].indexOf(garment.fit_profile);
+
+  if (index === -1) {
+    return 0;
+  }
+
+  return Math.max(10, 28 - index * 6);
+}
+
+function pickDiverseRecommendations<T extends { garment: Garment; score: number }>(items: T[]) {
+  const selected: T[] = [];
+  const selectedCategories = new Set<string>();
+
+  for (const item of items) {
+    if (selected.length >= 3) {
+      break;
+    }
+
+    if (selectedCategories.has(item.garment.category)) {
+      continue;
+    }
+
+    selected.push(item);
+    selectedCategories.add(item.garment.category);
+  }
+
+  for (const item of items) {
+    if (selected.length >= 3) {
+      break;
+    }
+
+    if (!selected.some((selectedItem) => selectedItem.garment.id === item.garment.id)) {
+      selected.push(item);
+    }
+  }
+
+  return selected;
+}
+
 function supportPiecesForContext(
   demographic: Demographic,
   profileId: StyleProfileId,
@@ -206,6 +316,14 @@ function supportPiecesForContext(
   context?: StylingContext
 ) {
   if (context?.occasion === "beach") {
+    if (demographic === "womenswear") {
+      return [
+        ["relaxed resort shirt", "wide-leg linen pant", "raffia tote"],
+        ["crochet cover-up", "woven sandal", "oval sunglasses"],
+        ["floral midi dress", "market tote", "soft gold jewelry"]
+      ][index] ?? ["relaxed resort shirt", "wide-leg linen pant", "raffia tote"];
+    }
+
     return [
       ["linen resort shirt", "quick-dry swim short", "polarized sunglasses"],
       ["open-collar knit", "tailored swim short", "raffia bucket hat"],
@@ -214,6 +332,14 @@ function supportPiecesForContext(
   }
 
   if (context?.occasion === "gym") {
+    if (demographic === "womenswear") {
+      return [
+        ["sculpted rib tank", "performance skort", "court sneaker"],
+        ["training tee", "stretch short", "nylon duffel"],
+        ["studio jacket", "supportive trainer", "sports watch"]
+      ][index] ?? ["sculpted rib tank", "performance skort", "court sneaker"];
+    }
+
     return [
       ["compression training top", "stretch short", "low-profile trainer"],
       ["moisture-wicking tee", "technical jogger", "training duffel"],
@@ -222,6 +348,14 @@ function supportPiecesForContext(
   }
 
   if (context?.occasion === "formal") {
+    if (demographic === "womenswear") {
+      return [
+        ["soft-volume blouse", "satin midi skirt", "structured shoulder bag"],
+        ["power blazer", "tailored short", "square-toe flat"],
+        ["column knit dress", "silk scarf", "minimal watch"]
+      ][index] ?? ["soft-volume blouse", "satin midi skirt", "structured shoulder bag"];
+    }
+
     return [
       ["pleated trouser", "fine-gauge knit polo", "brushed steel watch"],
       ["soft blazer", "straight-leg trouser", "minimal loafer"],
@@ -230,6 +364,14 @@ function supportPiecesForContext(
   }
 
   if (context?.season === "winter") {
+    if (demographic === "womenswear") {
+      return [
+        ["belted trench", "column knit dress", "ballet flat"],
+        ["soft suede jacket", "utility maxi skirt", "structured tote"],
+        ["power blazer", "rib knit base", "compact shoulder bag"]
+      ][index] ?? ["belted trench", "column knit dress", "ballet flat"];
+    }
+
     return [
       ["insulated parka", "thermal knit base", "straight denim"],
       ["chunky sweater", "wool bomber", "weather-resistant boot"],
@@ -238,6 +380,14 @@ function supportPiecesForContext(
   }
 
   if (context?.occasion === "mall") {
+    if (demographic === "womenswear") {
+      return [
+        ["graphic baby tee", "straight denim", "platform sneaker"],
+        ["soft blouse", "utility maxi skirt", "compact shoulder bag"],
+        ["cropped jacket", "rib tank", "oval sunglasses"]
+      ][index] ?? ["graphic baby tee", "straight denim", "platform sneaker"];
+    }
+
     return [
       ["boxy streetwear tee", "wide-leg cargo pant", "acetate sunglasses"],
       ["oversized hoodie", "straight denim", "crossbody sling"],
@@ -374,15 +524,23 @@ export function buildStylistRecommendations(
   garments: Garment[],
   profileId: StyleProfileId,
   demographic: Demographic,
-  context?: StylingContext
+  context?: StylingContext,
+  scoringInput: RecommendationScoringInput = {}
 ): OutfitRecommendation[] {
   const profile = getStyleProfile(profileId);
-
-  return garments
+  const scoredGarments = garments
     .filter((garment) => isAllowedForDemographic(garment, demographic))
-    .map((garment) => ({ garment, score: scoreGarment(garment, profile) + scoreContext(garment, context) }))
-    .sort((first, second) => second.score - first.score || second.garment.year - first.garment.year)
-    .slice(0, 3)
+    .map((garment) => ({
+      garment,
+      score:
+        scoreGarment(garment, profile) +
+        scoreContext(garment, context) +
+        scoreFitMatch(garment, scoringInput.suggestedFitProfile) +
+        scorePaletteMatch(garment, scoringInput.recommendedColorPalette)
+    }))
+    .sort((first, second) => second.score - first.score || second.garment.year - first.garment.year);
+
+  return pickDiverseRecommendations(scoredGarments)
     .map(({ garment, score }, index) => ({
       id: `${profile.id}-${garment.id}`,
       title: garment.title || `${titleCase(garment.style_tags[0] ?? garment.category)} Outfit`,

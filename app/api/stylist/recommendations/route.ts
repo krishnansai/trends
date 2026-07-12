@@ -49,9 +49,8 @@ async function getStrictClothingMatches(
 ) {
   const strictMatches = await getGarments({
     demographic: visionData.demographic,
-    fitProfile: visionData.suggested_fit_profile,
-    includeUnisex: false,
-    limit: 20,
+    includeUnisex: true,
+    limit: 60,
     occasion,
     season,
     strictContext: true
@@ -60,24 +59,24 @@ async function getStrictClothingMatches(
   const fitContextMatches = await getGarments({
     demographic: visionData.demographic,
     fitProfile: visionData.suggested_fit_profile,
-    includeUnisex: false,
-    limit: 20,
+    includeUnisex: true,
+    limit: 60,
     occasion,
     season
   });
 
   const contextMatches = await getGarments({
     demographic: visionData.demographic,
-    includeUnisex: false,
-    limit: 20,
+    includeUnisex: true,
+    limit: 60,
     occasion,
     season
   });
 
   const demographicMatches = await getGarments({
     demographic: visionData.demographic,
-    includeUnisex: false,
-    limit: 20
+    includeUnisex: true,
+    limit: 80
   });
 
   return {
@@ -102,6 +101,7 @@ export async function POST(request: Request) {
   const profileId: StyleProfileId = isStyleProfileId(visionData.primary_color_undertone)
     ? visionData.primary_color_undertone
     : "neutral";
+  const shouldIncludeBeard = visionData.demographic !== "womenswear";
 
   const [garmentMatches, hairstyleMatches, beardMatches] = await Promise.all([
     getStrictClothingMatches(visionData, occasion, season),
@@ -110,11 +110,13 @@ export async function POST(request: Request) {
       faceShape: visionData.detected_face_shape,
       limit: 12
     }),
-    getGroomingTrends({
-      category: "beard",
-      faceShape: visionData.detected_face_shape,
-      limit: 12
-    })
+    shouldIncludeBeard
+      ? getGroomingTrends({
+          category: "beard",
+          faceShape: visionData.detected_face_shape,
+          limit: 12
+        })
+      : Promise.resolve([])
   ]);
   const exactRecommendations = buildStylistRecommendations(
     garmentMatches.strictMatches,
@@ -123,6 +125,10 @@ export async function POST(request: Request) {
     {
       occasion,
       season
+    },
+    {
+      recommendedColorPalette: visionData.recommended_color_palette,
+      suggestedFitProfile: visionData.suggested_fit_profile
     }
   );
   const fallbackRecommendations = buildStylistRecommendations(
@@ -132,6 +138,10 @@ export async function POST(request: Request) {
     {
       occasion,
       season
+    },
+    {
+      recommendedColorPalette: visionData.recommended_color_palette,
+      suggestedFitProfile: visionData.suggested_fit_profile
     }
   );
   const recommendations = [...exactRecommendations, ...fallbackRecommendations].slice(0, 3);

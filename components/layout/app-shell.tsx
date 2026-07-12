@@ -5,29 +5,34 @@ import { usePathname } from "next/navigation";
 import {
   Archive,
   BarChart3,
+  Database,
+  Images,
   PanelLeft,
   Search,
   Settings,
-  Sparkles
+  Sparkles,
+  Zap
 } from "lucide-react";
-import { MobileNav } from "@/components/layout/mobile-nav";
+import { MobileBottomNav, MobileNav } from "@/components/layout/mobile-nav";
 import { ARCHIVE_YEAR_LABEL } from "@/lib/archive-window";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { href: "/archive", label: "Historical Archive", icon: Archive },
-  { href: "/forecasting", label: "Trend Forecasting", icon: BarChart3 },
-  { href: "/price-finder", label: "Price Finder", icon: Search },
-  { href: "/stylist", label: "AI Personal Stylist", icon: Sparkles },
-  { href: "/settings", label: "Settings", icon: Settings }
+  { href: "/archive", label: "Historical Archive", shortLabel: "Archive", icon: Archive },
+  { href: "/forecasting", label: "Trend Forecasting", shortLabel: "Trends", icon: BarChart3 },
+  { href: "/price-finder", label: "Price Finder", shortLabel: "Prices", icon: Search },
+  { href: "/stylist", label: "AI Personal Stylist", shortLabel: "Stylist", icon: Sparkles },
+  { href: "/celeba", label: "CelebA Dataset", shortLabel: "CelebA", icon: Images },
+  { href: "/settings", label: "Settings", shortLabel: "Settings", icon: Settings }
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const currentItem = navigation.find((item) => item.href === pathname) ?? navigation[0];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-border/80 bg-background/80 px-5 py-6 shadow-[24px_0_70px_-60px_hsl(var(--foreground)/0.55)] backdrop-blur-xl lg:block">
+      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-border/80 bg-background/82 px-5 py-6 shadow-[24px_0_70px_-60px_hsl(var(--foreground)/0.6)] backdrop-blur-xl lg:block">
         <div className="flex h-full flex-col">
           <Link href="/archive" className="flex items-center gap-3 border-b border-border/80 pb-6">
             <div className="grid size-10 place-items-center rounded-md border border-accent/25 bg-accent text-accent-foreground shadow-[0_16px_36px_-26px_hsl(var(--accent)/0.9)]">
@@ -39,7 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </Link>
 
-          <nav className="mt-8 space-y-1">
+          <nav className="mt-8 space-y-1.5">
             {navigation.map((item) => (
               <Link
                 key={item.href}
@@ -56,10 +61,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <div className="mt-auto rounded-md border border-border bg-background/80 p-4 shadow-[0_16px_40px_-34px_hsl(var(--foreground)/0.5)]">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">Data Window</p>
-            <p className="mt-2 text-2xl font-semibold leading-none">{ARCHIVE_YEAR_LABEL}</p>
-            <p className="mt-2 text-xs text-muted-foreground">Local archive and context filters</p>
+          <div className="mt-auto space-y-3">
+            <div className="rounded-md border border-border bg-background/80 p-4 shadow-[0_16px_40px_-34px_hsl(var(--foreground)/0.5)]">
+              <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+                <Database className="size-3.5" />
+                Data Window
+              </p>
+              <p className="mt-2 text-2xl font-semibold leading-none">{ARCHIVE_YEAR_LABEL}</p>
+              <p className="mt-2 text-xs text-muted-foreground">Local archive and context filters</p>
+            </div>
+            <div className="rounded-md border border-accent/20 bg-accent/10 p-3 text-xs font-medium text-foreground">
+              <span className="inline-flex items-center gap-2">
+                <Zap className="size-3.5 text-accent" />
+                Live recommendation build
+              </span>
+            </div>
           </div>
         </div>
       </aside>
@@ -74,7 +90,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
           <MobileNav navigation={navigation} />
         </header>
-        <main className="px-4 py-6 md:px-8 md:py-8 xl:px-12">{children}</main>
+        <header className="sticky top-0 z-30 hidden h-16 items-center justify-between border-b border-border/70 bg-background/82 px-8 shadow-[0_16px_44px_-40px_hsl(var(--foreground)/0.65)] backdrop-blur-xl lg:flex xl:px-12">
+          <div className="flex items-center gap-3">
+            <div className="grid size-9 place-items-center rounded-md border border-border bg-background">
+              <currentItem.icon className="size-4 text-accent" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold leading-none">{currentItem.label}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Atelier Signal workspace</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <span className="rounded-md border border-border bg-background px-3 py-1.5">
+              {ARCHIVE_YEAR_LABEL}
+            </span>
+            <span className="rounded-md border border-accent/30 bg-accent/10 px-3 py-1.5 text-foreground">
+              Live
+            </span>
+          </div>
+        </header>
+        <main className="px-4 pb-24 pt-6 md:px-8 md:pb-28 md:pt-8 lg:pb-10 lg:pt-8 xl:px-12">
+          {children}
+        </main>
+        <MobileBottomNav navigation={navigation} />
       </div>
     </div>
   );
