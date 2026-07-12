@@ -35,7 +35,7 @@ export function MobileNav({ navigation }: { navigation: NavigationItem[] }) {
     <>
       <button
         type="button"
-        className="inline-flex size-11 touch-manipulation items-center justify-center rounded-md border border-border bg-background text-foreground shadow-[0_10px_28px_-24px_hsl(var(--foreground)/0.45)] transition-colors active:bg-muted"
+        className="inline-flex size-11 touch-manipulation items-center justify-center rounded-sm border border-white/10 bg-white/[0.03] text-neutral-100 shadow-sm transition-colors active:bg-white/[0.08]"
         aria-label="Open navigation"
         aria-expanded={isOpen}
         aria-controls="mobile-navigation"
@@ -48,13 +48,13 @@ export function MobileNav({ navigation }: { navigation: NavigationItem[] }) {
         <div id="mobile-navigation" className="fixed inset-0 z-[100] lg:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-foreground/25 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             aria-label="Close navigation"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute inset-y-0 right-0 flex w-full max-w-sm flex-col border-l border-border bg-background shadow-[0_24px_80px_-40px_hsl(var(--foreground)/0.55)]">
-            <div className="flex h-16 shrink-0 items-center justify-between border-b border-border/80 px-4">
-              <span className="font-semibold">Navigation</span>
+          <div className="absolute inset-y-0 right-0 flex w-full max-w-sm flex-col border-l border-white/[0.07] bg-[#09090A] shadow-xl">
+            <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/[0.07] px-4">
+              <span className="text-xs font-light uppercase tracking-[0.25em]">Navigation</span>
               <Button
                 type="button"
                 variant="outline"
@@ -72,12 +72,12 @@ export function MobileNav({ navigation }: { navigation: NavigationItem[] }) {
                   href={item.href}
                   onClick={() => setIsOpen(false)}
                   className={cn(
-                    "relative flex min-h-14 touch-manipulation items-center gap-3 overflow-hidden rounded-md border border-border bg-background px-4 text-sm font-semibold text-muted-foreground shadow-sm transition-colors active:bg-muted",
+                    "relative flex min-h-14 touch-manipulation items-center gap-3 overflow-hidden rounded-sm border border-white/10 bg-white/[0.03] px-4 text-xs font-semibold uppercase tracking-[0.1em] text-neutral-500 transition-colors active:bg-white/[0.08]",
                     pathname === item.href &&
-                      "border-accent/45 bg-accent/10 text-foreground before:absolute before:left-0 before:top-3 before:h-8 before:w-1 before:rounded-r-full before:bg-accent"
+                      "border-white/25 bg-white/[0.08] text-neutral-100 before:absolute before:left-0 before:top-3 before:h-8 before:w-px before:bg-white"
                   )}
                 >
-                  <item.icon className={cn("size-5", pathname === item.href && "text-accent")} />
+                  <item.icon className={cn("size-5", pathname === item.href && "text-white")} />
                   <span>{item.label}</span>
                 </Link>
               ))}
@@ -94,7 +94,7 @@ export function MobileBottomNav({ navigation }: { navigation: NavigationItem[] }
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-18px_48px_-38px_hsl(var(--foreground)/0.5)] backdrop-blur-xl lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.07] bg-[#09090A]/92 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-20px_60px_-36px_hsl(0_0%_0%/0.9)] backdrop-blur-xl lg:hidden"
       aria-label="Primary mobile navigation"
     >
       <div
@@ -109,11 +109,11 @@ export function MobileBottomNav({ navigation }: { navigation: NavigationItem[] }
               key={item.href}
               href={item.href}
               className={cn(
-                "flex min-w-0 touch-manipulation flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-semibold leading-tight text-muted-foreground transition-colors active:bg-muted",
-                isActive && "bg-accent/10 text-foreground"
+                "flex min-w-0 touch-manipulation flex-col items-center justify-center gap-1 rounded-sm px-1 text-[10px] font-semibold uppercase leading-tight tracking-[0.08em] text-neutral-500 transition-colors active:bg-white/[0.08]",
+                isActive && "bg-white/[0.08] text-neutral-100 ring-1 ring-white/15"
               )}
             >
-              <item.icon className={cn("size-5 shrink-0", isActive && "text-accent")} />
+              <item.icon className={cn("size-5 shrink-0", isActive && "text-white")} />
               <span className="max-w-full truncate">{item.shortLabel ?? item.label}</span>
             </Link>
           );

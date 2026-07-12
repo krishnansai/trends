@@ -3,18 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --background: 216 30% 97%;
-  --foreground: 222 47% 9%;
-  --muted: 216 24% 92%;
-  --muted-foreground: 224 12% 42%;
-  --accent: 162 72% 32%;
-  --accent-foreground: 0 0% 100%;
-  --border: 216 18% 82%;
-  --input: 220 16% 78%;
-  --ring: 42 88% 48%;
-  --surface: 0 0% 100%;
-  --surface-2: 220 22% 96%;
-  --premium: 42 88% 48%;
+  --background: 240 4% 4%;
+  --foreground: 0 0% 94%;
+  --muted: 240 4% 11%;
+  --muted-foreground: 240 6% 64%;
+  --accent: 0 0% 100%;
+  --accent-foreground: 240 6% 6%;
+  --border: 240 4% 18%;
+  --input: 240 4% 20%;
+  --ring: 0 0% 100%;
+  --surface: 240 4% 7%;
+  --surface-2: 240 4% 10%;
+  --premium: 42 28% 72%;
 }
 
 * {
@@ -32,7 +32,8 @@ body {
   min-height: 100%;
   margin: 0;
   background:
-    linear-gradient(180deg, hsl(216 38% 99%) 0%, hsl(var(--background)) 42%, hsl(216 26% 94%) 100%);
+    radial-gradient(circle at 50% -10%, hsl(0 0% 100% / 0.06), transparent 30rem),
+    linear-gradient(180deg, hsl(240 5% 6%) 0%, hsl(var(--background)) 46%, hsl(240 5% 3%) 100%);
   color: hsl(var(--foreground));
   text-rendering: geometricPrecision;
 }
@@ -44,10 +45,10 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background-image:
-    linear-gradient(hsl(var(--foreground) / 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--foreground) / 0.028) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: linear-gradient(180deg, black, transparent 76%);
+    linear-gradient(hsl(0 0% 100% / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(0 0% 100% / 0.025) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(180deg, black, transparent 55%);
 }
 
 img {
@@ -60,26 +61,25 @@ button {
 }
 
 ::selection {
-  background: hsl(var(--premium));
-  color: hsl(var(--foreground));
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
 }
 
 .border.bg-background,
 .border.bg-muted\/35 {
-  border-radius: 0.5rem;
-  background:
-    linear-gradient(145deg, hsl(var(--surface) / 0.98), hsl(var(--surface-2) / 0.92));
-  box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.85) inset,
-    0 18px 48px -36px hsl(var(--foreground) / 0.42);
+  border-color: hsl(0 0% 100% / 0.08);
+  border-radius: 0.375rem;
+  background: hsl(var(--surface) / 0.82);
+  box-shadow: 0 28px 80px -60px hsl(0 0% 0% / 0.9);
+  backdrop-filter: blur(24px);
 }
 
 .border.bg-muted {
-  border-radius: 0.5rem;
+  border-radius: 0.375rem;
 }
 
 .bg-background\/95 {
-  background-color: hsl(var(--surface) / 0.86);
+  background-color: hsl(var(--surface) / 0.88);
 }
 
 input[type="range"] {
@@ -101,18 +101,37 @@ input[type="range"] {
 
 @keyframes scan-sweep {
   0% {
-    transform: translateY(-100%);
-    opacity: 0;
+    transform: translateY(-18%);
+    opacity: 0.2;
   }
-  30% {
-    opacity: 0.9;
+  50% {
+    opacity: 1;
   }
   100% {
-    transform: translateY(620px);
-    opacity: 0;
+    transform: translateY(118%);
+    opacity: 0.2;
   }
 }
 
 .scan-sweep {
-  animation: scan-sweep 1.45s ease-in-out infinite;
+  animation: scan-sweep 2.2s ease-in-out infinite alternate;
+  background:
+    linear-gradient(180deg, transparent, hsl(0 0% 100% / 0.08), transparent),
+    linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.8), transparent);
+  box-shadow: 0 0 36px hsl(0 0% 100% / 0.35);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 520ms ease-out both;
 }

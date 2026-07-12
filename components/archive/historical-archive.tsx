@@ -1,17 +1,20 @@
 "use client";
 
-import { Filter, Layers3, X } from "lucide-react";
+import { ArrowUpRight, Filter, Gauge, Layers3, TrendingUp, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Select } from "@/components/ui/select";
 import { ARCHIVE_END_YEAR, ARCHIVE_START_YEAR } from "@/lib/archive-window";
-import type { Demographic, Garment } from "@/lib/types";
+import type { Demographic, Garment, Trend } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const yearMin = ARCHIVE_START_YEAR;
 const yearMax = ARCHIVE_END_YEAR;
+
+type ArchiveView = "archive" | "forecast";
 
 function titleCase(value: string) {
   return value.replace(/[-_]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
@@ -25,25 +28,22 @@ const demographicLabels: Record<Demographic, string> = {
 
 export function HistoricalArchive({
   garments,
-  isUsingSampleData
+  isUsingSampleData,
+  trends
 }: {
   garments: Garment[];
   isUsingSampleData: boolean;
+  trends: Trend[];
 }) {
+  const [view, setView] = useState<ArchiveView>("archive");
   const [fromYear, setFromYear] = useState(yearMin);
   const [toYear, setToYear] = useState(yearMax);
-  const [ageGroup, setAgeGroup] = useState("all");
   const [category, setCategory] = useState("all");
   const [demographic, setDemographic] = useState("all");
   const [selected, setSelected] = useState<Garment | null>(null);
 
   const categoryOptions = useMemo(
     () => Array.from(new Set(garments.map((garment) => garment.category))).sort(),
-    [garments]
-  );
-
-  const ageOptions = useMemo(
-    () => Array.from(new Set(garments.map((garment) => garment.age_group))).sort(),
     [garments]
   );
 
@@ -58,13 +58,12 @@ export function HistoricalArchive({
 
     return garments.filter((garment) => {
       const inYear = garment.year >= lowerYear && garment.year <= upperYear;
-      const inAge = ageGroup === "all" || garment.age_group === ageGroup;
       const inCategory = category === "all" || garment.category === category;
       const inDemographic = demographic === "all" || garment.demographic === demographic;
 
-      return inYear && inAge && inCategory && inDemographic;
+      return inYear && inCategory && inDemographic;
     });
-  }, [ageGroup, category, demographic, fromYear, garments, toYear]);
+  }, [category, demographic, fromYear, garments, toYear]);
 
   const demographicCounts = useMemo(() => {
     return garments.reduce<Record<string, number>>(
@@ -77,209 +76,291 @@ export function HistoricalArchive({
   }, [garments]);
 
   return (
-    <section className="mx-auto max-w-7xl">
-      <div className="overflow-hidden border border-border bg-background">
-        <div className="grid gap-6 p-5 md:grid-cols-[1fr_auto] md:p-6">
+    <section className="mx-auto max-w-7xl animate-fade-in">
+      <div className="border border-white/[0.07] bg-[#121214]/80 p-5 backdrop-blur-xl md:p-7">
+        <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <p className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <Layers3 className="size-4 text-accent" />
-              Historical Archive
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">
+              <Layers3 className="size-4" />
+              Archive Studio
             </p>
-            <h1 className="mt-3 max-w-3xl text-3xl font-semibold tracking-normal md:text-5xl">
-              Five years of visual signals
+            <h1 className="mt-3 max-w-3xl text-3xl font-light tracking-[-0.01em] text-neutral-100 md:text-5xl">
+              Visual archive and forecast
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-              Filter original menswear, womenswear, and unisex looks by year, category, age band, season, and context.
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400">
+              Browse original fashion signals and switch into forecast mode without leaving the archive.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:min-w-72">
-            <div className="border border-border bg-muted/35 p-4">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Visible</p>
-              <p className="mt-2 text-3xl font-semibold">{filteredGarments.length}</p>
-            </div>
-            <div className="border border-border bg-muted/35 p-4">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Total</p>
-              <p className="mt-2 text-3xl font-semibold">{garments.length}</p>
-            </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:min-w-80">
+            <Button
+              type="button"
+              variant={view === "archive" ? "default" : "outline"}
+              onClick={() => setView("archive")}
+            >
+              Archive
+              <span className="text-xs opacity-70">{filteredGarments.length}</span>
+            </Button>
+            <Button
+              type="button"
+              variant={view === "forecast" ? "default" : "outline"}
+              onClick={() => setView("forecast")}
+            >
+              Forecast
+              <span className="text-xs opacity-70">{trends.length}</span>
+            </Button>
           </div>
         </div>
-      </div>
 
-      <div className="mt-5 flex flex-col justify-between gap-4 border-b border-border pb-5 md:flex-row md:items-center">
-        <div>
-          <p className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <Filter className="size-4" />
-            Archive controls
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-white/[0.07] pt-4">
           {isUsingSampleData ? <Badge>Sample data</Badge> : <Badge>Original data</Badge>}
-          <Badge>{filteredGarments.length} looks</Badge>
+          <Badge>{garments.length} archive looks</Badge>
+          <Badge>{trends.length} forecasts</Badge>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-2 sm:grid-cols-4">
-        <Button
-          type="button"
-          variant={demographic === "all" ? "default" : "outline"}
-          onClick={() => setDemographic("all")}
-        >
-          All Sections
-          <span className="text-xs opacity-75">{garments.length}</span>
-        </Button>
-        {demographicOptions.map((option) => (
-          <Button
-            key={option}
-            type="button"
-            variant={demographic === option ? "default" : "outline"}
-            onClick={() => setDemographic(option)}
-          >
-            {demographicLabels[option]}
-            <span className="text-xs opacity-75">{demographicCounts[option] ?? 0}</span>
-          </Button>
-        ))}
-      </div>
+      {view === "archive" ? (
+        <>
+          <div className="mt-5 border border-white/[0.07] bg-[#121214]/80 p-4 backdrop-blur-xl">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                  <Filter className="size-4" />
+                  Refine Archive
+                </p>
+                <p className="mt-2 text-sm text-neutral-400">
+                  {filteredGarments.length} looks visible from {Math.min(fromYear, toYear)}-
+                  {Math.max(fromYear, toYear)}
+                </p>
+              </div>
 
-      <div className="mt-4 grid gap-4 border border-border bg-background p-4 md:grid-cols-[minmax(260px,1.2fr)_1fr_1fr]">
-        <div>
-          <div className="flex items-center justify-between">
-            <Label>Year Range</Label>
-            <span className="text-sm font-medium">
-              {Math.min(fromYear, toYear)}-{Math.max(fromYear, toYear)}
-            </span>
-          </div>
-          <div className="mt-4 grid gap-3">
-            <input
-              type="range"
-              min={yearMin}
-              max={yearMax}
-              value={fromYear}
-              aria-label="Archive start year"
-              onChange={(event) => setFromYear(Number(event.target.value))}
-              className="w-full accent-foreground"
-            />
-            <input
-              type="range"
-              min={yearMin}
-              max={yearMax}
-              value={toYear}
-              aria-label="Archive end year"
-              onChange={(event) => setToYear(Number(event.target.value))}
-              className="w-full accent-foreground"
-            />
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="age-filter">Age Category</Label>
-          <Select
-            id="age-filter"
-            value={ageGroup}
-            onChange={(event) => setAgeGroup(event.target.value)}
-            className="mt-2"
-          >
-            <option value="all">All age groups</option>
-            {ageOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="category-filter">Clothing Type</Label>
-          <Select
-            id="category-filter"
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            className="mt-2"
-          >
-            <option value="all">All categories</option>
-            {categoryOptions.map((option) => (
-              <option key={option} value={option}>
-                {titleCase(option)}
-              </option>
-            ))}
-          </Select>
-        </div>
-      </div>
-
-      {garments.length === 0 ? (
-        <div className="mt-6 border border-border bg-muted/35 p-6">
-          <p className="text-base font-semibold">No original garment data ingested yet.</p>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Add real clothing rows locally with `npm run ingest:kaggle -- ./dataset/fashion.csv`
-            or configure Supabase and ingest there. The archive no longer renders bundled sample
-            looks by default.
-          </p>
-        </div>
-      ) : filteredGarments.length === 0 ? (
-        <div className="mt-6 border border-border bg-muted/35 p-6">
-          <p className="text-base font-semibold">No looks match these filters.</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Adjust the year range, age group, or clothing type.
-          </p>
-        </div>
-      ) : null}
-
-      <div className="masonry mt-6 columns-1 sm:columns-2 xl:columns-3 2xl:columns-4">
-        {filteredGarments.map((garment) => (
-          <button
-            key={garment.id}
-            type="button"
-            className="group w-full overflow-hidden border border-border bg-background text-left transition-colors hover:border-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground"
-            onClick={() => setSelected(garment)}
-          >
-            <div className="relative overflow-hidden bg-muted">
-              <img
-                src={garment.image_url}
-                alt={garment.description}
-                className="w-full bg-muted object-cover transition duration-500 group-hover:scale-[1.03]"
-                loading="lazy"
-              />
-              <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-                <Badge className="border-background/50 bg-background/90">{garment.year}</Badge>
-                <Badge className="border-background/50 bg-background/90">
-                  {demographicLabels[garment.demographic]}
-                </Badge>
+              <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[420px]">
+                <div>
+                  <Label htmlFor="year-start">From</Label>
+                  <Select
+                    id="year-start"
+                    value={String(fromYear)}
+                    onChange={(event) => setFromYear(Number(event.target.value))}
+                    className="mt-2"
+                  >
+                    {Array.from({ length: yearMax - yearMin + 1 }, (_, index) => yearMin + index).map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="year-end">To</Label>
+                  <Select
+                    id="year-end"
+                    value={String(toYear)}
+                    onChange={(event) => setToYear(Number(event.target.value))}
+                    className="mt-2"
+                  >
+                    {Array.from({ length: yearMax - yearMin + 1 }, (_, index) => yearMin + index).map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
               </div>
             </div>
-            <div className="space-y-3 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs text-muted-foreground">{titleCase(garment.category)}</span>
-                <span className="text-xs font-medium text-accent">{titleCase(garment.fit_profile)}</span>
-              </div>
-              <h2 className="text-base font-semibold leading-tight">{garment.title}</h2>
-              <p className="text-sm text-muted-foreground">{garment.description}</p>
+
+            <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
               <div className="flex flex-wrap gap-2">
-                {garment.style_tags.slice(0, 3).map((tag) => (
-                  <Badge key={tag} className="bg-muted">
-                    {tag}
-                  </Badge>
+                <Button
+                  type="button"
+                  variant={demographic === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDemographic("all")}
+                >
+                  All
+                  <span className="text-xs opacity-70">{garments.length}</span>
+                </Button>
+                {demographicOptions.map((option) => (
+                  <Button
+                    key={option}
+                    type="button"
+                    variant={demographic === option ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDemographic(option)}
+                  >
+                    {demographicLabels[option]}
+                    <span className="text-xs opacity-70">{demographicCounts[option] ?? 0}</span>
+                  </Button>
                 ))}
               </div>
+
+              <div>
+                <Label htmlFor="category-filter">Category</Label>
+                <Select
+                  id="category-filter"
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  className="mt-2"
+                >
+                  <option value="all">All categories</option>
+                  {categoryOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {titleCase(option)}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             </div>
-          </button>
-        ))}
-      </div>
+          </div>
+
+          {garments.length === 0 ? (
+            <div className="mt-6 border border-white/[0.07] bg-white/[0.03] p-6">
+              <p className="text-base font-medium text-neutral-100">No original garment data ingested yet.</p>
+              <p className="mt-2 text-sm leading-6 text-neutral-400">
+                Add real clothing rows locally with `npm run ingest:kaggle -- ./dataset/fashion.csv`
+                or configure Supabase and ingest there.
+              </p>
+            </div>
+          ) : filteredGarments.length === 0 ? (
+            <div className="mt-6 border border-white/[0.07] bg-white/[0.03] p-6">
+              <p className="text-base font-medium text-neutral-100">No looks match these filters.</p>
+              <p className="mt-2 text-sm text-neutral-400">Adjust the year, section, or category.</p>
+            </div>
+          ) : null}
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {filteredGarments.map((garment) => (
+              <button
+                key={garment.id}
+                type="button"
+                className="group flex min-h-full flex-col overflow-hidden border border-white/[0.07] bg-black text-left transition-colors hover:border-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+                onClick={() => setSelected(garment)}
+              >
+                <div className="relative aspect-[4/5] overflow-hidden bg-neutral-900">
+                  <img
+                    src={garment.image_url}
+                    alt={garment.description}
+                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                    <Badge className="bg-black/40 text-white">{garment.year}</Badge>
+                    <Badge className="bg-black/40 text-white">
+                      {demographicLabels[garment.demographic]}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex flex-1 flex-col space-y-3 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                      {titleCase(garment.category)}
+                    </span>
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-300">
+                      {titleCase(garment.fit_profile)}
+                    </span>
+                  </div>
+                  <h2 className="text-base font-medium leading-tight text-neutral-100">{garment.title}</h2>
+                  <p className="line-clamp-3 text-sm leading-6 text-neutral-400">{garment.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {garment.style_tags.slice(0, 3).map((tag) => (
+                      <Badge key={tag}>{tag}</Badge>
+                    ))}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="mt-6">
+          {trends.length === 0 ? (
+            <div className="border border-white/[0.07] bg-white/[0.03] p-6">
+              <p className="text-base font-medium text-neutral-100">No original trend data ingested yet.</p>
+              <p className="mt-2 text-sm leading-6 text-neutral-400">
+                Add sourced trend rows locally with `npm run ingest:trends -- ./dataset/trends.csv`.
+              </p>
+            </div>
+          ) : null}
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            {trends.map((trend) => (
+              <article
+                key={trend.id}
+                className="group overflow-hidden border border-white/[0.07] bg-black"
+              >
+                <div className="relative aspect-[4/5] overflow-hidden bg-neutral-900">
+                  <img
+                    src={trend.forecast_image_url}
+                    alt={trend.title}
+                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  />
+                  <div className="absolute left-3 top-3">
+                    <Badge className="bg-black/40 text-white">
+                      {trend.forecast_year} • {trend.season}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-5 p-5">
+                  <div>
+                    <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                      <TrendingUp className="size-4" />
+                      Forecast Signal
+                    </p>
+                    <h2 className="mt-3 text-2xl font-light leading-tight text-neutral-100">
+                      {trend.title}
+                    </h2>
+                    <p className="mt-3 text-sm leading-6 text-neutral-400">{trend.description}</p>
+                  </div>
+
+                  <div className="space-y-3 border-t border-white/[0.07] pt-4">
+                    <div className="flex items-center justify-between text-sm text-neutral-300">
+                      <span className="inline-flex items-center gap-2 font-medium">
+                        <Gauge className="size-4" />
+                        Confidence
+                      </span>
+                      <span>{trend.confidence_score}%</span>
+                    </div>
+                    <Progress value={trend.confidence_score} />
+                  </div>
+
+                  {trend.source_url ? (
+                    <a
+                      href={trend.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={buttonVariants({
+                        variant: "outline",
+                        className: "mt-auto w-full"
+                      })}
+                    >
+                      View source
+                      <ArrowUpRight className="size-4" />
+                    </a>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
 
       {selected ? (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-foreground/35 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-label="Garment details"
           onClick={() => setSelected(null)}
         >
           <div
-            className="max-h-[92vh] w-full max-w-5xl overflow-auto border border-border bg-background"
+            className="max-h-[92vh] w-full max-w-5xl overflow-auto border border-white/[0.07] bg-[#09090A]"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-border p-4">
+            <div className="flex items-center justify-between border-b border-white/[0.07] p-4">
               <div>
-                <p className="text-sm text-muted-foreground">{selected.year}</p>
-                <h2 className="text-xl font-semibold">{selected.title}</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                  {selected.year}
+                </p>
+                <h2 className="mt-1 text-xl font-light text-neutral-100">{selected.title}</h2>
               </div>
               <Button
                 type="button"
@@ -295,12 +376,12 @@ export function HistoricalArchive({
               <img
                 src={selected.image_url}
                 alt={selected.description}
-                className="h-full min-h-[360px] w-full bg-muted object-cover"
+                className="h-full min-h-[360px] w-full bg-neutral-900 object-cover"
               />
               <div className="space-y-6 p-5 md:p-6">
                 <div>
                   <Label>Description</Label>
-                  <p className="mt-2 text-base leading-7">{selected.description}</p>
+                  <p className="mt-2 text-base leading-7 text-neutral-300">{selected.description}</p>
                 </div>
 
                 <div>
@@ -319,41 +400,43 @@ export function HistoricalArchive({
                       <div key={color} className="space-y-2">
                         <div
                           className={cn(
-                            "h-14 border border-border",
-                            color.toLowerCase() === "#ffffff" ? "border-foreground/20" : ""
+                            "h-14 border border-white/10",
+                            color.toLowerCase() === "#ffffff" ? "border-white/25" : ""
                           )}
                           style={{ backgroundColor: color }}
                         />
-                        <p className="text-xs text-muted-foreground">{color}</p>
+                        <p className="text-xs text-neutral-500">{color}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <dl className="grid grid-cols-2 gap-4 border-t border-border pt-5 text-sm">
+                <dl className="grid grid-cols-2 gap-4 border-t border-white/[0.07] pt-5 text-sm">
                   <div>
-                    <dt className="text-muted-foreground">Age group</dt>
-                    <dd className="mt-1 font-medium">{selected.age_group}</dd>
+                    <dt className="text-neutral-500">Age group</dt>
+                    <dd className="mt-1 font-medium text-neutral-200">{selected.age_group}</dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground">Fit</dt>
-                    <dd className="mt-1 font-medium">{titleCase(selected.fit_profile)}</dd>
+                    <dt className="text-neutral-500">Fit</dt>
+                    <dd className="mt-1 font-medium text-neutral-200">
+                      {titleCase(selected.fit_profile)}
+                    </dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground">Occasion</dt>
-                    <dd className="mt-1 font-medium">
+                    <dt className="text-neutral-500">Occasion</dt>
+                    <dd className="mt-1 font-medium text-neutral-200">
                       {selected.occasion.map((value) => titleCase(value)).join(", ")}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground">Season</dt>
-                    <dd className="mt-1 font-medium">
+                    <dt className="text-neutral-500">Season</dt>
+                    <dd className="mt-1 font-medium text-neutral-200">
                       {selected.season.map((value) => titleCase(value)).join(", ")}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground">Source</dt>
-                    <dd className="mt-1 font-medium">
+                    <dt className="text-neutral-500">Source</dt>
+                    <dd className="mt-1 font-medium text-neutral-200">
                       <a
                         href={selected.source_url}
                         target="_blank"

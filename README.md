@@ -51,11 +51,70 @@ The first migration creates:
 
 ## App Modules
 
-- `/archive` - five-year visual archive, 2022-2026
-- `/forecasting` - forward trend lookbook
+- `/archive` - five-year visual archive, 2022-2026, with Forecast mode built in
 - `/price-finder` - image URL/upload price comparison prototype
 - `/stylist` - AI personal stylist prototype connected to garment archive data
 - `/collaborations` - brand partnership inquiry and trend insights
+
+## Optional Ollama Vision Analysis
+
+The stylist page works without a trained cloud model. It first runs a fast browser-side photo
+analysis, then can optionally send the uploaded image to a local Ollama vision model for stricter
+profile extraction.
+
+CPU-only Ollama works, but image analysis can be slow. Keep the browser fallback enabled for launch
+so uploads still work if Ollama is not running.
+
+Install Ollama and pull a vision model:
+
+```bash
+ollama pull llava:latest
+ollama serve
+```
+
+Enable local vision in `.env.local`:
+
+```bash
+OLLAMA_VISION_ENABLED=true
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_VISION_MODEL=llava:latest
+OLLAMA_VISION_TIMEOUT_MS=30000
+```
+
+The `/stylist` result panel shows whether analysis came from `Ollama` or `Browser analysis`.
+
+## Price Finder Provider Mode
+
+The Price Finder is designed to run in local/no-API mode during product buildout:
+
+- Pasted product URLs are fetched server-side and parsed for page metadata when the retailer allows it.
+- Typed searches such as `black shirt` open ranked retailer result pages with clearly labeled estimates.
+
+Use this mode for prototype and launch prep:
+
+```bash
+PRICE_FINDER_LIVE_PROVIDER=local
+```
+
+Later, switch this provider behind the same route to affiliate network APIs or approved retailer
+feeds. If a temporary live shopping provider is needed for typed-query testing, enable SerpAPI:
+
+```bash
+PRICE_FINDER_LIVE_PROVIDER=serpapi
+SERPAPI_API_KEY=your_serpapi_key
+```
+
+Keep provider keys in `.env.local`; never commit them.
+
+Run launch checks after data or scoring changes:
+
+```bash
+npm run validate:data
+npm run train:stylist
+npm run typecheck
+npm run lint
+npm run build
+```
 
 ## Image Ingestion
 
@@ -142,7 +201,7 @@ title,description,forecast_year,confidence_score,season,forecast_image_url,sourc
 Utility Tailoring,Structured utility jackets and relaxed trousers,2026,84,Spring 2026,https://example.com/look.jpg,https://example.com/source
 ```
 
-Rows without a `source_url` or image URL are skipped by default so the forecasting page only shows
+Rows without a `source_url` or image URL are skipped by default so Forecast mode only shows
 attributable trend data.
 
 Insert locally after checking the dry run:

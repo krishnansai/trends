@@ -10,7 +10,6 @@ import {
 import {
   isStylingOccasion,
   isStylingSeason,
-  type Garment,
   type StylingOccasion,
   type StylingSeason
 } from "@/lib/types";
@@ -30,7 +29,45 @@ type RecommendationRequest = {
   visionData?: unknown;
 };
 
-function mergeGarments(primary: Garment[], secondary: Garment[]) {
+const occasionMapping: Record<string, StylingOccasion> = {
+  "beach / vacation": "beach",
+  "formal / office": "office",
+  "gym / athletic": "gym",
+  "mall / street": "mall"
+};
+
+const seasonMapping: Record<string, StylingSeason> = {
+  "all season": "all-season",
+  "all-season": "all-season",
+  summer: "summer",
+  winter: "winter"
+};
+
+function normalizeSelection(value: unknown) {
+  return typeof value === "string"
+    ? value.trim().toLowerCase().replace(/\s+/g, " ")
+    : "";
+}
+
+function normalizeOccasion(value: unknown): StylingOccasion {
+  if (isStylingOccasion(value)) {
+    return value;
+  }
+
+  const normalized = normalizeSelection(value);
+  return occasionMapping[normalized] ?? "mall";
+}
+
+function normalizeSeason(value: unknown): StylingSeason {
+  if (isStylingSeason(value)) {
+    return value;
+  }
+
+  const normalized = normalizeSelection(value);
+  return seasonMapping[normalized] ?? "all-season";
+}
+
+function mergeGarments<T extends { id: string }>(primary: T[], secondary: T[]) {
   const garmentMap = new Map(primary.map((garment) => [garment.id, garment]));
 
   for (const garment of secondary) {
@@ -42,12 +79,32 @@ function mergeGarments(primary: Garment[], secondary: Garment[]) {
   return Array.from(garmentMap.values());
 }
 
+function enforceStrictContext<T extends { occasion: StylingOccasion[]; season: StylingSeason[] }>(
+  garments: T[],
+  occasion: StylingOccasion,
+  season: StylingSeason
+) {
+  return garments.filter(
+    (garment) => garment.occasion.includes(occasion) && garment.season.includes(season)
+  );
+}
+
 async function getStrictClothingMatches(
   visionData: VisionProfile,
   occasion: StylingOccasion,
   season: StylingSeason
 ) {
-  const strictMatches = await getGarments({
+  const strictFitMatches = await getGarments({
+    demographic: visionData.demographic,
+    fitProfile: visionData.suggested_fit_profile,
+    includeUnisex: true,
+    limit: 60,
+    occasion,
+    season,
+    strictContext: true
+  });
+
+  const strictContextMatches = await getGarments({
     demographic: visionData.demographic,
     includeUnisex: true,
     limit: 60,
@@ -56,40 +113,25 @@ async function getStrictClothingMatches(
     strictContext: true
   });
 
-  const fitContextMatches = await getGarments({
-    demographic: visionData.demographic,
-    fitProfile: visionData.suggested_fit_profile,
-    includeUnisex: true,
-    limit: 60,
+  return enforceStrictContext(
+    mergeGarments(strictFitMatches, strictContextMatches),
     occasion,
     season
-  });
-
-  const contextMatches = await getGarments({
-    demographic: visionData.demographic,
-    includeUnisex: true,
-    limit: 60,
-    occasion,
-    season
-  });
-
-  const demographicMatches = await getGarments({
-    demographic: visionData.demographic,
-    includeUnisex: true,
-    limit: 80
-  });
-
-  return {
-    fallbackMatches: mergeGarments(fitContextMatches, mergeGarments(contextMatches, demographicMatches))
-      .filter((garment) => !strictMatches.some((strictGarment) => strictGarment.id === garment.id)),
-    strictMatches
-  };
+  );
 }
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as RecommendationRequest;
-  const occasion: StylingOccasion = isStylingOccasion(body.occasion) ? body.occasion : "mall";
-  const season: StylingSeason = isStylingSeason(body.season) ? body.season : "all-season";
+  const occasion = normalizeOccasion(body.occasion);
+  const season = normalizeSeason(body.season);
+
+  console.log("[stylist/recommendations] context", {
+    incomingOccasion: body.occasion,
+    incomingSeason: body.season,
+    normalizedOccasion: occasion,
+    normalizedSeason: season
+  });
+
   const fallbackVisionData = createVisionProfile({
     demographic: body.demographic,
     faceShape: body.faceShape,
@@ -119,7 +161,7 @@ export async function POST(request: Request) {
       : Promise.resolve([])
   ]);
   const exactRecommendations = buildStylistRecommendations(
-    garmentMatches.strictMatches,
+    garmentMatches,
     profileId,
     visionData.demographic,
     {
@@ -131,20 +173,11 @@ export async function POST(request: Request) {
       suggestedFitProfile: visionData.suggested_fit_profile
     }
   );
-  const fallbackRecommendations = buildStylistRecommendations(
-    garmentMatches.fallbackMatches,
-    profileId,
-    visionData.demographic,
-    {
-      occasion,
-      season
-    },
-    {
-      recommendedColorPalette: visionData.recommended_color_palette,
-      suggestedFitProfile: visionData.suggested_fit_profile
-    }
-  );
-  const recommendations = [...exactRecommendations, ...fallbackRecommendations].slice(0, 3);
+  const recommendations = exactRecommendations.slice(0, 3);
+  const contextWarning =
+    recommendations.length === 0
+      ? `No ${occasion} + ${season} garments matched the strict context guardrail.`
+      : "";
   const grooming = buildGroomingRecommendations(
     [...hairstyleMatches, ...beardMatches],
     visionData.detected_face_shape
@@ -154,6 +187,7 @@ export async function POST(request: Request) {
     demographic: visionData.demographic,
     faceShape: visionData.detected_face_shape,
     grooming,
+    contextWarning,
     occasion,
     profile: getStyleProfile(profileId),
     recommendations,

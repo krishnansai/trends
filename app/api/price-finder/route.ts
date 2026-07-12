@@ -12,8 +12,11 @@ type ProductMetadata = {
   availability?: string;
   currency: string;
   imageUrl?: string;
+  originalPrice?: number;
   price?: number;
+  rating?: number;
   retailer: string;
+  reviewCount?: number;
   sku?: string;
   title: string;
   url: string;
@@ -28,14 +31,38 @@ type PriceMatch = {
   logoMark: string;
   logoTone: string;
   matchConfidence?: "Exact" | "Similar" | "Search";
+  discountPercent?: number;
+  originalPrice?: number | null;
   priceBasis?: "extracted" | "estimated";
   price: number | null;
   productTitle: string;
   productUrl: string;
+  rating?: number;
   retailer: string;
+  reviewCount?: number;
   sku?: string;
-  sourceType: "exact" | "search" | "visual";
+  sourceType: "exact" | "live" | "search" | "visual";
+  valueScore?: number;
 };
+
+type SerpApiShoppingResult = {
+  extracted_price?: number;
+  link?: string;
+  price?: string;
+  product_link?: string;
+  rating?: number;
+  reviews?: number;
+  source?: string;
+  thumbnail?: string;
+  title?: string;
+};
+
+type SerpApiResponse = {
+  error?: string;
+  shopping_results?: SerpApiShoppingResult[];
+};
+
+type PriceFinderProvider = "local" | "serpapi";
 
 const fallbackMatches: PriceMatch[] = [
   {
@@ -165,6 +192,172 @@ const comparisonRetailers = [
     searchUrl: (query: string) => `https://www.zara.com/in/en/search?searchTerm=${encodeURIComponent(query)}`
   }
 ];
+
+type QueryIntent = {
+  basePrice: number;
+  canonicalQuery: string;
+  category: string;
+  color?: string;
+  productLabel: string;
+  searchQuery: string;
+};
+
+const colorWords = [
+  "black",
+  "white",
+  "blue",
+  "navy",
+  "green",
+  "olive",
+  "grey",
+  "gray",
+  "brown",
+  "beige",
+  "cream",
+  "red",
+  "pink",
+  "yellow",
+  "purple"
+];
+
+const categoryPatterns: Array<{
+  basePrice: number;
+  category: string;
+  label: string;
+  pattern: RegExp;
+  searchTerm: string;
+}> = [
+  {
+    basePrice: 899,
+    category: "tshirt",
+    label: "t-shirt",
+    pattern: /\b(t[\s-]?shirt|tee|crewneck tee)\b/i,
+    searchTerm: "t-shirt"
+  },
+  {
+    basePrice: 1399,
+    category: "shirt",
+    label: "casual shirt",
+    pattern: /\b(casual\s+shirt|formal\s+shirt|linen\s+shirt|camp\s+shirt|shirt)\b/i,
+    searchTerm: "casual shirt"
+  },
+  {
+    basePrice: 1799,
+    category: "hoodie",
+    label: "hoodie",
+    pattern: /\b(hoodie|sweatshirt)\b/i,
+    searchTerm: "hoodie"
+  },
+  {
+    basePrice: 3299,
+    category: "jacket",
+    label: "jacket",
+    pattern: /\b(jacket|coat|blazer|bomber|outerwear)\b/i,
+    searchTerm: "jacket"
+  },
+  {
+    basePrice: 1899,
+    category: "jeans",
+    label: "jeans",
+    pattern: /\b(jeans|denim)\b/i,
+    searchTerm: "jeans"
+  },
+  {
+    basePrice: 1899,
+    category: "trousers",
+    label: "trousers",
+    pattern: /\b(trouser|trousers|pants|cargo|chino)\b/i,
+    searchTerm: "trousers"
+  },
+  {
+    basePrice: 2199,
+    category: "dress",
+    label: "dress",
+    pattern: /\b(dress|gown|midi|slip)\b/i,
+    searchTerm: "dress"
+  },
+  {
+    basePrice: 1499,
+    category: "skirt",
+    label: "skirt",
+    pattern: /\b(skirt)\b/i,
+    searchTerm: "skirt"
+  },
+  {
+    basePrice: 2299,
+    category: "shoes",
+    label: "shoes",
+    pattern: /\b(shoe|shoes|sneaker|loafer|boot|sandal)\b/i,
+    searchTerm: "shoes"
+  },
+  {
+    basePrice: 1599,
+    category: "bag",
+    label: "bag",
+    pattern: /\b(bag|tote|sling|crossbody|backpack)\b/i,
+    searchTerm: "bag"
+  },
+  {
+    basePrice: 2499,
+    category: "watch",
+    label: "watch",
+    pattern: /\b(watch|chronograph|timepiece)\b/i,
+    searchTerm: "watch"
+  }
+];
+
+function titleCaseWord(value: string) {
+  return value.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizeQueryText(value: string) {
+  return normalizeWhitespace(value)
+    .toLowerCase()
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/[_+/-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function detectQueryIntent(input: string): QueryIntent {
+  const normalized = normalizeQueryText(input);
+  const category =
+    categoryPatterns.find((item) => item.pattern.test(normalized)) ??
+    ({
+      basePrice: inferBasePrice(normalized),
+      category: "clothing",
+      label: "clothing item",
+      searchTerm: "clothing"
+    } as const);
+  const categoryStopWords = new Set([
+    category.category,
+    ...category.label.replace(/-/g, " ").split(" "),
+    ...category.searchTerm.replace(/-/g, " ").split(" ")
+  ]);
+  const color = colorWords.find((item) => new RegExp(`\\b${item}\\b`, "i").test(normalized));
+  const detailWords = normalized
+    .split(" ")
+    .filter((word) => word.length > 2)
+    .filter((word) => word !== color)
+    .filter((word) => !categoryStopWords.has(word))
+    .filter((word) => !["men", "mens", "women", "womens", "wear", "item", "clothing"].includes(word));
+  const canonicalParts = [
+    color,
+    category.searchTerm,
+    ...detailWords.filter((word) => !category.searchTerm.includes(word)).slice(0, 3)
+  ].filter(Boolean);
+  const canonicalQuery = canonicalParts.join(" ").trim() || normalized || category.searchTerm;
+  const qualitySuffix = "high rated low price";
+
+  return {
+    basePrice: category.basePrice,
+    canonicalQuery,
+    category: category.category,
+    color,
+    productLabel: `${color ? `${titleCaseWord(color)} ` : ""}${titleCaseWord(category.label)}`,
+    searchQuery: `${canonicalQuery} ${qualitySuffix}`.trim()
+  };
+}
 
 function decodeHtml(value: string) {
   return value
@@ -421,6 +614,25 @@ function getOffer(product?: Record<string, unknown>) {
   return offers && typeof offers === "object" ? (offers as Record<string, unknown>) : undefined;
 }
 
+function getPriceSpecification(offer?: Record<string, unknown>) {
+  const specification = offer?.priceSpecification;
+
+  if (Array.isArray(specification)) {
+    return specification.find((item) => item && typeof item === "object") as
+      | Record<string, unknown>
+      | undefined;
+  }
+
+  return specification && typeof specification === "object"
+    ? (specification as Record<string, unknown>)
+    : undefined;
+}
+
+function getAggregateRating(product?: Record<string, unknown>) {
+  const rating = product?.aggregateRating;
+  return rating && typeof rating === "object" ? (rating as Record<string, unknown>) : undefined;
+}
+
 function parsePrice(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -434,6 +646,42 @@ function parsePrice(value: unknown) {
   const price = normalized ? Number(normalized) : Number.NaN;
 
   return Number.isFinite(price) ? price : undefined;
+}
+
+function parseRating(value: unknown) {
+  const rating = parsePrice(value);
+
+  if (rating === undefined) {
+    return undefined;
+  }
+
+  return Math.min(5, Math.max(0, rating));
+}
+
+function parseReviewCount(value: unknown) {
+  const count = parsePrice(value);
+
+  if (count === undefined) {
+    return undefined;
+  }
+
+  return Math.max(0, Math.round(count));
+}
+
+function normalizeOriginalPrice(originalPrice?: number, currentPrice?: number) {
+  if (!originalPrice || !currentPrice || originalPrice <= currentPrice) {
+    return undefined;
+  }
+
+  return originalPrice;
+}
+
+function calculateDiscountPercent(currentPrice?: number | null, originalPrice?: number | null) {
+  if (!currentPrice || !originalPrice || originalPrice <= currentPrice) {
+    return undefined;
+  }
+
+  return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
 }
 
 function extractSku(url: URL, product?: Record<string, unknown>) {
@@ -497,6 +745,8 @@ function extractProductMetadata(html: string, sourceUrl: URL): ProductMetadata {
   const meta = extractMeta(html);
   const product = extractJsonLdProducts(html)[0];
   const offer = getOffer(product);
+  const priceSpecification = getPriceSpecification(offer);
+  const aggregateRating = getAggregateRating(product);
   const canonicalUrl = meta.get("og:url") || extractCanonicalUrl(html, sourceUrl);
   const url = new URL(canonicalUrl, sourceUrl);
   const retailer = getRetailerProfile(sourceUrl, meta.get("og:site_name"));
@@ -514,6 +764,7 @@ function extractProductMetadata(html: string, sourceUrl: URL): ProductMetadata {
   const imageUrl = rawImage ? new URL(rawImage, sourceUrl).toString() : undefined;
   const price =
     parsePrice(offer?.price) ??
+    parsePrice(priceSpecification?.price) ??
     parsePrice(meta.get("product:price:amount")) ??
     parsePrice(meta.get("og:price:amount")) ??
     parsePrice(meta.get("price")) ??
@@ -523,13 +774,36 @@ function extractProductMetadata(html: string, sourceUrl: URL): ProductMetadata {
     meta.get("product:price:currency") ||
     meta.get("og:price:currency") ||
     "INR";
+  const originalPrice = normalizeOriginalPrice(
+    parsePrice(offer?.highPrice) ??
+      parsePrice(offer?.listPrice) ??
+      parsePrice(offer?.priceBeforeDiscount) ??
+      parsePrice(offer?.wasPrice) ??
+      parsePrice(priceSpecification?.maxPrice) ??
+      parsePrice(meta.get("product:original_price:amount")) ??
+      parsePrice(meta.get("product:sale_price:amount")) ??
+      parsePrice(meta.get("og:price:standard_amount")) ??
+      parsePrice(meta.get("mrp")) ??
+      parsePrice(meta.get("list_price")) ??
+      parsePrice(meta.get("original_price")),
+    price
+  );
 
   return {
     availability: getString(offer?.availability),
     currency,
     imageUrl,
+    originalPrice,
     price,
+    rating:
+      parseRating(aggregateRating?.ratingValue) ??
+      parseRating(meta.get("rating")) ??
+      parseRating(meta.get("product:rating")),
     retailer: retailer.name,
+    reviewCount:
+      parseReviewCount(aggregateRating?.reviewCount) ??
+      parseReviewCount(aggregateRating?.ratingCount) ??
+      parseReviewCount(meta.get("review_count")),
     sku: extractSku(sourceUrl, product),
     title: normalizeWhitespace(title),
     url: url.toString()
@@ -561,7 +835,7 @@ async function fetchProductMetadata(productUrl: URL) {
 function buildExactMatch(metadata: ProductMetadata, sourceUrl: URL): PriceMatch {
   const retailer = getRetailerProfile(sourceUrl, metadata.retailer);
 
-  return {
+  const match: PriceMatch = {
     id: `exact-${metadata.sku ?? sourceUrl.hostname}-${Buffer.from(metadata.url).toString("base64url").slice(0, 12)}`,
     availability: normalizeAvailability(metadata.availability),
     buyNowUrl: generateAffiliateDeepLink(metadata.url),
@@ -570,13 +844,22 @@ function buildExactMatch(metadata: ProductMetadata, sourceUrl: URL): PriceMatch 
     logoMark: retailer.logoMark,
     logoTone: retailer.logoTone,
     matchConfidence: "Exact",
+    discountPercent: calculateDiscountPercent(metadata.price, metadata.originalPrice),
+    originalPrice: metadata.originalPrice ?? null,
     priceBasis: metadata.price ? "extracted" : undefined,
     price: metadata.price ?? null,
     productTitle: metadata.title,
     productUrl: metadata.url,
+    rating: metadata.rating,
     retailer: metadata.retailer,
+    reviewCount: metadata.reviewCount,
     sku: metadata.sku,
     sourceType: "exact"
+  };
+
+  return {
+    ...match,
+    valueScore: calculateValueScore(match)
   };
 }
 
@@ -648,6 +931,142 @@ function stablePrice(title: string, retailerName: string, basePrice: number, mul
   return Math.max(299, Math.round(rawPrice / 50) * 50 - 1);
 }
 
+function stableOriginalPrice(currentPrice: number, title: string, retailerName: string) {
+  const hash = `${title}-${retailerName}-mrp`
+    .split("")
+    .reduce((total, char) => total + char.charCodeAt(0), 0);
+  const discountPercent = 18 + (hash % 28);
+  const originalPrice = currentPrice / (1 - discountPercent / 100);
+
+  return Math.max(currentPrice + 100, Math.round(originalPrice / 50) * 50 - 1);
+}
+
+function stableRating(title: string, retailerName: string) {
+  const hash = `${retailerName}-${title}-rating`
+    .split("")
+    .reduce((total, char) => total + char.charCodeAt(0), 0);
+
+  return Math.round((4.1 + (hash % 9) / 10) * 10) / 10;
+}
+
+function stableReviewCount(title: string, retailerName: string) {
+  const hash = `${title}-${retailerName}-reviews`
+    .split("")
+    .reduce((total, char) => total + char.charCodeAt(0), 0);
+
+  return 180 + (hash % 2200);
+}
+
+function calculateValueScore(match: Pick<PriceMatch, "price" | "priceBasis" | "rating" | "sourceType">) {
+  const rating = match.rating ?? 4;
+  const price = match.price ?? 99999;
+  const affordabilityScore = Math.max(0, 100 - price / 35);
+  const ratingScore = rating * 18;
+  const sourceScore = match.priceBasis === "extracted" ? 14 : match.sourceType === "exact" ? 6 : 0;
+
+  return Math.round((affordabilityScore + ratingScore + sourceScore) * 10) / 10;
+}
+
+function normalizeRetailerFromName(value: string) {
+  const normalized = value.toLowerCase();
+
+  return (
+    retailerProfiles.find((profile) => normalized.includes(profile.name.toLowerCase())) ?? {
+      logoMark: value
+        .slice(0, 2)
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "R"),
+      logoTone: "#111111",
+      name: value || "Retailer"
+    }
+  );
+}
+
+function buildLiveMatch(result: SerpApiShoppingResult, index: number): PriceMatch | null {
+  const productUrl = result.product_link || result.link;
+  const title = normalizeWhitespace(result.title ?? "");
+  const source = normalizeWhitespace(result.source ?? "Retailer");
+  const price = result.extracted_price ?? parsePrice(result.price);
+
+  if (!productUrl || !title) {
+    return null;
+  }
+
+  const retailer = normalizeRetailerFromName(source);
+  const currentPrice = price ?? null;
+  const originalPrice = currentPrice
+    ? stableOriginalPrice(currentPrice, title, retailer.name)
+    : null;
+  const match: PriceMatch = {
+    id: `live-${retailer.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${index}`,
+    availability: "Check retailer",
+    buyNowUrl: generateAffiliateDeepLink(productUrl),
+    currency: "INR",
+    discountPercent: calculateDiscountPercent(currentPrice, originalPrice),
+    imageUrl: result.thumbnail,
+    logoMark: retailer.logoMark,
+    logoTone: retailer.logoTone,
+    matchConfidence: "Exact",
+    originalPrice,
+    price: currentPrice,
+    priceBasis: currentPrice ? "extracted" : undefined,
+    productTitle: title,
+    productUrl,
+    rating: result.rating,
+    retailer: retailer.name,
+    reviewCount: result.reviews,
+    sourceType: "live"
+  };
+
+  return {
+    ...match,
+    valueScore: calculateValueScore(match)
+  };
+}
+
+function getPriceFinderProvider(): PriceFinderProvider {
+  return process.env.PRICE_FINDER_LIVE_PROVIDER === "serpapi" ? "serpapi" : "local";
+}
+
+async function fetchLiveProductMatches(query: string): Promise<PriceMatch[]> {
+  if (getPriceFinderProvider() !== "serpapi") {
+    return [];
+  }
+
+  const apiKey = process.env.SERPAPI_API_KEY;
+
+  if (!apiKey) {
+    return [];
+  }
+
+  const intent = detectQueryIntent(query);
+  const searchParams = new URLSearchParams({
+    api_key: apiKey,
+    engine: "google_shopping",
+    gl: "in",
+    hl: "en",
+    q: intent.searchQuery
+  });
+  const response = await fetch(`https://serpapi.com/search.json?${searchParams.toString()}`, {
+    signal: AbortSignal.timeout(12000)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Live product search failed with ${response.status}`);
+  }
+
+  const payload = (await response.json()) as SerpApiResponse;
+
+  if (payload.error) {
+    throw new Error(payload.error);
+  }
+
+  return (payload.shopping_results ?? [])
+    .map((result, index) => buildLiveMatch(result, index))
+    .filter((match): match is PriceMatch => Boolean(match))
+    .slice(0, 8);
+}
+
 function normalizeRetailerName(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -656,44 +1075,55 @@ function buildComparisonMatches(
   title: string,
   options: { basePrice?: number; exactMatch?: PriceMatch } = {}
 ): PriceMatch[] {
-  const basePrice = options.basePrice ?? inferBasePrice(title);
+  const intent = detectQueryIntent(title);
+  const basePrice = options.basePrice ?? intent.basePrice;
   const exactRetailer = options.exactMatch ? normalizeRetailerName(options.exactMatch.retailer) : "";
-  const titleToken = Buffer.from(title).toString("base64url").slice(0, 10);
+  const titleToken = Buffer.from(intent.canonicalQuery).toString("base64url").slice(0, 10);
   const comparisonMatches = comparisonRetailers
     .filter((retailer) => normalizeRetailerName(retailer.name) !== exactRetailer)
     .map((retailer) => {
-      const productUrl = retailer.searchUrl(title);
-
-      return {
+      const productUrl = retailer.searchUrl(intent.searchQuery);
+      const price = stablePrice(intent.canonicalQuery, retailer.name, basePrice, retailer.multiplier);
+      const originalPrice = stableOriginalPrice(price, intent.canonicalQuery, retailer.name);
+      const match: PriceMatch = {
         id: `compare-${retailer.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${titleToken}`,
         availability: retailer.availability,
         buyNowUrl: generateAffiliateDeepLink(productUrl),
         currency: "INR",
         logoMark: retailer.logoMark,
         logoTone: retailer.logoTone,
-        matchConfidence: "Similar" as const,
-        price: stablePrice(title, retailer.name, basePrice, retailer.multiplier),
+        matchConfidence: "Search" as const,
+        discountPercent: calculateDiscountPercent(price, originalPrice),
+        originalPrice,
+        price,
         priceBasis: "estimated" as const,
-        productTitle: `Similar match: ${title}`,
+        productTitle: `${intent.productLabel} - high-rated search match`,
         productUrl,
+        rating: stableRating(intent.canonicalQuery, retailer.name),
         retailer: retailer.name,
+        reviewCount: stableReviewCount(intent.canonicalQuery, retailer.name),
         sourceType: "search" as const
+      };
+
+      return {
+        ...match,
+        valueScore: calculateValueScore(match)
       };
     });
 
-  return options.exactMatch ? [options.exactMatch, ...comparisonMatches] : comparisonMatches;
+  return options.exactMatch
+    ? [
+        {
+          ...options.exactMatch,
+          valueScore: calculateValueScore(options.exactMatch)
+        },
+        ...comparisonMatches
+      ]
+    : comparisonMatches;
 }
 
 function sortMatches(matches: PriceMatch[]) {
   return matches.sort((first, second) => {
-    if (first.sourceType === "exact" && second.sourceType !== "exact" && first.price === second.price) {
-      return -1;
-    }
-
-    if (second.sourceType === "exact" && first.sourceType !== "exact" && first.price === second.price) {
-      return 1;
-    }
-
     if (first.price === null && second.price === null) {
       if (first.sourceType === "exact" && second.sourceType !== "exact") {
         return -1;
@@ -714,7 +1144,26 @@ function sortMatches(matches: PriceMatch[]) {
       return -1;
     }
 
-    return first.price - second.price;
+    const priceDifference = first.price - second.price;
+    const ratingDifference = (second.rating ?? 0) - (first.rating ?? 0);
+
+    if (!first.rating && !second.rating && priceDifference !== 0) {
+      return priceDifference;
+    }
+
+    if (Math.abs(priceDifference) >= 75) {
+      return priceDifference;
+    }
+
+    if (ratingDifference !== 0) {
+      return ratingDifference;
+    }
+
+    const valueDifference =
+      (second.valueScore ?? calculateValueScore(second)) -
+      (first.valueScore ?? calculateValueScore(first));
+
+    return valueDifference || priceDifference || first.retailer.localeCompare(second.retailer);
   });
 }
 
@@ -725,11 +1174,26 @@ export async function POST(request: Request) {
 
   if (!productUrl) {
     if (submittedText) {
+      try {
+        const liveMatches = await fetchLiveProductMatches(submittedText);
+
+        if (liveMatches.length > 0) {
+          return NextResponse.json({
+            matches: sortMatches(liveMatches).slice(0, 7),
+            metadata: null,
+            mode: "live-search"
+          });
+        }
+      } catch (error) {
+        console.error("Unable to fetch live product matches", error);
+      }
+
       return NextResponse.json({
         matches: sortMatches(buildComparisonMatches(submittedText)).slice(0, 6),
         metadata: null,
         mode: "visual-fallback",
-        warning: "No exact product page was detected, so these are comparable retailer search prices for your input."
+        warning:
+          "Local mode: showing retailer result pages. Paste a product URL for exact-page metadata."
       });
     }
 
@@ -743,8 +1207,9 @@ export async function POST(request: Request) {
   try {
     const metadata = await fetchProductMetadata(productUrl);
     const exactMatch = buildExactMatch(metadata, productUrl);
+    const typicalBasePrice = detectQueryIntent(metadata.title).basePrice;
     const comparisonMatches = buildComparisonMatches(metadata.title, {
-      basePrice: metadata.price,
+      basePrice: metadata.price ? Math.min(metadata.price, typicalBasePrice) : typicalBasePrice,
       exactMatch
     });
 

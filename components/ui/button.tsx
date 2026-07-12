@@ -3,18 +3,18 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-transparent px-4 text-sm font-semibold shadow-sm transition-[background-color,border-color,color,box-shadow,transform] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-50",
+  "inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-transparent px-4 text-xs font-medium uppercase tracking-[0.16em] transition-[background-color,border-color,color,box-shadow,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default:
-          "border-accent/40 bg-accent text-accent-foreground shadow-[0_18px_42px_-26px_hsl(var(--accent)/0.85)] hover:border-accent hover:bg-accent/90 hover:shadow-[0_22px_48px_-28px_hsl(var(--accent)/0.95)]",
+          "border-white bg-white text-black shadow-[0_18px_40px_-30px_hsl(0_0%_100%/0.55)] hover:bg-neutral-200",
         outline:
-          "border-border bg-background text-foreground shadow-[0_10px_28px_-24px_hsl(var(--foreground)/0.45)] hover:border-ring/70 hover:bg-muted/70 hover:shadow-[0_16px_36px_-28px_hsl(var(--ring)/0.75)]",
+          "border-white/10 bg-white/[0.02] text-neutral-100 shadow-sm backdrop-blur-xl hover:border-white/35 hover:bg-white/[0.06]",
         ghost:
-          "border-transparent bg-transparent text-foreground shadow-none hover:bg-muted/70 hover:shadow-none",
+          "border-transparent bg-transparent text-neutral-200 shadow-none hover:bg-white/[0.06] hover:shadow-none",
         subtle:
-          "border-border bg-muted/80 text-foreground hover:border-accent/50 hover:bg-background hover:shadow-[0_16px_36px_-30px_hsl(var(--accent)/0.65)]"
+          "border-white/10 bg-neutral-900/80 text-neutral-100 shadow-sm backdrop-blur-xl hover:border-white/30 hover:bg-neutral-800/80"
       },
       size: {
         default: "h-10 px-4",
