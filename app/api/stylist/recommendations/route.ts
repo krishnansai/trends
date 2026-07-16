@@ -8,6 +8,8 @@ import {
   type StyleProfileId
 } from "@/lib/stylist";
 import {
+  getOccasionMatches,
+  getSeasonMatches,
   isStylingOccasion,
   isStylingSeason,
   type StylingOccasion,
@@ -20,6 +22,7 @@ import {
 } from "@/lib/vision";
 
 type RecommendationRequest = {
+  ageBand?: unknown;
   demographic?: unknown;
   faceShape?: unknown;
   occasion?: unknown;
@@ -79,13 +82,18 @@ function mergeGarments<T extends { id: string }>(primary: T[], secondary: T[]) {
   return Array.from(garmentMap.values());
 }
 
-function enforceStrictContext<T extends { occasion: StylingOccasion[]; season: StylingSeason[] }>(
+function enforceCompatibleContext<T extends { occasion: StylingOccasion[]; season: StylingSeason[] }>(
   garments: T[],
   occasion: StylingOccasion,
   season: StylingSeason
 ) {
+  const occasionMatches = getOccasionMatches(occasion);
+  const seasonMatches = getSeasonMatches(season);
+
   return garments.filter(
-    (garment) => garment.occasion.includes(occasion) && garment.season.includes(season)
+    (garment) =>
+      garment.occasion.some((itemOccasion) => occasionMatches.includes(itemOccasion)) &&
+      garment.season.some((itemSeason) => seasonMatches.includes(itemSeason))
   );
 }
 
@@ -110,10 +118,10 @@ async function getStrictClothingMatches(
     limit: 60,
     occasion,
     season,
-    strictContext: true
+    strictContext: false
   });
 
-  return enforceStrictContext(
+  return enforceCompatibleContext(
     mergeGarments(strictFitMatches, strictContextMatches),
     occasion,
     season
@@ -133,6 +141,7 @@ export async function POST(request: Request) {
   });
 
   const fallbackVisionData = createVisionProfile({
+    age_band: body.ageBand,
     demographic: body.demographic,
     faceShape: body.faceShape,
     primary_color_undertone: body.profileId,
@@ -169,6 +178,8 @@ export async function POST(request: Request) {
       season
     },
     {
+      ageBand: visionData.age_band,
+      faceShape: visionData.detected_face_shape,
       recommendedColorPalette: visionData.recommended_color_palette,
       suggestedFitProfile: visionData.suggested_fit_profile
     }
@@ -176,7 +187,7 @@ export async function POST(request: Request) {
   const recommendations = exactRecommendations.slice(0, 3);
   const contextWarning =
     recommendations.length === 0
-      ? `No ${occasion} + ${season} garments matched the strict context guardrail.`
+      ? `No compatible ${occasion} + ${season} garments matched the strict context guardrail.`
       : "";
   const grooming = buildGroomingRecommendations(
     [...hairstyleMatches, ...beardMatches],

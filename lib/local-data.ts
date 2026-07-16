@@ -133,6 +133,9 @@ export async function getLocalGarments() {
     readJsonArray<Garment>("garments-visuals.json"),
     readJsonArray<Garment>("garments-womenswear.json"),
     readJsonArray<Garment>("garments-launch-pack.json"),
+    readJsonArray<Garment>("garments-context-expansion.json"),
+    readJsonArray<Garment>("garments-latest-trends-2026.json"),
+    readJsonArray<Garment>("garments-photo-profile-2026.json"),
     readGarmentCsv("garments-pro-launch.csv")
   ]);
 
@@ -144,7 +147,9 @@ export async function getLocalTrends() {
     readJsonArray<Trend>("trends.json"),
     readJsonArray<Trend>("trends-sourced.json"),
     readJsonArray<Trend>("trends-launch-pack.json"),
-    readJsonArray<Trend>("trends-pro-launch.json")
+    readJsonArray<Trend>("trends-pro-launch.json"),
+    readJsonArray<Trend>("trends-latest-2026.json"),
+    readJsonArray<Trend>("trends-photo-profile-2026.json")
   ]);
 
   return dedupeById(trendSets.flat());

@@ -1,0 +1,523 @@
+[
+  {
+    "id": "mens-beach-summer-warm-square",
+    "demographics": ["menswear"],
+    "occasions": ["beach", "vacation", "pool"],
+    "seasons": ["summer"],
+    "undertones": ["warm", "neutral"],
+    "face_shapes": ["square", "oval", "round"],
+    "fit_profiles": ["relaxed", "straight", "regular"],
+    "category_weights": {
+      "tops": 26,
+      "bottoms": 22,
+      "footwear": 18,
+      "accessory_sunglasses": 16,
+      "accessory_headwear": 14,
+      "accessory_bag": 10
+    },
+    "tag_weights": {
+      "linen": 24,
+      "resort": 22,
+      "summer": 18,
+      "breathable": 16,
+      "old-money": 12,
+      "sandal": 12,
+      "raffia": 10
+    },
+    "rationale": "Warm beach profiles need breathable linen, resort textures, UV accessories, and relaxed lines that do not look like officewear."
+  },
+  {
+    "id": "mens-mall-summer-cool-street",
+    "demographics": ["menswear", "unisex"],
+    "occasions": ["mall", "street", "casual"],
+    "seasons": ["summer", "all-season"],
+    "undertones": ["cool", "neutral"],
+    "face_shapes": ["oval", "square", "diamond", "rectangle"],
+    "fit_profiles": ["oversized", "relaxed", "straight"],
+    "category_weights": {
+      "tops": 24,
+      "bottoms": 22,
+      "outerwear": 18,
+      "footwear": 16,
+      "accessory_sunglasses": 12,
+      "accessory_bag": 10
+    },
+    "tag_weights": {
+      "streetwear": 24,
+      "mesh": 20,
+      "graphic": 18,
+      "denim": 16,
+      "cobalt": 16,
+      "technical": 12,
+      "oversized": 10
+    },
+    "rationale": "Cool mall profiles can carry stronger contrast, streetwear graphics, technical texture, and sharper denim proportions."
+  },
+  {
+    "id": "mens-gym-all-season-athletic",
+    "demographics": ["menswear", "unisex"],
+    "occasions": ["gym", "athletic", "sporty"],
+    "seasons": ["summer", "all-season"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "round", "rectangle", "diamond"],
+    "fit_profiles": ["slim", "straight", "relaxed"],
+    "category_weights": {
+      "tops": 28,
+      "bottoms": 24,
+      "footwear": 18,
+      "accessory_watch": 12,
+      "accessory_bag": 10
+    },
+    "tag_weights": {
+      "training": 26,
+      "athletic": 24,
+      "compression": 20,
+      "quick-dry": 18,
+      "mesh": 16,
+      "performance": 16,
+      "sporty": 14
+    },
+    "rationale": "Gym recommendations must prioritize performance fabric, mobility, breathable layers, and training footwear before fashion-only pieces."
+  },
+  {
+    "id": "mens-office-summer-tailoring",
+    "demographics": ["menswear"],
+    "occasions": ["formal", "office"],
+    "seasons": ["summer", "all-season"],
+    "undertones": ["warm", "neutral", "cool"],
+    "face_shapes": ["oval", "square", "rectangle", "diamond"],
+    "fit_profiles": ["straight", "regular", "relaxed"],
+    "category_weights": {
+      "tops": 24,
+      "bottoms": 26,
+      "outerwear": 18,
+      "footwear": 16,
+      "accessory_watch": 14
+    },
+    "tag_weights": {
+      "office": 28,
+      "tailoring": 26,
+      "pleated": 20,
+      "fine-knit": 18,
+      "linen": 16,
+      "smart-casual": 14,
+      "workwear": 12
+    },
+    "rationale": "Summer office looks should use breathable tailoring, fine knits, pleated trousers, and polished accessories without heavy suiting."
+  },
+  {
+    "id": "womens-beach-summer-warm-resort",
+    "demographics": ["womenswear"],
+    "occasions": ["beach", "vacation", "pool"],
+    "seasons": ["summer"],
+    "undertones": ["warm", "neutral"],
+    "face_shapes": ["oval", "heart", "round", "square"],
+    "fit_profiles": ["relaxed", "straight", "regular"],
+    "category_weights": {
+      "dresses": 28,
+      "tops": 24,
+      "bottoms": 22,
+      "footwear": 18,
+      "accessory_bag": 16,
+      "accessory_sunglasses": 14,
+      "accessory_headwear": 12
+    },
+    "tag_weights": {
+      "resort": 26,
+      "linen": 24,
+      "poplin": 20,
+      "summer": 18,
+      "raffia": 16,
+      "romantic": 12,
+      "vacation": 12
+    },
+    "rationale": "Warm womenswear beach profiles are best served by breezy resort shirts, poplin dresses, linen pants, raffia bags, and soft gold accessories."
+  },
+  {
+    "id": "womens-office-all-season-polished",
+    "demographics": ["womenswear"],
+    "occasions": ["formal", "office"],
+    "seasons": ["summer", "all-season", "winter"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "diamond", "rectangle", "heart"],
+    "fit_profiles": ["regular", "straight", "relaxed"],
+    "category_weights": {
+      "blouses": 28,
+      "bottoms": 24,
+      "outerwear": 22,
+      "footwear": 18,
+      "accessory_bag": 16,
+      "dresses": 12
+    },
+    "tag_weights": {
+      "office": 30,
+      "tailoring": 24,
+      "blazer": 22,
+      "ballet": 18,
+      "eyelet": 16,
+      "utility": 14,
+      "structured": 12
+    },
+    "rationale": "Office womenswear should favor polished blouses, modern skirts or trousers, collarless jackets, and comfortable flats before casual resort pieces."
+  },
+  {
+    "id": "womens-gym-summer-studio",
+    "demographics": ["womenswear"],
+    "occasions": ["gym", "athletic", "sporty"],
+    "seasons": ["summer", "all-season"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "heart", "square", "round", "diamond"],
+    "fit_profiles": ["slim", "regular", "straight"],
+    "category_weights": {
+      "tops": 28,
+      "bottoms": 26,
+      "footwear": 18,
+      "outerwear": 10,
+      "accessory_bag": 10
+    },
+    "tag_weights": {
+      "studio": 28,
+      "athletic": 24,
+      "court": 22,
+      "skort": 20,
+      "rib": 18,
+      "performance": 16,
+      "sporty": 14
+    },
+    "rationale": "Studio and gym recommendations should emphasize support, movement, breathable stretch fabric, and sport-first bottoms."
+  },
+  {
+    "id": "unisex-travel-all-season-utility",
+    "demographics": ["unisex", "menswear", "womenswear"],
+    "occasions": ["travel", "outdoor"],
+    "seasons": ["all-season", "winter", "summer"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "round", "rectangle", "diamond", "heart"],
+    "fit_profiles": ["regular", "straight", "relaxed"],
+    "category_weights": {
+      "outerwear": 24,
+      "accessory_bag": 24,
+      "footwear": 20,
+      "tops": 16,
+      "bottoms": 16,
+      "accessory_headwear": 10
+    },
+    "tag_weights": {
+      "travel": 28,
+      "utility": 24,
+      "technical": 20,
+      "packable": 18,
+      "commuter": 16,
+      "weather": 12,
+      "minimal": 10
+    },
+    "rationale": "Travel profiles need utility layers, reliable footwear, bags, and adaptable neutral colors."
+  },
+  {
+    "id": "latest-womens-pool-to-street-resortwear",
+    "demographics": ["womenswear"],
+    "occasions": ["beach", "pool", "vacation"],
+    "seasons": ["summer"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "heart", "round", "square", "diamond"],
+    "fit_profiles": ["relaxed", "straight", "regular"],
+    "category_weights": {
+      "tops": 28,
+      "skirts": 26,
+      "dresses": 24,
+      "footwear": 18,
+      "accessory_bag": 16,
+      "accessories": 14,
+      "accessory_sunglasses": 12
+    },
+    "tag_weights": {
+      "draped": 28,
+      "poncho": 26,
+      "poplin": 24,
+      "crochet": 22,
+      "mesh": 20,
+      "scarf": 18,
+      "resort": 18,
+      "pool": 16,
+      "fisherman-sandal": 14
+    },
+    "rationale": "Latest beach styling is pool-to-street: swim-adjacent layers, poplin skirts, crochet, mesh, scarves, and sandals that work after leaving the beach."
+  },
+  {
+    "id": "latest-womens-modern-sundress-color",
+    "demographics": ["womenswear"],
+    "occasions": ["mall", "vacation", "casual", "office"],
+    "seasons": ["summer"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "heart", "round", "square", "diamond", "rectangle"],
+    "fit_profiles": ["relaxed", "straight", "regular"],
+    "category_weights": {
+      "dresses": 34,
+      "footwear": 12,
+      "accessories": 10,
+      "accessory_bag": 10,
+      "accessory_sunglasses": 8
+    },
+    "tag_weights": {
+      "sundress": 30,
+      "drop-waist": 28,
+      "corset": 24,
+      "babydoll": 24,
+      "lychee-pink": 20,
+      "sky-blue": 20,
+      "sunny-citrus": 18,
+      "summer-color": 16,
+      "poplin": 14
+    },
+    "rationale": "Modern sundress recommendations should prioritize 2026 shapes like drop waists, corset bodices, babydoll volume, and current summer colors."
+  },
+  {
+    "id": "latest-office-heatwave-fabric-filter",
+    "demographics": ["menswear", "womenswear"],
+    "occasions": ["office", "formal"],
+    "seasons": ["summer"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "round", "rectangle", "diamond", "heart"],
+    "fit_profiles": ["straight", "regular", "relaxed"],
+    "category_weights": {
+      "tops": 28,
+      "bottoms": 28,
+      "outerwear": 22,
+      "blouses": 22,
+      "dresses": 16,
+      "footwear": 14
+    },
+    "tag_weights": {
+      "heatwave": 32,
+      "linen": 28,
+      "cotton": 24,
+      "cotton-linen": 24,
+      "merino": 22,
+      "longline": 20,
+      "tailored": 20,
+      "swing-vest": 18,
+      "open-neck": 16,
+      "office": 14
+    },
+    "rationale": "Office heatwave output must prefer breathable natural fabrics, longline tailoring, open necklines, and polished flats or sandals over beach-only items."
+  },
+  {
+    "id": "latest-fall-formal-vogue-filter",
+    "demographics": ["menswear", "womenswear"],
+    "occasions": ["formal", "office"],
+    "seasons": ["winter", "all-season"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "rectangle", "diamond", "heart"],
+    "fit_profiles": ["straight", "relaxed", "regular", "boxy"],
+    "category_weights": {
+      "outerwear": 30,
+      "skirts": 24,
+      "bottoms": 20,
+      "dresses": 18,
+      "accessory_jewelry": 16,
+      "footwear": 14
+    },
+    "tag_weights": {
+      "art-deco": 34,
+      "velvet": 28,
+      "fringe": 26,
+      "geometric": 22,
+      "updated-lady": 22,
+      "power-dressing": 20,
+      "sculptural": 18,
+      "playful-proportions": 18,
+      "bubble": 16
+    },
+    "rationale": "Fall formal recommendations should reflect current runway signals: updated power dressing, Art Deco surfaces, fringe, velvet, and expressive proportions."
+  },
+  {
+    "id": "latest-mens-ventilated-tailoring",
+    "demographics": ["menswear"],
+    "occasions": ["mall", "street", "office", "formal", "vacation"],
+    "seasons": ["summer", "all-season"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "rectangle", "diamond"],
+    "fit_profiles": ["straight", "relaxed", "regular"],
+    "category_weights": {
+      "tops": 30,
+      "outerwear": 24,
+      "bottoms": 18,
+      "footwear": 14,
+      "accessory_sunglasses": 10
+    },
+    "tag_weights": {
+      "perforated": 30,
+      "seersucker": 28,
+      "open-neck": 24,
+      "lightweight": 22,
+      "camp-collar": 20,
+      "sheer": 18,
+      "leather": 16,
+      "tailoring": 16,
+      "teal": 12
+    },
+    "rationale": "Latest menswear accuracy should favor ventilated tailoring, open collars, seersucker, sheer layers, and breathable textures for hotter climates."
+  },
+  {
+    "id": "latest-unisex-accessory-completion",
+    "demographics": ["unisex", "menswear", "womenswear"],
+    "occasions": ["beach", "pool", "vacation", "mall", "street", "travel"],
+    "seasons": ["summer", "all-season"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "round", "rectangle", "diamond", "heart"],
+    "fit_profiles": ["regular", "straight", "relaxed", "slim"],
+    "category_weights": {
+      "accessory_sunglasses": 28,
+      "accessory_bag": 24,
+      "accessories": 22,
+      "footwear": 20,
+      "accessory_headwear": 14
+    },
+    "tag_weights": {
+      "teal": 28,
+      "oversized": 22,
+      "crochet": 22,
+      "canvas": 18,
+      "scarf": 18,
+      "fisherman-sandal": 18,
+      "summer-capsule": 16,
+      "tote": 14,
+      "printed": 12
+    },
+    "rationale": "Accessory completion improves outfit accuracy by pairing latest color, sandal, tote, scarf, and oversized sunglass trends with the core look."
+  },
+  {
+    "id": "profile-womens-capri-office-accuracy",
+    "demographics": ["womenswear"],
+    "age_bands": ["adult", "mature"],
+    "occasions": ["office", "formal", "mall"],
+    "seasons": ["summer", "all-season"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "round", "rectangle", "diamond", "heart"],
+    "fit_profiles": ["straight", "regular", "relaxed", "slim"],
+    "category_weights": {
+      "bottoms": 34,
+      "blouses": 24,
+      "footwear": 16,
+      "accessory_bag": 12
+    },
+    "tag_weights": {
+      "capri": 36,
+      "pedal-pusher": 32,
+      "tailored": 28,
+      "broderie": 22,
+      "butter-yellow": 20,
+      "white-denim": 18,
+      "office": 16
+    },
+    "rationale": "Adult and mature womenswear summer profiles should get polished capri trousers, light blouses, and refined color rather than casual beach dresses."
+  },
+  {
+    "id": "profile-young-summer-uniform-accuracy",
+    "demographics": ["menswear", "womenswear", "unisex"],
+    "age_bands": ["young_adult", "adult"],
+    "occasions": ["mall", "street", "beach", "vacation"],
+    "seasons": ["summer"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "round", "rectangle", "diamond", "heart"],
+    "fit_profiles": ["relaxed", "straight", "oversized", "regular"],
+    "category_weights": {
+      "tops": 28,
+      "bottoms": 30,
+      "footwear": 22,
+      "accessory_sunglasses": 12
+    },
+    "tag_weights": {
+      "drawstring": 36,
+      "tank": 32,
+      "flip-flop": 28,
+      "summer-uniform": 26,
+      "comfy-chic": 20,
+      "low-rise": 16,
+      "rib": 14
+    },
+    "rationale": "Young adult and adult summer profiles should prioritize the current tank, drawstring pant, and light sandal formula when the context is casual or vacation."
+  },
+  {
+    "id": "profile-beach-sun-protection-resort",
+    "demographics": ["menswear", "womenswear", "unisex"],
+    "age_bands": ["adult", "mature", "young_adult"],
+    "occasions": ["beach", "pool", "vacation"],
+    "seasons": ["summer"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "round", "rectangle", "diamond", "heart"],
+    "fit_profiles": ["regular", "straight", "relaxed", "slim"],
+    "category_weights": {
+      "tops": 30,
+      "skirts": 24,
+      "accessory_headwear": 24,
+      "accessory_bag": 18,
+      "accessories": 16,
+      "dresses": 14
+    },
+    "tag_weights": {
+      "upf": 34,
+      "rash-guard": 30,
+      "sun-protection": 28,
+      "poplin": 24,
+      "crochet": 24,
+      "pool-to-street": 22,
+      "straw": 18,
+      "resort": 18
+    },
+    "rationale": "Beach recommendations should prefer breathable resort pieces and sun protection before office or mall-only fashion items."
+  },
+  {
+    "id": "profile-mens-soft-risk-tailoring",
+    "demographics": ["menswear", "unisex"],
+    "age_bands": ["adult", "mature", "young_adult"],
+    "occasions": ["office", "formal", "mall", "street"],
+    "seasons": ["all-season", "winter", "summer"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "rectangle", "diamond", "round"],
+    "fit_profiles": ["straight", "relaxed", "regular", "boxy"],
+    "category_weights": {
+      "outerwear": 30,
+      "tops": 24,
+      "accessories": 20,
+      "accessory_bag": 18,
+      "bottoms": 12
+    },
+    "tag_weights": {
+      "top-button": 34,
+      "mint-green": 30,
+      "brown-accent": 28,
+      "neckerchief": 24,
+      "boxy-weekender": 22,
+      "soft-color": 18,
+      "menswear": 18
+    },
+    "rationale": "Menswear profiles should get 2026 personality through soft color, brown accents, relaxed tailoring, and small accessories without breaking wardrobe guardrails."
+  },
+  {
+    "id": "profile-womens-soft-power-mature",
+    "demographics": ["womenswear"],
+    "age_bands": ["adult", "mature"],
+    "occasions": ["office", "formal", "street", "mall"],
+    "seasons": ["all-season", "winter", "summer"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "rectangle", "diamond", "heart"],
+    "fit_profiles": ["straight", "relaxed", "regular"],
+    "category_weights": {
+      "outerwear": 32,
+      "dresses": 26,
+      "bottoms": 18,
+      "accessory_bag": 12
+    },
+    "tag_weights": {
+      "power-dressing": 36,
+      "relaxed-tailoring": 32,
+      "updated-lady": 28,
+      "column-dress": 24,
+      "chocolate-brown": 22,
+      "minimal": 14,
+      "office": 14
+    },
+    "rationale": "Adult and mature womenswear office profiles should favor soft power tailoring, column dresses, and warm neutrals over youth-heavy Y2K pieces."
+  }
+]

@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Sparkles,
   Upload,
+  UserRound,
   Wand2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ import type { Demographic, FaceShape, StylingOccasion, StylingSeason } from "@/l
 import { cn } from "@/lib/utils";
 import {
   createVisionProfile,
+  type VisionAgeBand,
   type VisionDemographic,
   type VisionProfile
 } from "@/lib/vision";
@@ -42,6 +44,12 @@ const demographicLabels: Record<Demographic, string> = {
   menswear: "Menswear",
   womenswear: "Womenswear",
   unisex: "Unisex"
+};
+
+const ageBandLabels: Record<VisionAgeBand, string> = {
+  adult: "Adult",
+  mature: "Mature",
+  young_adult: "Young adult"
 };
 
 const stylistDemographics = ["menswear", "womenswear", "unisex"] as const satisfies readonly VisionDemographic[];
@@ -141,6 +149,7 @@ export function AIPersonalStylist({
   const undertoneLabel = visionProfile
     ? `${titleCase(visionProfile.primary_color_undertone)} undertone`
     : profile.title;
+  const ageBandLabel = visionProfile ? ageBandLabels[visionProfile.age_band] : "Adult";
 
   useEffect(() => {
     return () => {
@@ -201,6 +210,7 @@ export function AIPersonalStylist({
     try {
       const formData = new FormData();
       formData.append("photo", file);
+      formData.append("age_band", fallbackProfile.age_band);
       formData.append("demographic", fallbackProfile.demographic);
       formData.append("detected_face_shape", fallbackProfile.detected_face_shape);
       formData.append("primary_color_undertone", fallbackProfile.primary_color_undertone);
@@ -366,12 +376,12 @@ export function AIPersonalStylist({
 
   return (
     <section className="mx-auto max-w-7xl animate-fade-in">
-      <div className="flex flex-col justify-between gap-4 border-b border-white/[0.07] pb-6 md:flex-row md:items-end">
+      <div className="flex flex-col justify-between gap-4 border-b border-[#D8CCBB] pb-6 md:flex-row md:items-end">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">
             PERSONAL STYLIST
           </p>
-          <h1 className="mt-3 text-3xl font-light tracking-[-0.01em] text-neutral-100 md:text-5xl">
+          <h1 className="mt-3 text-3xl font-light tracking-[-0.01em] text-neutral-950 md:text-5xl">
             Aesthetic profile studio
           </h1>
         </div>
@@ -382,15 +392,15 @@ export function AIPersonalStylist({
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <section className="border border-white/[0.07] bg-[#121214]/80 p-5 backdrop-blur-xl md:p-6">
+        <section className="border border-[#D8CCBB] bg-white/80 p-5 backdrop-blur-xl md:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
                 Profile Input
               </p>
-              <h2 className="mt-2 text-2xl font-light text-neutral-100">Photo scan</h2>
+              <h2 className="mt-2 text-2xl font-light text-neutral-950">Photo scan</h2>
             </div>
-            <div className="grid size-11 place-items-center border border-white/10 bg-white/[0.03]">
+            <div className="grid size-11 place-items-center border border-[#D8CCBB] bg-white/70">
               <Wand2 className="size-5" />
             </div>
           </div>
@@ -414,20 +424,23 @@ export function AIPersonalStylist({
               </div>
             </div>
 
-            <Label htmlFor="stylist-photo">Full-body or portrait photo</Label>
             <input
               id="stylist-photo"
               type="file"
               accept="image/*"
               ref={photoInputRef}
-              className="mt-2 block w-full rounded-sm border border-white/10 bg-neutral-950/70 text-sm text-neutral-300 shadow-sm file:mr-3 file:h-11 file:border-0 file:border-r file:border-white/10 file:bg-white file:px-4 file:text-xs file:font-semibold file:uppercase file:tracking-[0.14em] file:text-black"
+              className="sr-only"
               onChange={handleUpload}
             />
-            <div
+            <button
+              type="button"
               className={cn(
-                "relative mt-3 flex min-h-[420px] flex-col items-center justify-center overflow-hidden border border-dashed border-neutral-800 bg-[#09090A] p-5 text-center transition-all duration-300 hover:border-neutral-500",
-                previewUrl ? "border-solid border-white/10 bg-black" : ""
+                "relative mt-3 flex min-h-[420px] w-full flex-col items-center justify-center overflow-hidden border border-dashed border-[#BDAE9A] bg-[#F6F0E6] p-5 text-center transition-all duration-300 hover:border-[#7B5637] hover:bg-[#F0E5D6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8A6A4F]/25 disabled:cursor-wait",
+                previewUrl ? "border-solid border-[#D8CCBB] bg-white" : ""
               )}
+              disabled={isScanning}
+              aria-label={previewUrl ? "Change styling profile photo" : "Select styling profile photo"}
+              onClick={() => photoInputRef.current?.click()}
             >
               {previewUrl ? (
                 <img
@@ -437,24 +450,26 @@ export function AIPersonalStylist({
                 />
               ) : (
                 <>
-                  <span className="grid size-12 place-items-center border border-white/10 bg-white/[0.03]">
+                  <span className="grid size-12 place-items-center border border-[#D8CCBB] bg-white/70">
                     <Upload className="size-5" />
                   </span>
-                  <span className="mt-3 text-sm font-medium uppercase tracking-[0.16em] text-neutral-200">
-                    Select a photo above
+                  <span className="mt-3 text-sm font-medium uppercase tracking-[0.16em] text-neutral-800">
+                    Select a photo
                   </span>
-                  <span className="mt-1 text-xs text-neutral-500">Native file picker works best on mobile</span>
+                  <span className="mt-1 text-xs text-neutral-500">
+                    Portrait or full-body image works best
+                  </span>
                 </>
               )}
 
               {isScanning ? (
-                <div className="absolute inset-0 overflow-hidden bg-black/55 p-6 text-neutral-100 backdrop-blur-[2px]">
+                <div className="absolute inset-0 overflow-hidden bg-stone-950/45 p-6 text-neutral-950 backdrop-blur-[2px]">
                   <div className="scan-sweep absolute inset-x-0 top-0 h-24" />
                   <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40" />
                   <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 text-center">
                     <div className="h-px w-40 bg-gradient-to-r from-transparent via-white to-transparent" />
                     <div>
-                      <p className="font-mono text-xs uppercase tracking-[0.26em] text-neutral-300">
+                      <p className="font-mono text-xs uppercase tracking-[0.26em] text-neutral-700">
                         ANALYZING AESTHETIC PROFILE & FACIAL STRUCTURE...
                       </p>
                       <p className="mt-3 text-xs uppercase tracking-[0.2em] text-neutral-500">
@@ -464,7 +479,7 @@ export function AIPersonalStylist({
                   </div>
                 </div>
               ) : null}
-            </div>
+            </button>
 
             <div className="mt-5 grid gap-4">
               <div>
@@ -531,7 +546,7 @@ export function AIPersonalStylist({
                   ) : (
                     <Upload className="size-4" />
                   )}
-                  {photoSeed ? "Analyze photo" : "Choose photo"}
+                  {photoSeed ? "Analyze photo" : "Select photo"}
                 </Button>
                 <Button type="button" variant="outline" onClick={handleReset}>
                   <RotateCcw className="size-4" />
@@ -541,7 +556,7 @@ export function AIPersonalStylist({
             </div>
 
             {recommendationError ? (
-              <div className="mt-4 border border-white/[0.07] bg-white/[0.03] p-3 text-sm text-neutral-300">
+              <div className="mt-4 border border-[#D8CCBB] bg-white/70 p-3 text-sm text-neutral-700">
                 {recommendationError}
               </div>
             ) : null}
@@ -549,13 +564,13 @@ export function AIPersonalStylist({
         </section>
 
         {isReady ? (
-          <section className="border border-white/[0.07] bg-[#121214]/80 p-5 backdrop-blur-xl md:p-6">
+          <section className="border border-[#D8CCBB] bg-white/80 p-5 backdrop-blur-xl md:p-6">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
                   Styling Output
                 </p>
-                <h2 className="mt-2 text-2xl font-light text-neutral-100">Profile analysis</h2>
+                <h2 className="mt-2 text-2xl font-light text-neutral-950">Profile analysis</h2>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge>Analysis ready</Badge>
@@ -564,29 +579,29 @@ export function AIPersonalStylist({
               </div>
             </div>
 
-            <div className="mt-6 overflow-hidden border border-white/[0.07] bg-black/25">
+            <div className="mt-6 overflow-hidden border border-[#D8CCBB] bg-white/70">
               <div className="grid lg:grid-cols-[1.08fr_0.92fr]">
-                <div className="border-b border-white/[0.07] p-5 lg:border-b-0 lg:border-r lg:p-6">
+                <div className="border-b border-[#D8CCBB] p-5 lg:border-b-0 lg:border-r lg:p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-500">
                         Style DNA
                       </p>
-                      <h3 className="mt-3 text-2xl font-light leading-tight text-neutral-100">
-                        {wardrobeProfileLabel} · {fitProfileLabel} · {selectedOccasionLabel}
+                      <h3 className="mt-3 text-2xl font-light leading-tight text-neutral-950">
+                        {wardrobeProfileLabel} · {ageBandLabel} · {fitProfileLabel}
                       </h3>
                     </div>
-                    <div className="grid size-11 shrink-0 place-items-center border border-white/10 bg-white/[0.03]">
-                      <Sparkles className="size-5 text-neutral-200" />
+                    <div className="grid size-11 shrink-0 place-items-center border border-[#D8CCBB] bg-white/70">
+                      <Sparkles className="size-5 text-neutral-800" />
                     </div>
                   </div>
 
-                  <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-400">
-                    The scan matched your profile to {undertoneLabel.toLowerCase()}, a {fitProfileLabel.toLowerCase()} fit direction, and a {selectedSeasonLabel.toLowerCase()} styling context.
+                  <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-600">
+                    The scan matched your profile to {undertoneLabel.toLowerCase()}, a {fitProfileLabel.toLowerCase()} fit direction, a {ageBandLabel.toLowerCase()} styling band, and a {selectedOccasionLabel.toLowerCase()} / {selectedSeasonLabel.toLowerCase()} context.
                   </p>
 
                   <div className="mt-5">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-400">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-600">
                       <Palette className="size-4" />
                       Recommended palette
                     </div>
@@ -594,7 +609,7 @@ export function AIPersonalStylist({
                       {profilePalette.map((color) => (
                         <div
                           key={color}
-                          className="flex h-14 items-end border border-white/10 p-2 text-[10px] font-medium uppercase tracking-[0.12em] text-white/80 shadow-inner"
+                          className="flex h-14 items-end border border-[#D8CCBB] p-2 text-[10px] font-medium uppercase tracking-[0.12em] text-white/80 shadow-inner"
                           style={{ backgroundColor: color }}
                           title={color}
                         >
@@ -602,50 +617,59 @@ export function AIPersonalStylist({
                         </div>
                       ))}
                     </div>
-                    <p className="mt-3 text-sm leading-6 text-neutral-400">{profile.dominantTones}</p>
+                    <p className="mt-3 text-sm leading-6 text-neutral-600">{profile.dominantTones}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 divide-x divide-y divide-white/[0.07] lg:divide-x">
-                  <div className="p-4">
+                <div className="grid grid-cols-2 gap-px bg-[#D8CCBB] lg:grid-cols-3">
+                  <div className="bg-white/70 p-4">
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                       <Ruler className="size-4" />
                       Fit
                     </div>
-                    <p className="mt-3 text-sm font-medium text-neutral-100">{fitProfileLabel}</p>
+                    <p className="mt-3 text-sm font-medium text-neutral-950">{fitProfileLabel}</p>
                     <p className="mt-1 text-xs text-neutral-500">{undertoneLabel}</p>
                   </div>
 
-                  <div className="p-4">
+                  <div className="bg-white/70 p-4">
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                       <ShieldCheck className="size-4" />
                       Wardrobe
                     </div>
-                    <p className="mt-3 text-sm font-medium text-neutral-100">{wardrobeProfileLabel}</p>
+                    <p className="mt-3 text-sm font-medium text-neutral-950">{wardrobeProfileLabel}</p>
                     <p className="mt-1 text-xs text-neutral-500">Guardrail active</p>
                   </div>
 
-                  <div className="p-4">
+                  <div className="bg-white/70 p-4">
+                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                      <UserRound className="size-4" />
+                      Style band
+                    </div>
+                    <p className="mt-3 text-sm font-medium text-neutral-950">{ageBandLabel}</p>
+                    <p className="mt-1 text-xs text-neutral-500">Broad fit signal</p>
+                  </div>
+
+                  <div className="bg-white/70 p-4">
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                       <Scissors className="size-4" />
                       Face
                     </div>
-                    <p className="mt-3 text-sm font-medium text-neutral-100">{faceShapeLabel}</p>
+                    <p className="mt-3 text-sm font-medium text-neutral-950">{faceShapeLabel}</p>
                     <p className="mt-1 text-xs text-neutral-500">Grooming input</p>
                   </div>
 
-                  <div className="p-4">
+                  <div className="bg-white/70 p-4">
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                       <Sparkles className="size-4" />
                       Context
                     </div>
-                    <p className="mt-3 text-sm font-medium text-neutral-100">{selectedOccasionLabel}</p>
+                    <p className="mt-3 text-sm font-medium text-neutral-950">{selectedOccasionLabel}</p>
                     <p className="mt-1 text-xs text-neutral-500">{selectedSeasonLabel}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 border-t border-white/[0.07] p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 border-t border-[#D8CCBB] p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
                     Wardrobe override
@@ -673,7 +697,7 @@ export function AIPersonalStylist({
 
             <div className="mt-8">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-xl font-light text-neutral-100">Trending Matches for You</h3>
+                <h3 className="text-xl font-light text-neutral-950">Trending Matches for You</h3>
                 <Badge>{recommendations.length} outfits</Badge>
               </div>
 
@@ -682,16 +706,16 @@ export function AIPersonalStylist({
                   {recommendations.map((recommendation) => (
                   <article
                     key={recommendation.id}
-                    className="group overflow-hidden border border-white/[0.07] bg-black"
+                    className="group overflow-hidden border border-[#D8CCBB] bg-white"
                   >
-                    <div className="relative aspect-[4/5] overflow-hidden bg-neutral-900">
+                    <div className="relative aspect-[4/5] overflow-hidden bg-[#EEE5D7]">
                       <img
                         src={recommendation.garment.image_url}
                         alt={recommendation.garment.description}
                         className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                       />
                       <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-                        <Badge className="bg-black/40 text-white">
+                        <Badge className="bg-white/90 text-[#3A2A1E]">
                           {recommendation.garment.demographic} • {selectedSeason}
                         </Badge>
                       </div>
@@ -702,7 +726,7 @@ export function AIPersonalStylist({
                           {recommendation.garment.year} - {titleCase(recommendation.garment.category)}
                         </p>
                         <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <h4 className="text-base font-medium text-neutral-100">{recommendation.title}</h4>
+                          <h4 className="text-base font-medium text-neutral-950">{recommendation.title}</h4>
                           <Badge>
                             {demographicLabels[recommendation.garment.demographic]}
                           </Badge>
@@ -717,16 +741,16 @@ export function AIPersonalStylist({
                         ))}
                       </div>
 
-                      <div className="space-y-2 text-sm text-neutral-400">
+                      <div className="space-y-2 text-sm text-neutral-600">
                         {recommendation.supportPieces.map((piece) => (
                           <p key={piece} className="flex items-start gap-2">
-                            <Check className="mt-0.5 size-4 shrink-0 text-white" />
+                            <Check className="mt-0.5 size-4 shrink-0 text-[#7B5637]" />
                             <span>{piece}</span>
                           </p>
                         ))}
                       </div>
 
-                      <p className="border-t border-white/[0.07] pt-3 text-xs font-medium text-neutral-300">
+                      <p className="border-t border-[#D8CCBB] pt-3 text-xs font-medium text-neutral-700">
                         {recommendation.trendSignal}
                       </p>
                     </div>
@@ -734,7 +758,7 @@ export function AIPersonalStylist({
                   ))}
                 </div>
               ) : (
-                <div className="mt-4 border border-white/[0.07] bg-white/[0.03] p-4 text-sm text-neutral-400">
+                <div className="mt-4 border border-[#D8CCBB] bg-white/70 p-4 text-sm text-neutral-600">
                   {contextWarning || "No eligible outfits found after applying the demographic guardrail."}
                 </div>
               )}
@@ -742,7 +766,7 @@ export function AIPersonalStylist({
 
             <div className="mt-8">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-xl font-light text-neutral-100">2026 Grooming Architecture</h3>
+                <h3 className="text-xl font-light text-neutral-950">2026 Grooming Architecture</h3>
                 <Badge>{groomingCards.length} styles</Badge>
               </div>
 
@@ -751,16 +775,16 @@ export function AIPersonalStylist({
                   {groomingCards.map((card) => (
                     <article
                       key={card.id}
-                      className="group overflow-hidden border border-white/[0.07] bg-black"
+                      className="group overflow-hidden border border-[#D8CCBB] bg-white"
                     >
-                      <div className="relative aspect-[16/10] overflow-hidden bg-neutral-900">
+                      <div className="relative aspect-[16/10] overflow-hidden bg-[#EEE5D7]">
                         <img
                           src={card.imageUrl}
                           alt={card.title}
                           className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                         />
                         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-                          <Badge className="bg-black/40 text-white">
+                          <Badge className="bg-white/90 text-[#3A2A1E]">
                             {titleCase(card.category)} • {titleCase(card.matchedFaceShape)}
                           </Badge>
                         </div>
@@ -775,13 +799,13 @@ export function AIPersonalStylist({
                         </div>
 
                         <div>
-                          <h4 className="text-base font-medium text-neutral-100">{card.title}</h4>
-                          <p className="mt-2 text-sm leading-6 text-neutral-400">
+                          <h4 className="text-base font-medium text-neutral-950">{card.title}</h4>
+                          <p className="mt-2 text-sm leading-6 text-neutral-600">
                             {card.description}
                           </p>
                         </div>
 
-                        <p className="border-t border-white/[0.07] pt-3 text-sm leading-6 text-neutral-300">
+                        <p className="border-t border-[#D8CCBB] pt-3 text-sm leading-6 text-neutral-700">
                           {card.rationale}
                         </p>
 
@@ -800,18 +824,18 @@ export function AIPersonalStylist({
                   ))}
                 </div>
               ) : (
-                <div className="mt-4 border border-white/[0.07] bg-white/[0.03] p-4 text-sm text-neutral-400">
+                <div className="mt-4 border border-[#D8CCBB] bg-white/70 p-4 text-sm text-neutral-600">
                   No grooming matches found for this face shape.
                 </div>
               )}
             </div>
 
-            <div className="mt-6 border border-white/[0.07] bg-white/[0.03] p-4">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-400">
+            <div className="mt-6 border border-[#D8CCBB] bg-white/70 p-4">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-600">
                 <Sparkles className="size-4" />
                 Rationale
               </div>
-              <p className="mt-3 text-sm leading-6 text-neutral-400">{profile.rationale}</p>
+              <p className="mt-3 text-sm leading-6 text-neutral-600">{profile.rationale}</p>
             </div>
           </section>
         ) : null}

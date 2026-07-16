@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Matte Silver Cuboid Chain Pendant</title>
+  <desc id="desc">A silver geometric cuboid pendant hanging from a box chain on a warm stone surface.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f7f2ea"/>
+      <stop offset="1" stop-color="#d8cbbb"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.32" stop-color="#d9d9d9"/>
+      <stop offset="0.68" stop-color="#8e9294"/>
+      <stop offset="1" stop-color="#f4f4f4"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="30" stdDeviation="28" flood-color="#6f6256" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  <path d="M0 735c145-74 236-91 356-67 141 29 232-25 444-129v461H0z" fill="#efe6da" opacity=".78"/>
+  <g fill="none" stroke="#b8a996" stroke-width="2" opacity=".4">
+    <path d="M82 164c142 54 293 69 453 45 88-13 154-8 199 16"/>
+    <path d="M37 791c178-95 336-111 474-48 80 36 153 44 230 18"/>
+  </g>
+  <g fill="none" stroke="#a7a9aa" stroke-linecap="round" stroke-width="12">
+    <path d="M231 0c32 102 78 194 138 276"/>
+    <path d="M569 0c-39 111-89 205-150 282"/>
+  </g>
+  <g fill="none" stroke="#dfe0df" stroke-linecap="round" stroke-width="5" opacity=".9">
+    <path d="M247 0c30 94 72 178 126 252"/>
+    <path d="M553 0c-36 101-82 187-137 258"/>
+  </g>
+  <circle cx="397" cy="314" r="35" fill="none" stroke="url(#metal)" stroke-width="18" filter="url(#shadow)"/>
+  <g filter="url(#shadow)">
+    <path d="M278 423l125-97 124 97-124 97z" fill="#c7c9c9"/>
+    <path d="M278 423v150l125 96V520z" fill="#a5a9aa"/>
+    <path d="M527 423v150l-124 96V520z" fill="#e9e9e8"/>
+    <path d="M278 423l125 97 124-97M278 573l125 96 124-96M278 423v150M527 423v150M403 520v149" fill="none" stroke="#707476" stroke-linejoin="round" stroke-width="16"/>
+    <path d="M328 442l75-58 74 58-74 58z" fill="none" stroke="#fbfbfb" stroke-linejoin="round" stroke-width="8" opacity=".8"/>
+  </g>
+  <rect x="216" y="740" width="368" height="88" fill="#ffffff" opacity=".7"/>
+  <text x="400" y="778" fill="#3a2f28" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" text-anchor="middle">MATTE SILVER</text>
+  <text x="400" y="812" fill="#6f6256" font-family="Arial, Helvetica, sans-serif" font-size="20" text-anchor="middle">CUBOID PENDANT</text>
+</svg>

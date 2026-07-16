@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, Filter, Gauge, Layers3, TrendingUp, X } from "lucide-react";
+import { ArrowUpRight, Filter, Gauge, ImageOff, Layers3, TrendingUp, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -25,6 +25,52 @@ const demographicLabels: Record<Demographic, string> = {
   unisex: "Unisex",
   womenswear: "Womenswear"
 };
+
+function ArchiveImage({
+  alt,
+  className,
+  label,
+  src
+}: {
+  alt: string;
+  className?: string;
+  label: string;
+  src: string;
+}) {
+  const [hasError, setHasError] = useState(!src);
+
+  if (hasError) {
+    return (
+      <div
+        className={cn(
+          "grid h-full min-h-full w-full place-items-center bg-[#EEE5D7] p-5 text-center",
+          className
+        )}
+      >
+        <div>
+          <div className="mx-auto grid size-12 place-items-center border border-[#D8CCBB] bg-white/70">
+            <ImageOff className="size-5 text-neutral-500" />
+          </div>
+          <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
+            Image unavailable
+          </p>
+          <p className="mt-2 text-sm font-medium text-neutral-800">{label}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setHasError(true)}
+    />
+  );
+}
 
 export function HistoricalArchive({
   garments,
@@ -77,17 +123,17 @@ export function HistoricalArchive({
 
   return (
     <section className="mx-auto max-w-7xl animate-fade-in">
-      <div className="border border-white/[0.07] bg-[#121214]/80 p-5 backdrop-blur-xl md:p-7">
+      <div className="border border-[#D8CCBB] bg-white/80 p-5 backdrop-blur-xl md:p-7">
         <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
             <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">
               <Layers3 className="size-4" />
               Archive Studio
             </p>
-            <h1 className="mt-3 max-w-3xl text-3xl font-light tracking-[-0.01em] text-neutral-100 md:text-5xl">
+            <h1 className="mt-3 max-w-3xl text-3xl font-light tracking-[-0.01em] text-neutral-950 md:text-5xl">
               Visual archive and forecast
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-600">
               Browse original fashion signals and switch into forecast mode without leaving the archive.
             </p>
           </div>
@@ -112,7 +158,7 @@ export function HistoricalArchive({
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-white/[0.07] pt-4">
+        <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-[#D8CCBB] pt-4">
           {isUsingSampleData ? <Badge>Sample data</Badge> : <Badge>Original data</Badge>}
           <Badge>{garments.length} archive looks</Badge>
           <Badge>{trends.length} forecasts</Badge>
@@ -121,14 +167,14 @@ export function HistoricalArchive({
 
       {view === "archive" ? (
         <>
-          <div className="mt-5 border border-white/[0.07] bg-[#121214]/80 p-4 backdrop-blur-xl">
+          <div className="mt-5 border border-[#D8CCBB] bg-white/80 p-4 backdrop-blur-xl">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
                   <Filter className="size-4" />
                   Refine Archive
                 </p>
-                <p className="mt-2 text-sm text-neutral-400">
+                <p className="mt-2 text-sm text-neutral-600">
                   {filteredGarments.length} looks visible from {Math.min(fromYear, toYear)}-
                   {Math.max(fromYear, toYear)}
                 </p>
@@ -213,17 +259,17 @@ export function HistoricalArchive({
           </div>
 
           {garments.length === 0 ? (
-            <div className="mt-6 border border-white/[0.07] bg-white/[0.03] p-6">
-              <p className="text-base font-medium text-neutral-100">No original garment data ingested yet.</p>
-              <p className="mt-2 text-sm leading-6 text-neutral-400">
+            <div className="mt-6 border border-[#D8CCBB] bg-white/70 p-6">
+              <p className="text-base font-medium text-neutral-950">No original garment data ingested yet.</p>
+              <p className="mt-2 text-sm leading-6 text-neutral-600">
                 Add real clothing rows locally with `npm run ingest:kaggle -- ./dataset/fashion.csv`
                 or configure Supabase and ingest there.
               </p>
             </div>
           ) : filteredGarments.length === 0 ? (
-            <div className="mt-6 border border-white/[0.07] bg-white/[0.03] p-6">
-              <p className="text-base font-medium text-neutral-100">No looks match these filters.</p>
-              <p className="mt-2 text-sm text-neutral-400">Adjust the year, section, or category.</p>
+            <div className="mt-6 border border-[#D8CCBB] bg-white/70 p-6">
+              <p className="text-base font-medium text-neutral-950">No looks match these filters.</p>
+              <p className="mt-2 text-sm text-neutral-600">Adjust the year, section, or category.</p>
             </div>
           ) : null}
 
@@ -232,19 +278,19 @@ export function HistoricalArchive({
               <button
                 key={garment.id}
                 type="button"
-                className="group flex min-h-full flex-col overflow-hidden border border-white/[0.07] bg-black text-left transition-colors hover:border-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+                className="group flex min-h-full flex-col overflow-hidden border border-[#D8CCBB] bg-white text-left transition-colors hover:border-[#AD9C87] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8A6A4F]/25"
                 onClick={() => setSelected(garment)}
               >
-                <div className="relative aspect-[4/5] overflow-hidden bg-neutral-900">
-                  <img
+                <div className="relative aspect-[4/5] overflow-hidden bg-[#EEE5D7]">
+                  <ArchiveImage
                     src={garment.image_url}
                     alt={garment.description}
+                    label={garment.title}
                     className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                    loading="lazy"
                   />
                   <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-                    <Badge className="bg-black/40 text-white">{garment.year}</Badge>
-                    <Badge className="bg-black/40 text-white">
+                    <Badge className="bg-white/90 text-[#3A2A1E]">{garment.year}</Badge>
+                    <Badge className="bg-white/90 text-[#3A2A1E]">
                       {demographicLabels[garment.demographic]}
                     </Badge>
                   </div>
@@ -254,12 +300,12 @@ export function HistoricalArchive({
                     <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
                       {titleCase(garment.category)}
                     </span>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-300">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-700">
                       {titleCase(garment.fit_profile)}
                     </span>
                   </div>
-                  <h2 className="text-base font-medium leading-tight text-neutral-100">{garment.title}</h2>
-                  <p className="line-clamp-3 text-sm leading-6 text-neutral-400">{garment.description}</p>
+                  <h2 className="text-base font-medium leading-tight text-neutral-950">{garment.title}</h2>
+                  <p className="line-clamp-3 text-sm leading-6 text-neutral-600">{garment.description}</p>
                   <div className="flex flex-wrap gap-2">
                     {garment.style_tags.slice(0, 3).map((tag) => (
                       <Badge key={tag}>{tag}</Badge>
@@ -273,9 +319,9 @@ export function HistoricalArchive({
       ) : (
         <div className="mt-6">
           {trends.length === 0 ? (
-            <div className="border border-white/[0.07] bg-white/[0.03] p-6">
-              <p className="text-base font-medium text-neutral-100">No original trend data ingested yet.</p>
-              <p className="mt-2 text-sm leading-6 text-neutral-400">
+            <div className="border border-[#D8CCBB] bg-white/70 p-6">
+              <p className="text-base font-medium text-neutral-950">No original trend data ingested yet.</p>
+              <p className="mt-2 text-sm leading-6 text-neutral-600">
                 Add sourced trend rows locally with `npm run ingest:trends -- ./dataset/trends.csv`.
               </p>
             </div>
@@ -285,16 +331,17 @@ export function HistoricalArchive({
             {trends.map((trend) => (
               <article
                 key={trend.id}
-                className="group overflow-hidden border border-white/[0.07] bg-black"
+                className="group overflow-hidden border border-[#D8CCBB] bg-white"
               >
-                <div className="relative aspect-[4/5] overflow-hidden bg-neutral-900">
-                  <img
+                <div className="relative aspect-[4/5] overflow-hidden bg-[#EEE5D7]">
+                  <ArchiveImage
                     src={trend.forecast_image_url}
                     alt={trend.title}
+                    label={trend.title}
                     className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                   />
                   <div className="absolute left-3 top-3">
-                    <Badge className="bg-black/40 text-white">
+                    <Badge className="bg-white/90 text-[#3A2A1E]">
                       {trend.forecast_year} • {trend.season}
                     </Badge>
                   </div>
@@ -305,14 +352,14 @@ export function HistoricalArchive({
                       <TrendingUp className="size-4" />
                       Forecast Signal
                     </p>
-                    <h2 className="mt-3 text-2xl font-light leading-tight text-neutral-100">
+                    <h2 className="mt-3 text-2xl font-light leading-tight text-neutral-950">
                       {trend.title}
                     </h2>
-                    <p className="mt-3 text-sm leading-6 text-neutral-400">{trend.description}</p>
+                    <p className="mt-3 text-sm leading-6 text-neutral-600">{trend.description}</p>
                   </div>
 
-                  <div className="space-y-3 border-t border-white/[0.07] pt-4">
-                    <div className="flex items-center justify-between text-sm text-neutral-300">
+                  <div className="space-y-3 border-t border-[#D8CCBB] pt-4">
+                    <div className="flex items-center justify-between text-sm text-neutral-700">
                       <span className="inline-flex items-center gap-2 font-medium">
                         <Gauge className="size-4" />
                         Confidence
@@ -345,22 +392,22 @@ export function HistoricalArchive({
 
       {selected ? (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 grid place-items-center bg-stone-950/45 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-label="Garment details"
           onClick={() => setSelected(null)}
         >
           <div
-            className="max-h-[92vh] w-full max-w-5xl overflow-auto border border-white/[0.07] bg-[#09090A]"
+            className="max-h-[92vh] w-full max-w-5xl overflow-auto border border-[#D8CCBB] bg-[#F6F0E6]"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-white/[0.07] p-4">
+            <div className="flex items-center justify-between border-b border-[#D8CCBB] p-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
                   {selected.year}
                 </p>
-                <h2 className="mt-1 text-xl font-light text-neutral-100">{selected.title}</h2>
+                <h2 className="mt-1 text-xl font-light text-neutral-950">{selected.title}</h2>
               </div>
               <Button
                 type="button"
@@ -373,15 +420,16 @@ export function HistoricalArchive({
               </Button>
             </div>
             <div className="grid gap-0 md:grid-cols-[1.1fr_0.9fr]">
-              <img
+              <ArchiveImage
                 src={selected.image_url}
                 alt={selected.description}
-                className="h-full min-h-[360px] w-full bg-neutral-900 object-cover"
+                label={selected.title}
+                className="h-full min-h-[360px] w-full bg-[#EEE5D7] object-cover"
               />
               <div className="space-y-6 p-5 md:p-6">
                 <div>
                   <Label>Description</Label>
-                  <p className="mt-2 text-base leading-7 text-neutral-300">{selected.description}</p>
+                  <p className="mt-2 text-base leading-7 text-neutral-700">{selected.description}</p>
                 </div>
 
                 <div>
@@ -400,8 +448,8 @@ export function HistoricalArchive({
                       <div key={color} className="space-y-2">
                         <div
                           className={cn(
-                            "h-14 border border-white/10",
-                            color.toLowerCase() === "#ffffff" ? "border-white/25" : ""
+                            "h-14 border border-[#D8CCBB]",
+                            color.toLowerCase() === "#ffffff" ? "border-[#AD9C87]" : ""
                           )}
                           style={{ backgroundColor: color }}
                         />
@@ -411,32 +459,32 @@ export function HistoricalArchive({
                   </div>
                 </div>
 
-                <dl className="grid grid-cols-2 gap-4 border-t border-white/[0.07] pt-5 text-sm">
+                <dl className="grid grid-cols-2 gap-4 border-t border-[#D8CCBB] pt-5 text-sm">
                   <div>
                     <dt className="text-neutral-500">Age group</dt>
-                    <dd className="mt-1 font-medium text-neutral-200">{selected.age_group}</dd>
+                    <dd className="mt-1 font-medium text-neutral-800">{selected.age_group}</dd>
                   </div>
                   <div>
                     <dt className="text-neutral-500">Fit</dt>
-                    <dd className="mt-1 font-medium text-neutral-200">
+                    <dd className="mt-1 font-medium text-neutral-800">
                       {titleCase(selected.fit_profile)}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-neutral-500">Occasion</dt>
-                    <dd className="mt-1 font-medium text-neutral-200">
+                    <dd className="mt-1 font-medium text-neutral-800">
                       {selected.occasion.map((value) => titleCase(value)).join(", ")}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-neutral-500">Season</dt>
-                    <dd className="mt-1 font-medium text-neutral-200">
+                    <dd className="mt-1 font-medium text-neutral-800">
                       {selected.season.map((value) => titleCase(value)).join(", ")}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-neutral-500">Source</dt>
-                    <dd className="mt-1 font-medium text-neutral-200">
+                    <dd className="mt-1 font-medium text-neutral-800">
                       <a
                         href={selected.source_url}
                         target="_blank"

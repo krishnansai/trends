@@ -1,5 +1,7 @@
 import { generateAffiliateLink } from "@/lib/affiliate";
 import { ARCHIVE_END_YEAR, ARCHIVE_START_YEAR } from "@/lib/archive-window";
+import stylistFilterRules from "@/data/stylist-filter-rules.json";
+import type { VisionAgeBand } from "@/lib/vision";
 import {
   getOccasionMatches,
   getSeasonMatches,
@@ -61,8 +63,24 @@ type StylingContext = {
 };
 
 type RecommendationScoringInput = {
+  ageBand?: VisionAgeBand;
+  faceShape?: FaceShape;
   recommendedColorPalette?: string[];
   suggestedFitProfile?: FitProfile;
+};
+
+type StylistFilterRule = {
+  id: string;
+  demographics: Demographic[];
+  age_bands?: VisionAgeBand[];
+  occasions: StylingOccasion[];
+  seasons: StylingSeason[];
+  undertones: StyleProfileId[];
+  face_shapes: FaceShape[];
+  fit_profiles: FitProfile[];
+  category_weights: Partial<Record<Garment["category"], number>>;
+  tag_weights: Record<string, number>;
+  rationale: string;
 };
 
 const visionFaceShapes = ["oval", "square", "round", "rectangle", "diamond"] as const satisfies readonly FaceShape[];
@@ -72,6 +90,22 @@ const faceShapeFallbacks: Partial<Record<FaceShape, FaceShape[]>> = {
   oblong: ["oblong", "rectangle", "diamond"],
   rectangle: ["rectangle", "oblong", "oval"]
 };
+const filterRules = stylistFilterRules as unknown as StylistFilterRule[];
+const primaryRecommendationCategories = new Set<Garment["category"]>([
+  "blouses",
+  "bottoms",
+  "dresses",
+  "outerwear",
+  "skirts",
+  "tops"
+]);
+const beachPrimaryRecommendationCategories = new Set<Garment["category"]>([
+  "blouses",
+  "bottoms",
+  "dresses",
+  "skirts",
+  "tops"
+]);
 
 export const styleProfiles: StyleProfile[] = [
   {
@@ -192,17 +226,27 @@ function scoreGarment(garment: Garment, profile: StyleProfile) {
 function scoreContext(garment: Garment, context?: StylingContext) {
   const occasionMatches = getOccasionMatches(context?.occasion);
   const seasonMatches = getSeasonMatches(context?.season);
-  const occasionScore =
+  const hasExactOccasion = Boolean(context?.occasion && garment.occasion.includes(context.occasion));
+  const hasGroupedOccasion =
     occasionMatches.length > 0 &&
-    garment.occasion.some((occasion) => occasionMatches.includes(occasion))
-      ? 28
+    garment.occasion.some((occasion) => occasionMatches.includes(occasion));
+  const hasExactSeason = Boolean(context?.season && garment.season.includes(context.season));
+  const hasGroupedSeason =
+    seasonMatches.length > 0 && garment.season.some((season) => seasonMatches.includes(season));
+  const occasionScore = hasExactOccasion ? 42 : hasGroupedOccasion ? 26 : 0;
+  const seasonScore = hasExactSeason
+    ? 38
+    : hasGroupedSeason && garment.season.includes("all-season")
+      ? 12
       : 0;
-  const seasonScore =
-    seasonMatches.length > 0 && garment.season.some((season) => seasonMatches.includes(season))
-      ? 22
-      : 0;
+  const seasonPenalty =
+    context?.season === "summer" && !garment.season.includes("summer") && garment.season.includes("winter")
+      ? -140
+      : context?.season === "winter" && !garment.season.includes("winter") && garment.season.includes("summer")
+        ? -120
+        : 0;
 
-  return occasionScore + seasonScore;
+  return occasionScore + seasonScore + seasonPenalty;
 }
 
 function hexToRgb(hex: string) {
@@ -279,32 +323,181 @@ function scoreFitMatch(garment: Garment, preferredFit?: FitProfile) {
   return Math.max(10, 28 - index * 6);
 }
 
-function pickDiverseRecommendations<T extends { garment: Garment; score: number }>(items: T[]) {
+function scoreAgeBandMatch(garment: Garment, ageBand?: VisionAgeBand) {
+  if (!ageBand) {
+    return 0;
+  }
+
+  const ranges: Record<VisionAgeBand, [number, number]> = {
+    adult: [25, 44],
+    mature: [40, 70],
+    young_adult: [16, 29]
+  };
+  const values = garment.age_group.match(/\d+/g)?.map(Number) ?? [];
+
+  if (values.length < 2) {
+    return 0;
+  }
+
+  const [minAge, maxAge] = [Math.min(values[0], values[1]), Math.max(values[0], values[1])];
+  const [bandMin, bandMax] = ranges[ageBand];
+  const overlaps = minAge <= bandMax && maxAge >= bandMin;
+
+  if (!overlaps) {
+    return 0;
+  }
+
+  const bandMid = (bandMin + bandMax) / 2;
+  const garmentMid = (minAge + maxAge) / 2;
+  const distance = Math.abs(bandMid - garmentMid);
+
+  return Math.max(8, 22 - distance * 0.45);
+}
+
+function matchesRuleContext(
+  rule: StylistFilterRule,
+  demographic: Demographic,
+  profileId: StyleProfileId,
+  context?: StylingContext,
+  scoringInput: RecommendationScoringInput = {}
+) {
+  if (!rule.demographics.includes(demographic)) {
+    return false;
+  }
+
+  if (rule.age_bands?.length && scoringInput.ageBand && !rule.age_bands.includes(scoringInput.ageBand)) {
+    return false;
+  }
+
+  if (context?.occasion) {
+    const occasionMatches = getOccasionMatches(context.occasion);
+
+    if (!rule.occasions.some((occasion) => occasionMatches.includes(occasion))) {
+      return false;
+    }
+  }
+
+  if (context?.season) {
+    const seasonMatches = getSeasonMatches(context.season);
+
+    if (!rule.seasons.some((season) => seasonMatches.includes(season))) {
+      return false;
+    }
+  }
+
+  if (!rule.undertones.includes(profileId)) {
+    return false;
+  }
+
+  if (scoringInput.faceShape && !rule.face_shapes.includes(scoringInput.faceShape)) {
+    return false;
+  }
+
+  if (
+    scoringInput.suggestedFitProfile &&
+    !rule.fit_profiles.includes(scoringInput.suggestedFitProfile)
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function scoreJsonFilterRules(
+  garment: Garment,
+  demographic: Demographic,
+  profileId: StyleProfileId,
+  context?: StylingContext,
+  scoringInput: RecommendationScoringInput = {}
+) {
+  const searchable = normalize(
+    [garment.title, garment.description, garment.category, ...garment.style_tags].join(" ")
+  );
+
+  return filterRules.reduce((score, rule) => {
+    if (!matchesRuleContext(rule, demographic, profileId, context, scoringInput)) {
+      return score;
+    }
+
+    const categoryScore = rule.category_weights[garment.category] ?? 0;
+    const tagScore = Object.entries(rule.tag_weights).reduce((tagTotal, [tag, value]) => {
+      return searchable.includes(normalize(tag)) ? tagTotal + value : tagTotal;
+    }, 0);
+
+    return score + 18 + categoryScore + Math.min(tagScore, 54);
+  }, 0);
+}
+
+function getJsonFilterRuleSignal(
+  garment: Garment,
+  demographic: Demographic,
+  profileId: StyleProfileId,
+  context?: StylingContext,
+  scoringInput: RecommendationScoringInput = {}
+) {
+  const matchingRule = filterRules.find((rule) => {
+    if (!matchesRuleContext(rule, demographic, profileId, context, scoringInput)) {
+      return false;
+    }
+
+    const searchable = normalize(
+      [garment.title, garment.description, garment.category, ...garment.style_tags].join(" ")
+    );
+
+    return (
+      Boolean(rule.category_weights[garment.category]) ||
+      Object.keys(rule.tag_weights).some((tag) => searchable.includes(normalize(tag)))
+    );
+  });
+
+  if (!matchingRule) {
+    return null;
+  }
+
+  return `${ARCHIVE_END_YEAR} accuracy rule: ${matchingRule.rationale}`;
+}
+
+function isPrimaryRecommendationCategory(category: Garment["category"], context?: StylingContext) {
+  if (context?.occasion === "beach") {
+    return beachPrimaryRecommendationCategories.has(category);
+  }
+
+  return primaryRecommendationCategories.has(category);
+}
+
+function pickDiverseRecommendations<T extends { garment: Garment; score: number }>(
+  items: T[],
+  context?: StylingContext
+) {
   const selected: T[] = [];
   const selectedCategories = new Set<string>();
 
-  for (const item of items) {
-    if (selected.length >= 3) {
-      break;
-    }
+  function selectFrom(candidates: T[], requireNewCategory: boolean) {
+    for (const item of candidates) {
+      if (selected.length >= 3) {
+        break;
+      }
 
-    if (selectedCategories.has(item.garment.category)) {
-      continue;
-    }
+      if (selected.some((selectedItem) => selectedItem.garment.id === item.garment.id)) {
+        continue;
+      }
 
-    selected.push(item);
-    selectedCategories.add(item.garment.category);
-  }
+      if (requireNewCategory && selectedCategories.has(item.garment.category)) {
+        continue;
+      }
 
-  for (const item of items) {
-    if (selected.length >= 3) {
-      break;
-    }
-
-    if (!selected.some((selectedItem) => selectedItem.garment.id === item.garment.id)) {
       selected.push(item);
+      selectedCategories.add(item.garment.category);
     }
   }
+
+  const primaryItems = items.filter((item) =>
+    isPrimaryRecommendationCategory(item.garment.category, context)
+  );
+
+  selectFrom(primaryItems, true);
+  selectFrom(primaryItems, false);
+  selectFrom(items, false);
 
   return selected;
 }
@@ -322,6 +515,14 @@ function supportPiecesForContext(
         ["crochet cover-up", "woven sandal", "oval sunglasses"],
         ["floral midi dress", "market tote", "soft gold jewelry"]
       ][index] ?? ["relaxed resort shirt", "wide-leg linen pant", "raffia tote"];
+    }
+
+    if (demographic === "unisex") {
+      return [
+        ["linen resort shirt", "drawstring beach pant", "polarized sunglasses"],
+        ["rib tank", "wide-leg linen pant", "canvas tote"],
+        ["UPF swim layer", "straw sun hat", "minimal sandal"]
+      ][index] ?? ["linen resort shirt", "drawstring beach pant", "polarized sunglasses"];
     }
 
     return [
@@ -347,7 +548,7 @@ function supportPiecesForContext(
     ][index] ?? ["compression training top", "stretch short", "low-profile trainer"];
   }
 
-  if (context?.occasion === "formal") {
+  if (context?.occasion === "formal" || context?.occasion === "office") {
     if (demographic === "womenswear") {
       return [
         ["soft-volume blouse", "satin midi skirt", "structured shoulder bag"],
@@ -535,18 +736,22 @@ export function buildStylistRecommendations(
       score:
         scoreGarment(garment, profile) +
         scoreContext(garment, context) +
+        scoreAgeBandMatch(garment, scoringInput.ageBand) +
         scoreFitMatch(garment, scoringInput.suggestedFitProfile) +
-        scorePaletteMatch(garment, scoringInput.recommendedColorPalette)
+        scorePaletteMatch(garment, scoringInput.recommendedColorPalette) +
+        scoreJsonFilterRules(garment, demographic, profile.id, context, scoringInput)
     }))
     .sort((first, second) => second.score - first.score || second.garment.year - first.garment.year);
 
-  return pickDiverseRecommendations(scoredGarments)
+  return pickDiverseRecommendations(scoredGarments, context)
     .map(({ garment, score }, index) => ({
       id: `${profile.id}-${garment.id}`,
       title: garment.title || `${titleCase(garment.style_tags[0] ?? garment.category)} Outfit`,
       garment,
       score,
       supportPieces: supportPiecesForContext(demographic, profile.id, index, context),
-      trendSignal: `${ARCHIVE_END_YEAR} signal: ${profile.trendSignals[index] ?? profile.trendSignals[0]}`
+      trendSignal:
+        getJsonFilterRuleSignal(garment, demographic, profile.id, context, scoringInput) ??
+        `${ARCHIVE_END_YEAR} signal: ${profile.trendSignals[index] ?? profile.trendSignals[0]}`
     }));
 }

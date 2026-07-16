@@ -8,13 +8,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "border-white bg-white text-black shadow-[0_18px_40px_-30px_hsl(0_0%_100%/0.55)] hover:bg-neutral-200",
+          "border-[#3A2A1E] bg-[#3A2A1E] text-[#FFF8EC] shadow-[0_18px_40px_-30px_rgba(58,42,30,0.8)] hover:border-[#5C402B] hover:bg-[#5C402B]",
         outline:
-          "border-white/10 bg-white/[0.02] text-neutral-100 shadow-sm backdrop-blur-xl hover:border-white/35 hover:bg-white/[0.06]",
+          "border-[#CDBFAE] bg-white/70 text-[#2E251D] shadow-sm backdrop-blur-xl hover:border-[#8A6A4F] hover:bg-[#F0E5D6]",
         ghost:
-          "border-transparent bg-transparent text-neutral-200 shadow-none hover:bg-white/[0.06] hover:shadow-none",
+          "border-transparent bg-transparent text-[#4A3A2C] shadow-none hover:bg-[#F0E5D6] hover:text-[#2E251D] hover:shadow-none",
         subtle:
-          "border-white/10 bg-neutral-900/80 text-neutral-100 shadow-sm backdrop-blur-xl hover:border-white/30 hover:bg-neutral-800/80"
+          "border-[#CDBFAE] bg-[#EFE6D8]/90 text-[#2E251D] shadow-sm backdrop-blur-xl hover:border-[#9B8065] hover:bg-[#E3D6C4]/90"
       },
       size: {
         default: "h-10 px-4",

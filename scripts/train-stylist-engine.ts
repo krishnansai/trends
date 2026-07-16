@@ -64,7 +64,10 @@ const garmentJsonFiles = [
   "garments-sourced.json",
   "garments-visuals.json",
   "garments-womenswear.json",
-  "garments-launch-pack.json"
+  "garments-launch-pack.json",
+  "garments-context-expansion.json",
+  "garments-latest-trends-2026.json",
+  "garments-photo-profile-2026.json"
 ];
 const garmentCsvFiles = ["garments-pro-launch.csv"];
 const groomingFiles = [

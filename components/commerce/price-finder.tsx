@@ -129,7 +129,7 @@ function formatOfferLabel(match: PriceMatch) {
     <>
       <span className="line-through">{formatOriginalPrice(match)}</span>
       {match.discountPercent ? (
-        <span className="ml-2 font-medium text-neutral-200">{match.discountPercent}% off</span>
+        <span className="ml-2 font-medium text-neutral-800">{match.discountPercent}% off</span>
       ) : null}
     </>
   );
@@ -348,12 +348,12 @@ export function PriceFinder() {
 
   return (
     <section className="mx-auto max-w-7xl animate-fade-in">
-      <div className="flex flex-col justify-between gap-4 border-b border-white/[0.07] pb-6 md:flex-row md:items-end">
+      <div className="flex flex-col justify-between gap-4 border-b border-[#D8CCBB] pb-6 md:flex-row md:items-end">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">
             PERSONAL STYLIST
           </p>
-          <h1 className="mt-3 text-3xl font-light tracking-[-0.01em] text-neutral-100 md:text-5xl">
+          <h1 className="mt-3 text-3xl font-light tracking-[-0.01em] text-neutral-950 md:text-5xl">
             Best-value price comparison
           </h1>
         </div>
@@ -365,7 +365,7 @@ export function PriceFinder() {
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <form
-          className="border border-white/[0.07] bg-[#121214]/80 p-5 backdrop-blur-xl md:p-6"
+          className="border border-[#D8CCBB] bg-white/80 p-5 backdrop-blur-xl md:p-6"
           onSubmit={handleSubmit}
           noValidate
         >
@@ -374,9 +374,9 @@ export function PriceFinder() {
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
                 Source Item
               </p>
-              <h2 className="mt-2 text-2xl font-light text-neutral-100">Image input</h2>
+              <h2 className="mt-2 text-2xl font-light text-neutral-950">Image input</h2>
             </div>
-            <div className="grid size-11 place-items-center border border-white/10 bg-white/[0.03]">
+            <div className="grid size-11 place-items-center border border-[#D8CCBB] bg-white/70">
               <ImagePlus className="size-5" />
             </div>
           </div>
@@ -408,7 +408,7 @@ export function PriceFinder() {
               <Label htmlFor="product-upload">Photo upload</Label>
               <label
                 htmlFor="product-upload"
-                className="mt-2 flex min-h-52 cursor-pointer flex-col items-center justify-center gap-3 border border-dashed border-neutral-800 bg-[#09090A] p-5 text-center transition-all duration-300 hover:border-neutral-500 hover:bg-black"
+                className="mt-2 flex min-h-52 cursor-pointer flex-col items-center justify-center gap-3 border border-dashed border-neutral-800 bg-[#F6F0E6] p-5 text-center transition-all duration-300 hover:border-neutral-500 hover:bg-[#EFE6D8]"
               >
                 {visiblePreview ? (
                   <img
@@ -418,10 +418,10 @@ export function PriceFinder() {
                   />
                 ) : trimmedInputUrl ? (
                   <>
-                    <span className="grid size-12 place-items-center border border-white/10 bg-white/[0.03]">
+                    <span className="grid size-12 place-items-center border border-[#D8CCBB] bg-white/70">
                       <ExternalLink className="size-5" />
                     </span>
-                    <span className="max-w-full truncate text-sm font-medium uppercase tracking-[0.16em] text-neutral-200">
+                    <span className="max-w-full truncate text-sm font-medium uppercase tracking-[0.16em] text-neutral-800">
                       Product page ready
                     </span>
                     <span className="max-w-full truncate text-xs text-neutral-500">
@@ -430,10 +430,10 @@ export function PriceFinder() {
                   </>
                 ) : (
                   <>
-                    <span className="grid size-12 place-items-center border border-white/10 bg-white/[0.03]">
+                    <span className="grid size-12 place-items-center border border-[#D8CCBB] bg-white/70">
                       <Upload className="size-5" />
                     </span>
-                    <span className="text-sm font-medium uppercase tracking-[0.16em] text-neutral-200">
+                    <span className="text-sm font-medium uppercase tracking-[0.16em] text-neutral-800">
                       Upload a clothing item
                     </span>
                     <span className="text-xs text-neutral-500">JPG, PNG, or WebP</span>
@@ -465,13 +465,13 @@ export function PriceFinder() {
           </div>
         </form>
 
-        <section className="border border-white/[0.07] bg-[#121214]/80 p-5 backdrop-blur-xl md:p-6">
+        <section className="border border-[#D8CCBB] bg-white/80 p-5 backdrop-blur-xl md:p-6">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
                 Retailer Matches
               </p>
-              <h2 className="mt-2 text-2xl font-light text-neutral-100">Ranked product links</h2>
+              <h2 className="mt-2 text-2xl font-light text-neutral-950">Ranked product links</h2>
             </div>
             <div className="flex flex-col gap-3 md:items-end">
               {hasSearched ? <Badge>{pricedMatches.length} websites compared</Badge> : null}
@@ -492,11 +492,11 @@ export function PriceFinder() {
           </div>
 
           {isLoading ? (
-            <div className="mt-6 grid min-h-[420px] place-items-center border border-white/[0.07] bg-black/40">
+            <div className="mt-6 grid min-h-[420px] place-items-center border border-[#D8CCBB] bg-white/85">
               <div className="flex flex-col items-center gap-4 text-center">
                 <div className="h-px w-40 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent" />
                 <div>
-                  <p className="font-mono text-xs uppercase tracking-[0.24em] text-neutral-300">
+                  <p className="font-mono text-xs uppercase tracking-[0.24em] text-neutral-700">
                     Scanning retailer catalogs
                   </p>
                   <p className="mt-2 text-xs uppercase tracking-[0.18em] text-neutral-500">
@@ -508,18 +508,18 @@ export function PriceFinder() {
           ) : hasSearched ? (
             <div className="mt-6 space-y-3">
               {warning ? (
-                <div className="border border-white/[0.07] bg-white/[0.03] px-3 py-2 text-sm text-neutral-400">
+                <div className="border border-[#D8CCBB] bg-white/70 px-3 py-2 text-sm text-neutral-600">
                   {warning}
                 </div>
               ) : null}
 
               {bestMatch ? (
-                <div className="grid gap-4 border border-white/10 bg-white/[0.04] p-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
+                <div className="grid gap-4 border border-[#D8CCBB] bg-white/75 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
                       {isSearchOnlyMode ? "Best retailer result" : "Top ranked product"}
                     </p>
-                    <h3 className="mt-2 text-xl font-light text-neutral-100">{getDisplayTitle(bestMatch)}</h3>
+                    <h3 className="mt-2 text-xl font-light text-neutral-950">{getDisplayTitle(bestMatch)}</h3>
                     <div className="mt-2 flex flex-wrap items-end gap-3">
                       <div>
                         {isSearchOnlyMode ? (
@@ -527,7 +527,7 @@ export function PriceFinder() {
                             Est. starting price
                           </p>
                         ) : null}
-                        <p className="text-3xl font-light text-neutral-100">{formatPrice(bestMatch)}</p>
+                        <p className="text-3xl font-light text-neutral-950">{formatPrice(bestMatch)}</p>
                         {formatOfferLabel(bestMatch) ? (
                           <p className="mt-1 text-sm text-neutral-500">{formatOfferLabel(bestMatch)}</p>
                         ) : null}
@@ -539,12 +539,12 @@ export function PriceFinder() {
                         <Badge>Save up to {currencyFormatter.format(savings)}</Badge>
                       ) : null}
                     </div>
-                    <p className="mt-3 text-sm leading-6 text-neutral-400">
+                    <p className="mt-3 text-sm leading-6 text-neutral-600">
                       {hasExactProductUrl(bestMatch)
                         ? `Compared on this page across ${pricedMatches.length} retailer websites using price and rating signals.`
                         : `Ranked by low estimated price and rating. Open the retailer result page to choose the exact item.`}
                     </p>
-                    <div className="mt-3 border border-white/[0.07] bg-black/30 p-3 text-sm">
+                    <div className="mt-3 border border-[#D8CCBB] bg-white/75 p-3 text-sm">
                       {hasExactProductUrl(bestMatch) ? (
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">
@@ -554,7 +554,7 @@ export function PriceFinder() {
                             href={bestMatch.productUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="mt-1 inline-flex max-w-full items-center gap-2 font-medium text-neutral-200 underline underline-offset-4"
+                            className="mt-1 inline-flex max-w-full items-center gap-2 font-medium text-neutral-800 underline underline-offset-4"
                           >
                             <span className="truncate">{bestMatch.productUrl}</span>
                             <ExternalLink className="size-3.5 shrink-0" />
@@ -569,7 +569,7 @@ export function PriceFinder() {
                             href={bestMatch.productUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="mt-1 inline-flex max-w-full items-center gap-2 font-medium text-neutral-200 underline underline-offset-4"
+                            className="mt-1 inline-flex max-w-full items-center gap-2 font-medium text-neutral-800 underline underline-offset-4"
                           >
                             <span className="truncate">{bestMatch.productUrl}</span>
                             <ExternalLink className="size-3.5 shrink-0" />
@@ -587,10 +587,10 @@ export function PriceFinder() {
                       <ArrowUpRight className="size-4" />
                     </a>
                   </div>
-                  <div className="border-t border-white/[0.07] pt-4 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
+                  <div className="border-t border-[#D8CCBB] pt-4 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-medium text-neutral-100">
+                        <p className="text-sm font-medium text-neutral-950">
                           {isSearchOnlyMode ? "Other retailer pages" : "Similar product links"}
                         </p>
                         <p className="mt-1 text-xs text-neutral-500">
@@ -599,7 +599,7 @@ export function PriceFinder() {
                       </div>
                       <Badge>{similarMatches.length}</Badge>
                     </div>
-                    <div className="mt-3 divide-y divide-white/[0.07]">
+                    <div className="mt-3 divide-y divide-[#D8CCBB]">
                       {similarMatches.length ? (
                         similarMatches.map((match) => (
                           <a
@@ -607,7 +607,7 @@ export function PriceFinder() {
                             href={match.buyNowUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="grid grid-cols-[36px_1fr_auto] items-center gap-3 py-3 text-sm text-neutral-300 transition-colors hover:text-white"
+                            className="grid grid-cols-[36px_1fr_auto] items-center gap-3 py-3 text-sm text-neutral-700 transition-colors hover:text-[#7B5637]"
                           >
                             <span
                               className="grid size-9 place-items-center text-xs font-semibold text-white"
@@ -642,8 +642,8 @@ export function PriceFinder() {
               ) : null}
 
               {pricedMatches.length ? (
-                <div className="overflow-hidden border border-white/[0.07] bg-black/25">
-                  <div className="grid grid-cols-[1.1fr_0.8fr_0.9fr] bg-white/[0.04] px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500 sm:grid-cols-[1.1fr_0.7fr_0.9fr_0.9fr]">
+                <div className="overflow-hidden border border-[#D8CCBB] bg-white/70">
+                  <div className="grid grid-cols-[1.1fr_0.8fr_0.9fr] bg-white/75 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500 sm:grid-cols-[1.1fr_0.7fr_0.9fr_0.9fr]">
                     <span>Website</span>
                     <span>Price</span>
                     <span className="hidden sm:block">Rating</span>
@@ -652,7 +652,7 @@ export function PriceFinder() {
                   {pricedMatches.map((match, index) => (
                     <div
                       key={`row-${match.id}`}
-                      className="grid grid-cols-[1.1fr_0.8fr_0.9fr] items-center gap-2 border-t border-white/[0.07] px-3 py-3 text-sm text-neutral-300 transition-colors hover:bg-white/[0.04] sm:grid-cols-[1.1fr_0.7fr_0.9fr_0.9fr]"
+                      className="grid grid-cols-[1.1fr_0.8fr_0.9fr] items-center gap-2 border-t border-[#D8CCBB] px-3 py-3 text-sm text-neutral-700 transition-colors hover:bg-white/75 sm:grid-cols-[1.1fr_0.7fr_0.9fr_0.9fr]"
                     >
                       <div className="flex min-w-0 items-center gap-2">
                         <span
@@ -661,7 +661,7 @@ export function PriceFinder() {
                         >
                           {match.logoMark}
                         </span>
-                        <span className="min-w-0 truncate font-medium text-neutral-200">
+                        <span className="min-w-0 truncate font-medium text-neutral-800">
                           {index === 0 ? "Best - " : ""}
                           {match.retailer}
                         </span>
@@ -681,7 +681,7 @@ export function PriceFinder() {
                         href={match.buyNowUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="justify-self-end text-xs font-semibold uppercase tracking-[0.12em] text-neutral-200 underline underline-offset-4 hover:text-white"
+                        className="justify-self-end text-xs font-semibold uppercase tracking-[0.12em] text-neutral-800 underline underline-offset-4 hover:text-[#7B5637]"
                       >
                         {match.sourceType === "exact" ? "View" : "Matches"}
                       </a>
@@ -696,12 +696,12 @@ export function PriceFinder() {
                     <article
                       key={match.id}
                       className={cn(
-                        "grid gap-4 border border-white/[0.07] bg-black/30 p-4 md:grid-cols-[64px_1fr_auto]",
-                        index === 0 ? "border-white/20 bg-white/[0.05]" : ""
+                        "grid gap-4 border border-[#D8CCBB] bg-white/75 p-4 md:grid-cols-[64px_1fr_auto]",
+                        index === 0 ? "border-[#BDAE9A] bg-white/80" : ""
                       )}
                     >
                       {match.imageUrl ? (
-                        <div className="size-16 overflow-hidden border border-white/10 bg-neutral-900">
+                        <div className="size-16 overflow-hidden border border-[#D8CCBB] bg-[#EEE5D7]">
                           <img
                             src={match.imageUrl}
                             alt={match.productTitle}
@@ -710,7 +710,7 @@ export function PriceFinder() {
                         </div>
                       ) : (
                         <div
-                          className="grid size-16 place-items-center border border-white/10 text-sm font-semibold text-white"
+                          className="grid size-16 place-items-center border border-[#D8CCBB] text-sm font-semibold text-white"
                           style={{ backgroundColor: match.logoTone }}
                           aria-label={`${match.retailer} logo`}
                         >
@@ -719,7 +719,7 @@ export function PriceFinder() {
                       )}
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-medium text-neutral-100">{getDisplayTitle(match)}</h3>
+                          <h3 className="text-base font-medium text-neutral-950">{getDisplayTitle(match)}</h3>
                           {index === 0 && match.price !== null ? <Badge>Best value</Badge> : null}
                           <Badge>{getMatchBasisLabel(match)}</Badge>
                           {match.priceBasis === "estimated" ? <Badge>Estimated</Badge> : null}
@@ -730,7 +730,7 @@ export function PriceFinder() {
                           href={match.productUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="mt-2 inline-flex max-w-full items-center gap-2 text-xs font-medium text-neutral-300 underline underline-offset-4 hover:text-white"
+                          className="mt-2 inline-flex max-w-full items-center gap-2 text-xs font-medium text-neutral-700 underline underline-offset-4 hover:text-[#7B5637]"
                         >
                           <span className="shrink-0">{getDestinationLabel(match)}:</span>
                           <span className="truncate text-neutral-500">{match.productUrl}</span>
@@ -740,7 +740,7 @@ export function PriceFinder() {
                           <p className="mt-1 text-xs text-neutral-500">SKU / ID: {match.sku}</p>
                         ) : null}
                         <p className="mt-3 inline-flex items-center gap-2 text-sm">
-                          <CheckCircle2 className="size-4 text-white" />
+                          <CheckCircle2 className="size-4 text-[#7B5637]" />
                           {match.availability}
                         </p>
                       </div>
@@ -769,10 +769,10 @@ export function PriceFinder() {
               ) : null}
             </div>
           ) : (
-            <div className="mt-6 grid min-h-[420px] place-items-center border border-white/[0.07] bg-black/35 p-6 text-center">
+            <div className="mt-6 grid min-h-[420px] place-items-center border border-[#D8CCBB] bg-white/80 p-6 text-center">
               <div>
                 <Search className="mx-auto size-9" />
-                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-200">
+                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-800">
                   No image scanned yet
                 </p>
                 <p className="mt-2 text-sm text-neutral-500">

@@ -34,6 +34,7 @@ function isUploadedFile(value: FormDataEntryValue | null): value is File {
 
 function getFallbackVisionProfile(formData: FormData): VisionProfile {
   return createVisionProfile({
+    age_band: formValue(formData, "age_band"),
     demographic: formValue(formData, "demographic"),
     detected_face_shape: formValue(formData, "detected_face_shape"),
     primary_color_undertone: formValue(formData, "primary_color_undertone"),

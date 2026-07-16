@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Beefy Silk Tie</title>
+  <desc id="desc">A substantial burgundy silk tie styled over a crisp shirt and navy tailoring.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f8f3ec"/>
+      <stop offset="1" stop-color="#d7c7b8"/>
+    </linearGradient>
+    <linearGradient id="tie" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#a3232d"/>
+      <stop offset=".5" stop-color="#5f1019"/>
+      <stop offset="1" stop-color="#c94a55"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#34241d" flood-opacity=".24"/>
+    </filter>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  <path d="M155 0h185l58 228L455 0h190l-76 1000H231z" fill="#1b263b"/>
+  <path d="M264 0h272l-84 256 112 744H236l111-744z" fill="#fbf8f1"/>
+  <path d="M345 74h110l37 148-92 108-91-108z" fill="url(#tie)" filter="url(#shadow)"/>
+  <path d="M400 330l112 494-112 132-112-132z" fill="url(#tie)" filter="url(#shadow)"/>
+  <path d="M357 98l43 201 43-201M313 824h174" fill="none" stroke="#f2a3aa" stroke-width="8" opacity=".35"/>
+  <g fill="none" stroke="#ffffff" stroke-width="6" opacity=".18">
+    <path d="M338 398l118 150"/>
+    <path d="M324 520l140 178"/>
+    <path d="M350 714l94 121"/>
+  </g>
+  <rect x="212" y="752" width="376" height="88" fill="#ffffff" opacity=".75"/>
+  <text x="400" y="790" fill="#1b263b" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" text-anchor="middle">BEEFY SILK</text>
+  <text x="400" y="824" fill="#7b1f2a" font-family="Arial, Helvetica, sans-serif" font-size="20" text-anchor="middle">TAILORING TIE</text>
+</svg>

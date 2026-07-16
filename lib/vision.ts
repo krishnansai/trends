@@ -6,10 +6,12 @@ import {
 } from "@/lib/types";
 
 export type VisionDemographic = Demographic;
+export type VisionAgeBand = "young_adult" | "adult" | "mature";
 export type VisionUndertone = "warm" | "cool" | "neutral";
 export type VisionFitProfile = Extract<FitProfile, "relaxed" | "oversized" | "straight" | "slim">;
 
 export type VisionProfile = {
+  age_band: VisionAgeBand;
   demographic: VisionDemographic;
   detected_face_shape: Exclude<FaceShape, "heart" | "oblong">;
   primary_color_undertone: VisionUndertone;
@@ -23,6 +25,8 @@ Analyze and extract these exact keys:
 
 demographic: Value must strictly be one of "menswear", "womenswear", or "unisex". Classify the requested wardrobe presentation, then keep recommendations inside that wardrobe category plus unisex items only.
 
+age_band: Choose exactly one broad styling band from: ["young_adult", "adult", "mature"]. Do not estimate exact age. Use this only as a fashion styling band based on visual presentation; if uncertain, return "adult".
+
 detected_face_shape: Choose exactly one from: ["oval", "square", "round", "rectangle", "diamond"]. Base this on their jawline, cheekbones, and facial proportions.
 
 primary_color_undertone: Analyze the user's skin, hair, and existing clothing tones. Classify as "warm", "cool", or "neutral".
@@ -32,8 +36,9 @@ suggested_fit_profile: Based on their physical frame, determine if they look bes
 recommended_color_palette: Provide an array of 3 hex color codes that would look exceptionally flattering on them based on their undertone.
 
 Example JSON Output:
-{"demographic":"womenswear","detected_face_shape":"oval","primary_color_undertone":"warm","suggested_fit_profile":"relaxed","recommended_color_palette":["#1A1A1A","#4F5D4E","#D8C3A5"]}`;
+{"demographic":"womenswear","age_band":"adult","detected_face_shape":"oval","primary_color_undertone":"warm","suggested_fit_profile":"relaxed","recommended_color_palette":["#1A1A1A","#4F5D4E","#D8C3A5"]}`;
 
+export const visionAgeBands = ["young_adult", "adult", "mature"] as const satisfies readonly VisionAgeBand[];
 export const visionDemographics = ["menswear", "womenswear", "unisex"] as const satisfies readonly VisionDemographic[];
 export const visionFaceShapes = ["oval", "square", "round", "rectangle", "diamond"] as const satisfies readonly VisionProfile["detected_face_shape"][];
 export const visionUndertones = ["warm", "cool", "neutral"] as const satisfies readonly VisionUndertone[];
@@ -47,6 +52,10 @@ const undertonePalettes: Record<VisionUndertone, [string, string, string]> = {
 
 function isVisionDemographic(value: unknown): value is VisionDemographic {
   return typeof value === "string" && visionDemographics.includes(value as VisionDemographic);
+}
+
+function isVisionAgeBand(value: unknown): value is VisionAgeBand {
+  return typeof value === "string" && visionAgeBands.includes(value as VisionAgeBand);
 }
 
 function isVisionFaceShape(value: unknown): value is VisionProfile["detected_face_shape"] {
@@ -86,6 +95,8 @@ function normalizeFaceShape(value: unknown): VisionProfile["detected_face_shape"
 }
 
 export function createVisionProfile(input: {
+  age_band?: unknown;
+  ageBand?: unknown;
   demographic?: unknown;
   detected_face_shape?: unknown;
   faceShape?: unknown;
@@ -94,6 +105,11 @@ export function createVisionProfile(input: {
   recommended_color_palette?: unknown;
   suggested_fit_profile?: unknown;
 }): VisionProfile {
+  const age_band = isVisionAgeBand(input.age_band)
+    ? input.age_band
+    : isVisionAgeBand(input.ageBand)
+      ? input.ageBand
+      : "adult";
   const demographic = isVisionDemographic(input.demographic) ? input.demographic : "menswear";
   const primary_color_undertone = isVisionUndertone(input.primary_color_undertone)
     ? input.primary_color_undertone
@@ -105,6 +121,7 @@ export function createVisionProfile(input: {
     : "relaxed";
 
   return {
+    age_band,
     demographic,
     detected_face_shape: normalizeFaceShape(input.detected_face_shape ?? input.faceShape),
     primary_color_undertone,
@@ -124,10 +141,12 @@ export function parseVisionProfile(value: unknown, fallback: VisionProfile): Vis
   const payload = value as Partial<VisionProfile>;
 
   return createVisionProfile({
-    demographic: payload.demographic,
-    detected_face_shape: payload.detected_face_shape,
-    primary_color_undertone: payload.primary_color_undertone,
-    recommended_color_palette: payload.recommended_color_palette,
-    suggested_fit_profile: payload.suggested_fit_profile
+    age_band: payload.age_band ?? fallback.age_band,
+    demographic: payload.demographic ?? fallback.demographic,
+    detected_face_shape: payload.detected_face_shape ?? fallback.detected_face_shape,
+    primary_color_undertone: payload.primary_color_undertone ?? fallback.primary_color_undertone,
+    recommended_color_palette:
+      payload.recommended_color_palette ?? fallback.recommended_color_palette,
+    suggested_fit_profile: payload.suggested_fit_profile ?? fallback.suggested_fit_profile
   });
 }

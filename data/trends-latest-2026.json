@@ -1,0 +1,134 @@
+[
+  {
+    "id": "trend-latest-2026-pool-to-street-resortwear",
+    "title": "Pool-to-Street Resortwear",
+    "description": "Beach outfits are moving beyond swimwear into draped ponchos, poplin skirts, crochet separates, mesh dresses, scarves, and easy pieces that work after leaving the pool.",
+    "forecast_year": 2026,
+    "confidence_score": 92,
+    "season": "summer",
+    "forecast_image_url": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800",
+    "source_url": "https://www.elle.com/fashion/shopping/a71857605/beach-pool-outfits-summer-2026/",
+    "created_at": "2026-07-16T00:00:00.000Z"
+  },
+  {
+    "id": "trend-latest-2026-modern-sundress-architecture",
+    "title": "Modern Sundress Architecture",
+    "description": "The 2026 sundress is being refreshed through drop waists, corset bodices, Y2K halters, babydoll volume, lace, eyelet, and scarf-belt details.",
+    "forecast_year": 2026,
+    "confidence_score": 89,
+    "season": "summer",
+    "forecast_image_url": "https://images.unsplash.com/photo-1495385794356-15371f348c31?w=800",
+    "source_url": "https://www.byrdie.com/modern-sundress-fashion-trend-12017152",
+    "created_at": "2026-07-16T00:00:00.000Z"
+  },
+  {
+    "id": "trend-latest-2026-juicy-summer-color-system",
+    "title": "Juicy Summer Color System",
+    "description": "Lychee pink, sun-ripened red, vintage peach, sunny citrus, Baja teal, sky blue, and raspberry tones are becoming a stronger summer color layer over neutral wardrobes.",
+    "forecast_year": 2026,
+    "confidence_score": 88,
+    "season": "summer",
+    "forecast_image_url": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800",
+    "source_url": "https://www.byrdie.com/summer-fashion-color-trends-12012904",
+    "created_at": "2026-07-16T00:00:00.000Z"
+  },
+  {
+    "id": "trend-latest-2026-sporty-influence",
+    "title": "Sporty Influence Moves Into Daily Outfits",
+    "description": "Soccer references, jerseys, track pants, Bermuda shorts, and low-profile sneakers are pushing sport styling into mall and street outfits.",
+    "forecast_year": 2026,
+    "confidence_score": 87,
+    "season": "summer",
+    "forecast_image_url": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800",
+    "source_url": "https://www.instyle.com/cool-girl-summer-fashion-trends-12020196",
+    "created_at": "2026-07-16T00:00:00.000Z"
+  },
+  {
+    "id": "trend-latest-2026-heatwave-office-fabrics",
+    "title": "Heatwave Office Fabrics",
+    "description": "Office wardrobes are shifting toward breathable linen, cotton, silk, merino wool, swing vests, midi dresses, longline tailored shorts, flats, and sandals that still read professional.",
+    "forecast_year": 2026,
+    "confidence_score": 90,
+    "season": "summer",
+    "forecast_image_url": "https://images.unsplash.com/photo-1507680434567-5739c80be1ac?w=800",
+    "source_url": "https://www.theguardian.com/commentisfree/2026/jul/13/dress-office-heatwave-shorts-fabrics-beach",
+    "created_at": "2026-07-16T00:00:00.000Z"
+  },
+  {
+    "id": "trend-latest-2026-updated-lady-power-dressing",
+    "title": "Updated Lady Power Dressing",
+    "description": "Fall 2026 power dressing is becoming softer and more sculptural, with relaxed tailoring, luxurious textures, and elegance that does not feel rigid.",
+    "forecast_year": 2026,
+    "confidence_score": 91,
+    "season": "fall-winter",
+    "forecast_image_url": "https://images.unsplash.com/photo-1542060748-10c28b62716f?w=800",
+    "source_url": "https://www.vogue.com/article/fall-winter-2026-fashion-trends",
+    "created_at": "2026-07-16T00:00:00.000Z"
+  },
+  {
+    "id": "trend-latest-2026-art-deco-evening",
+    "title": "Art Deco Evening Surfaces",
+    "description": "Geometric motifs, velvet, fringe, and polished metallic accessories are increasing in fall-winter evening and formalwear signals.",
+    "forecast_year": 2026,
+    "confidence_score": 87,
+    "season": "fall-winter",
+    "forecast_image_url": "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800",
+    "source_url": "https://www.vogue.com/article/fall-winter-2026-fashion-trends",
+    "created_at": "2026-07-16T00:00:00.000Z"
+  },
+  {
+    "id": "trend-latest-2026-playful-proportions",
+    "title": "Playful Proportions",
+    "description": "Oversized, cropped, bubble, and exaggerated silhouettes are emerging as expressive 2026 proportions for people who want more movement than quiet minimalism.",
+    "forecast_year": 2026,
+    "confidence_score": 85,
+    "season": "fall-winter",
+    "forecast_image_url": "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?w=800",
+    "source_url": "https://www.vogue.com/article/fall-winter-2026-fashion-trends",
+    "created_at": "2026-07-16T00:00:00.000Z"
+  },
+  {
+    "id": "trend-latest-2026-lightweight-menswear-ventilation",
+    "title": "Lightweight Menswear Ventilation",
+    "description": "Menswear is leaning into lighter silhouettes, open necklines, sheer layers, seersucker, perforated leather, and breathable tailoring for hotter climates.",
+    "forecast_year": 2026,
+    "confidence_score": 84,
+    "season": "spring-summer",
+    "forecast_image_url": "https://images.unsplash.com/photo-1516826957135-700dedea698c?w=800",
+    "source_url": "https://apnews.com/article/ccd72aac37b3ac069862e3616cf830d0",
+    "created_at": "2026-07-16T00:00:00.000Z"
+  },
+  {
+    "id": "trend-latest-2026-summer-capsule-natural-fabrics",
+    "title": "Summer Capsule Natural Fabrics",
+    "description": "Linen, cotton, silk, breathable dresses, practical totes, fisherman sandals, and relaxed summer separates are becoming the clearest capsule wardrobe direction.",
+    "forecast_year": 2026,
+    "confidence_score": 90,
+    "season": "summer",
+    "forecast_image_url": "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800",
+    "source_url": "https://www.whowhatwear.com/fashion/shopping/best-summer-2026-wardrobe-staples",
+    "created_at": "2026-07-16T00:00:00.000Z"
+  },
+  {
+    "id": "trend-latest-2026-thong-sandal-dress-formula",
+    "title": "Thong Sandal and Dress Formula",
+    "description": "Minimal thong sandals are pairing with summer dresses across city outfits, giving casual looks a cleaner and more flexible 2026 shape.",
+    "forecast_year": 2026,
+    "confidence_score": 83,
+    "season": "summer",
+    "forecast_image_url": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=800",
+    "source_url": "https://www.marieclaire.com/fashion/thong-sandals-and-dresses-summer-2026/",
+    "created_at": "2026-07-16T00:00:00.000Z"
+  },
+  {
+    "id": "trend-latest-2026-sustainable-silk-linen-capsule",
+    "title": "Sustainable Silk and Linen Capsule",
+    "description": "Affordable silk, linen, cotton, sandals, shirt dresses, and summer travel basics are reinforcing a practical capsule wardrobe built around breathable materials.",
+    "forecast_year": 2026,
+    "confidence_score": 84,
+    "season": "summer",
+    "forecast_image_url": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800",
+    "source_url": "https://www.realsimple.com/quince-summer-capsule-wardrobe-stylist-approved-picks-july-2026-12015685",
+    "created_at": "2026-07-16T00:00:00.000Z"
+  }
+]

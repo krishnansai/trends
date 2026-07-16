@@ -14,16 +14,27 @@ const garmentFiles = [
   "garments-sourced.json",
   "garments-visuals.json",
   "garments-womenswear.json",
-  "garments-launch-pack.json"
+  "garments-launch-pack.json",
+  "garments-context-expansion.json",
+  "garments-latest-trends-2026.json",
+  "garments-photo-profile-2026.json"
 ];
 const garmentCsvFiles = ["garments-pro-launch.csv"];
-const trendFiles = ["trends.json", "trends-sourced.json", "trends-launch-pack.json", "trends-pro-launch.json"];
+const trendFiles = [
+  "trends.json",
+  "trends-sourced.json",
+  "trends-launch-pack.json",
+  "trends-pro-launch.json",
+  "trends-latest-2026.json",
+  "trends-photo-profile-2026.json"
+];
 const groomingFiles = [
   "grooming-seed.json",
   "grooming-seed-v2.json",
   "grooming-launch-pack.json",
   "grooming-pro-launch.json"
 ];
+const stylistRuleFiles = ["stylist-filter-rules.json"];
 
 const demographics = new Set(["menswear", "womenswear", "unisex"]);
 const garmentCategories = new Set([
@@ -58,6 +69,7 @@ const occasions = new Set([
   "travel"
 ]);
 const seasons = new Set(["summer", "winter", "all-season"]);
+const ageBands = new Set(["young_adult", "adult", "mature"]);
 const faceShapes = new Set(["oval", "square", "round", "heart", "rectangle", "diamond", "oblong"]);
 const groomingCategories = new Set(["hairstyle", "beard"]);
 
@@ -176,6 +188,10 @@ function isHttpUrl(value: unknown): value is string {
   return isString(value) && /^https?:\/\//i.test(value);
 }
 
+function isImageRef(value: unknown): value is string {
+  return isHttpUrl(value) || (isString(value) && value.startsWith("/images/"));
+}
+
 function isHex(value: unknown): value is string {
   return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
 }
@@ -213,8 +229,8 @@ function validateGarment(fileName: string, item: JsonRecord) {
     }
   }
 
-  if (!isHttpUrl(item.image_url)) {
-    errors.push(`${fileName}/${id}: image_url must be an http(s) URL`);
+  if (!isImageRef(item.image_url)) {
+    errors.push(`${fileName}/${id}: image_url must be an http(s) URL or /images/ asset`);
   }
 
   if (!isHttpUrl(item.source_url)) {
@@ -267,8 +283,8 @@ function validateTrend(fileName: string, item: JsonRecord) {
     errors.push(`${fileName}/${id}: confidence_score must be 0-100`);
   }
 
-  if (!isHttpUrl(item.forecast_image_url)) {
-    errors.push(`${fileName}/${id}: forecast_image_url must be an http(s) URL`);
+  if (!isImageRef(item.forecast_image_url)) {
+    errors.push(`${fileName}/${id}: forecast_image_url must be an http(s) URL or /images/ asset`);
   }
 
   if (!isHttpUrl(item.source_url)) {
@@ -293,8 +309,8 @@ function validateGrooming(fileName: string, item: JsonRecord) {
     errors.push(`${fileName}/${id}: invalid category`);
   }
 
-  if (!isHttpUrl(item.image_url)) {
-    errors.push(`${fileName}/${id}: image_url must be an http(s) URL`);
+  if (!isImageRef(item.image_url)) {
+    errors.push(`${fileName}/${id}: image_url must be an http(s) URL or /images/ asset`);
   }
 
   validateStringArray(fileName, id, "face_shapes", item.face_shapes, faceShapes);
@@ -303,6 +319,51 @@ function validateGrooming(fileName: string, item: JsonRecord) {
   if (!Array.isArray(item.recommended_products) || item.recommended_products.length === 0) {
     errors.push(`${fileName}/${id}: recommended_products must be a non-empty array`);
   }
+}
+
+function validateWeightObject(
+  fileName: string,
+  id: string,
+  field: string,
+  value: unknown,
+  allowedKeys?: Set<string>
+) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    errors.push(`${fileName}/${id}: ${field} must be an object`);
+    return;
+  }
+
+  for (const [key, weight] of Object.entries(value as Record<string, unknown>)) {
+    if (allowedKeys && !allowedKeys.has(key)) {
+      errors.push(`${fileName}/${id}: ${field} contains invalid key "${key}"`);
+    }
+
+    if (typeof weight !== "number" || weight <= 0) {
+      errors.push(`${fileName}/${id}: ${field}.${key} must be a positive number`);
+    }
+  }
+}
+
+function validateStylistRule(fileName: string, item: JsonRecord) {
+  const id = isString(item.id) ? item.id : "missing-id";
+
+  for (const field of ["id", "rationale"]) {
+    if (!isString(item[field])) {
+      errors.push(`${fileName}/${id}: ${field} is required`);
+    }
+  }
+
+  validateStringArray(fileName, id, "demographics", item.demographics, demographics);
+  if (item.age_bands !== undefined) {
+    validateStringArray(fileName, id, "age_bands", item.age_bands, ageBands);
+  }
+  validateStringArray(fileName, id, "occasions", item.occasions, occasions);
+  validateStringArray(fileName, id, "seasons", item.seasons, seasons);
+  validateStringArray(fileName, id, "undertones", item.undertones, new Set(["warm", "cool", "neutral"]));
+  validateStringArray(fileName, id, "face_shapes", item.face_shapes, faceShapes);
+  validateStringArray(fileName, id, "fit_profiles", item.fit_profiles, fitProfiles);
+  validateWeightObject(fileName, id, "category_weights", item.category_weights, garmentCategories);
+  validateWeightObject(fileName, id, "tag_weights", item.tag_weights);
 }
 
 function validateUniqueIds(kind: string, records: JsonRecord[]) {
@@ -341,12 +402,18 @@ const grooming = groomingFiles.flatMap((file) => {
   items.forEach((item) => validateGrooming(file, item));
   return items;
 });
+const stylistRules = stylistRuleFiles.flatMap((file) => {
+  const items = readArray(file);
+  items.forEach((item) => validateStylistRule(file, item));
+  return items;
+});
 
 const allGarments = [...garments, ...csvGarments];
 
 validateUniqueIds("garments", allGarments);
 validateUniqueIds("trends", trends);
 validateUniqueIds("grooming", grooming);
+validateUniqueIds("stylistRules", stylistRules);
 
 const garmentDemographics = allGarments.reduce<Record<string, number>>((counts, item) => {
   const key = String(item.demographic);
@@ -371,6 +438,7 @@ console.log(
       totalGarments: allGarments.length,
       garmentDemographics,
       grooming: grooming.length,
+      stylistRules: stylistRules.length,
       trends: trends.length
     },
     null,

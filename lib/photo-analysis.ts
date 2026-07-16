@@ -1,6 +1,7 @@
-import type { Demographic, FaceShape } from "@/lib/types";
+import type { Demographic } from "@/lib/types";
 import {
   createVisionProfile,
+  type VisionAgeBand,
   type VisionDemographic,
   type VisionFitProfile,
   type VisionProfile,
@@ -23,8 +24,6 @@ type Bounds = {
   minX: number;
   minY: number;
 };
-
-const faceShapes = ["oval", "square", "round", "rectangle", "diamond"] as const satisfies readonly FaceShape[];
 
 const paletteByUndertone: Record<VisionUndertone, [string, string, string]> = {
   cool: ["#111111", "#C7D0D8", "#0057B8"],
@@ -158,8 +157,7 @@ function detectFaceShape(skinSamples: PixelSample[], width: number, height: numb
   const bounds = boundsFor(faceSamples);
 
   if (!bounds || faceSamples.length < 32) {
-    const signal = Math.round(width * 0.7 + height * 0.3 + skinSamples.length);
-    return faceShapes[signal % faceShapes.length] as VisionProfile["detected_face_shape"];
+    return "oval";
   }
 
   const faceWidth = bounds.maxX - bounds.minX + 1;
@@ -258,15 +256,15 @@ function detectFitProfile(
     return subjectWidthRatio > 0.58 ? "relaxed" : "straight";
   }
 
-  if (subjectWidthRatio > 0.72 || foregroundCoverage > 0.42) {
+  if (subjectWidthRatio > 0.76 || foregroundCoverage > 0.46) {
     return "oversized";
   }
 
-  if (subjectWidthRatio > 0.54 || foregroundCoverage > 0.24) {
+  if (subjectWidthRatio > 0.58 || foregroundCoverage > 0.28) {
     return "relaxed";
   }
 
-  if (subjectWidthRatio < 0.34) {
+  if (subjectWidthRatio < 0.32 && foregroundCoverage < 0.2) {
     return "slim";
   }
 
@@ -275,6 +273,20 @@ function detectFitProfile(
 
 function clampDemographic(fallback: Demographic): VisionDemographic {
   return fallback;
+}
+
+function detectAgeBandFromImageSignal(seed: string): VisionAgeBand {
+  const normalizedSeed = seed.toLowerCase();
+
+  if (/(^|[^a-z])(student|college|campus|young|youth|genz)([^a-z]|$)/.test(normalizedSeed)) {
+    return "young_adult";
+  }
+
+  if (/(^|[^a-z])(mature|senior|older|silver|midlife)([^a-z]|$)/.test(normalizedSeed)) {
+    return "mature";
+  }
+
+  return "adult";
 }
 
 export async function analyzeStylistPhoto(
@@ -330,11 +342,12 @@ export async function analyzeStylistPhoto(
       ? "womenswear"
       : /(^|[^a-z])(male|man|men|mens|menswear|boy)([^a-z]|$)/.test(fileSignal)
         ? "menswear"
-        : fileSignal.includes("unisex")
-          ? "unisex"
-          : clampDemographic(fallbackDemographic);
+          : fileSignal.includes("unisex")
+            ? "unisex"
+            : clampDemographic(fallbackDemographic);
 
   return createVisionProfile({
+    age_band: detectAgeBandFromImageSignal(fileSignal),
     demographic,
     detected_face_shape: faceShape,
     primary_color_undertone: undertone,
