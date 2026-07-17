@@ -4,8 +4,11 @@ import {
   createVisionProfile,
   type VisionAgeBand,
   type VisionAnalysis,
+  type VisionBuildAndProportion,
   type VisionDemographic,
   type VisionFitProfile,
+  type VisionGroomingState,
+  type VisionHairstyleVolume,
   type VisionProfile,
   type VisionUndertone
 } from "@/lib/vision";
@@ -463,6 +466,64 @@ function detectAgeBandFromImageSignal(seed: string): VisionAgeBand {
   return "adult";
 }
 
+function detectBuildAndProportion(fitProfile: VisionFitProfile): VisionBuildAndProportion {
+  if (fitProfile === "slim" || fitProfile === "straight") {
+    return "lean_tapered";
+  }
+
+  if (fitProfile === "oversized") {
+    return "relaxed";
+  }
+
+  return "broad_athletic";
+}
+
+function detectGroomingStateFromSignal(seed: string, demographic: VisionDemographic): VisionGroomingState {
+  const normalizedSeed = seed.toLowerCase();
+
+  if (/(^|[^a-z])(full beard|beard|bearded)([^a-z]|$)/.test(normalizedSeed)) {
+    return "full_beard";
+  }
+
+  if (/(^|[^a-z])(stubble|moustache|mustache|shadow)([^a-z]|$)/.test(normalizedSeed)) {
+    return "stubble_heavy_stubble";
+  }
+
+  if (/(^|[^a-z])(clean shaven|clean-shaven|shaved)([^a-z]|$)/.test(normalizedSeed)) {
+    return "clean_shaven";
+  }
+
+  return demographic === "womenswear" ? "clean_shaven" : "stubble_heavy_stubble";
+}
+
+function detectHairstyleVolume(
+  skinSamples: PixelSample[],
+  foregroundSamples: PixelSample[],
+  width: number,
+  height: number
+): VisionHairstyleVolume {
+  const faceBounds = boundsFor(skinSamples.filter((sample) => sample.y < height * 0.72));
+  const foregroundBounds = boundsFor(foregroundSamples);
+
+  if (!faceBounds || !foregroundBounds) {
+    return "medium";
+  }
+
+  const headTop = faceBounds.minY;
+  const visibleHairSpace = Math.max(0, headTop - foregroundBounds.minY);
+  const normalizedVolume = visibleHairSpace / Math.max(height, 1);
+
+  if (normalizedVolume > 0.13 || foregroundBounds.maxX - foregroundBounds.minX > width * 0.7) {
+    return "high";
+  }
+
+  if (normalizedVolume < 0.045) {
+    return "low";
+  }
+
+  return "medium";
+}
+
 function scoreBrowserConfidence(
   skinSamples: PixelSample[],
   foregroundSamples: PixelSample[],
@@ -593,6 +654,9 @@ export async function analyzeStylistPhoto(
           ? "unisex"
           : clampDemographic(fallbackDemographic);
   const ageBand = detectAgeBandFromImageSignal(fileSignal);
+  const buildAndProportion = detectBuildAndProportion(fitProfile);
+  const groomingState = detectGroomingStateFromSignal(fileSignal, demographic);
+  const hairstyleVolume = detectHairstyleVolume(skinSamples, foregroundSamples, width, height);
   const profile = createVisionProfile({
     age_band: ageBand,
     demographic,
@@ -614,12 +678,17 @@ export async function analyzeStylistPhoto(
           `Avoid pieces outside the ${demographic} wardrobe profile unless they are clearly unisex.`,
           `Avoid colors that fight the detected photo palette ${dominantPalette.join(", ")}.`
         ],
+    build_and_proportion: buildAndProportion,
+    dominant_color: dominantPalette[0],
+    extracted_palette: dominantPalette,
+    grooming_state: groomingState,
     grooming_strategy:
       wrongPhotoSignal
         ? "Grooming cannot be read from this image because no clear face profile was detected."
         : demographic === "womenswear"
         ? `${faceShape} face structure works best with balanced face-framing hair and controlled volume.`
         : `${faceShape} face structure works best with grooming that sharpens the jaw and keeps side volume controlled.`,
+    hairstyle_volume: hairstyleVolume,
     outfit_strategy: wrongPhotoSignal
       ? "This image is not suitable for a personal styling scan. Upload a clear portrait or full-body outfit photo."
       : `Prioritize ${fitProfile} ${demographic} pieces that match the detected photo palette ${dominantPalette.join(", ")}, then filter by the selected occasion and season.`,

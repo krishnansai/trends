@@ -9,11 +9,14 @@ export type VisionDemographic = Demographic;
 export type VisionAgeBand = "young_adult" | "adult" | "mature";
 export type VisionUndertone = "warm" | "cool" | "neutral";
 export type VisionFitProfile = Extract<FitProfile, "relaxed" | "oversized" | "straight" | "slim">;
+export type VisionBuildAndProportion = "broad_athletic" | "lean_tapered" | "relaxed";
+export type VisionGroomingState = "clean_shaven" | "stubble_heavy_stubble" | "full_beard";
+export type VisionHairstyleVolume = "low" | "medium" | "high";
 
 export type VisionProfile = {
   age_band: VisionAgeBand;
   demographic: VisionDemographic;
-  detected_face_shape: Exclude<FaceShape, "heart" | "oblong">;
+  detected_face_shape: Exclude<FaceShape, "heart">;
   primary_color_undertone: VisionUndertone;
   suggested_fit_profile: VisionFitProfile;
   recommended_color_palette: [string, string, string];
@@ -22,12 +25,17 @@ export type VisionProfile = {
 export type VisionAnalysis = VisionProfile & {
   analysis_confidence: number;
   avoid_notes: string[];
+  build_and_proportion: VisionBuildAndProportion;
+  dominant_color: string;
+  extracted_palette: [string, string, string];
+  grooming_state: VisionGroomingState;
   grooming_strategy: string;
+  hairstyle_volume: VisionHairstyleVolume;
   outfit_strategy: string;
   visible_cues: string[];
 };
 
-export const VISION_IMAGE_ANALYZER_SYSTEM_PROMPT = `You are the core computer vision engine for a premium fashion and grooming platform. Analyze the uploaded user image and return a strict, minified JSON object. Do not include any markdown formatting, code blocks, or conversational text. Only return the JSON object.
+export const VISION_IMAGE_ANALYZER_SYSTEM_PROMPT = `You are the core computer vision engine for a premium fashion and grooming platform. Act like a master tailor, color analyst, and grooming expert. Analyze the uploaded user image and return a strict, minified JSON object. Do not include any markdown formatting, code blocks, or conversational text. Only return the JSON object.
 
 Analyze and extract these exact keys:
 
@@ -35,13 +43,25 @@ demographic: Value must strictly be one of "menswear", "womenswear", or "unisex"
 
 age_band: Choose exactly one broad styling band from: ["young_adult", "adult", "mature"]. Do not estimate exact age. Use this only as a fashion styling band based on visual presentation; if uncertain, return "adult".
 
-detected_face_shape: Choose exactly one from: ["oval", "square", "round", "rectangle", "diamond"]. Base this on their jawline, cheekbones, and facial proportions.
+detected_face_shape: Choose exactly one from: ["oval", "square", "round", "diamond", "oblong", "rectangle"]. Base this on jawline, cheekbones, and facial proportions. Use "oblong" for long face structures and "rectangle" for squared long structures.
 
-primary_color_undertone: Analyze the user's skin, hair, and existing clothing tones. Classify as "warm", "cool", or "neutral".
+grooming_state: Choose exactly one from: ["clean_shaven", "stubble_heavy_stubble", "full_beard"]. Use visible facial-hair density only.
+
+hairstyle_volume: Choose exactly one from: ["low", "medium", "high"]. Use visible hair height and side volume.
+
+build_and_proportion: Choose exactly one from: ["broad_athletic", "lean_tapered", "relaxed"]. Use shoulder width, torso balance, and garment drape, not identity.
+
+primary_color_undertone: Analyze the user's skin, hair, and existing clothing tones. Classify as "warm", "cool", or "neutral". If client-side swatches are provided in the fallback profile, cross-check against dominant_color and extracted_palette before deciding.
 
 suggested_fit_profile: Based on their physical frame, determine if they look best in "relaxed", "oversized", "straight", or "slim" garments.
 
+Body proportion note: If the application supplies a separate Body Architecture selector, treat that selector as a hard styling context. Do not recommend overly cropped tops or ultra-slim trousers for broad/athletic frames; prioritize texture and layering for lean frames; prioritize soft structure and clean drape for relaxed frames.
+
 recommended_color_palette: Provide an array of 3 hex color codes that would look exceptionally flattering on them based on their undertone.
+
+dominant_color: One exact hex code for the dominant visible outfit color. If client-side swatches are provided, use the closest swatch from fallback.dominant_color.
+
+extracted_palette: Array of exactly 3 hex color codes from the visible uploaded image. If client-side swatches are provided, preserve fallback.extracted_palette unless the image clearly contradicts it.
 
 analysis_confidence: Number from 0 to 100 based on image clarity, visible face, visible clothing, and lighting. Use lower confidence when the image is blurry, cropped, dark, or face/body cues are unclear.
 
@@ -56,13 +76,16 @@ grooming_strategy: One concise sentence explaining the haircut/beard direction b
 avoid_notes: Array of 2 concise notes about what to avoid, based on fit, color, or context mismatch.
 
 Example JSON Output:
-{"demographic":"womenswear","age_band":"adult","detected_face_shape":"oval","primary_color_undertone":"warm","suggested_fit_profile":"relaxed","recommended_color_palette":["#1A1A1A","#4F5D4E","#D8C3A5"],"analysis_confidence":82,"visible_cues":["clear face outline","warm skin and clothing tones","relaxed shoulder line"],"outfit_strategy":"Use relaxed warm neutrals with structured texture so the outfit looks polished without becoming stiff.","grooming_strategy":"Oval face shape can support soft layers or clean face-framing hair with balanced volume.","avoid_notes":["Avoid very cold neon colors near the face.","Avoid overly tight fits when relaxed structure is the better proportion."]}`;
+{"demographic":"womenswear","age_band":"adult","detected_face_shape":"oval","grooming_state":"clean_shaven","hairstyle_volume":"medium","build_and_proportion":"relaxed","primary_color_undertone":"warm","suggested_fit_profile":"relaxed","dominant_color":"#6B705C","extracted_palette":["#6B705C","#D8C3A5","#1A1A1A"],"recommended_color_palette":["#1A1A1A","#4F5D4E","#D8C3A5"],"analysis_confidence":82,"visible_cues":["clear face outline","warm skin and clothing tones","relaxed shoulder line"],"outfit_strategy":"Use relaxed warm neutrals with structured texture so the outfit looks polished without becoming stiff.","grooming_strategy":"Oval face shape can support soft layers or clean face-framing hair with balanced volume.","avoid_notes":["Avoid very cold neon colors near the face.","Avoid overly tight fits when relaxed structure is the better proportion."]}`;
 
 export const visionAgeBands = ["young_adult", "adult", "mature"] as const satisfies readonly VisionAgeBand[];
 export const visionDemographics = ["menswear", "womenswear", "unisex"] as const satisfies readonly VisionDemographic[];
-export const visionFaceShapes = ["oval", "square", "round", "rectangle", "diamond"] as const satisfies readonly VisionProfile["detected_face_shape"][];
+export const visionFaceShapes = ["oval", "square", "round", "rectangle", "diamond", "oblong"] as const satisfies readonly VisionProfile["detected_face_shape"][];
 export const visionUndertones = ["warm", "cool", "neutral"] as const satisfies readonly VisionUndertone[];
 export const visionFitProfiles = ["relaxed", "oversized", "straight", "slim"] as const satisfies readonly VisionFitProfile[];
+export const visionBuildAndProportions = ["broad_athletic", "lean_tapered", "relaxed"] as const satisfies readonly VisionBuildAndProportion[];
+export const visionGroomingStates = ["clean_shaven", "stubble_heavy_stubble", "full_beard"] as const satisfies readonly VisionGroomingState[];
+export const visionHairstyleVolumes = ["low", "medium", "high"] as const satisfies readonly VisionHairstyleVolume[];
 
 const undertonePalettes: Record<VisionUndertone, [string, string, string]> = {
   cool: ["#111111", "#C7D0D8", "#0057B8"],
@@ -90,6 +113,18 @@ function isVisionFitProfile(value: unknown): value is VisionFitProfile {
   return typeof value === "string" && visionFitProfiles.includes(value as VisionFitProfile);
 }
 
+function isVisionBuildAndProportion(value: unknown): value is VisionBuildAndProportion {
+  return typeof value === "string" && visionBuildAndProportions.includes(value as VisionBuildAndProportion);
+}
+
+function isVisionGroomingState(value: unknown): value is VisionGroomingState {
+  return typeof value === "string" && visionGroomingStates.includes(value as VisionGroomingState);
+}
+
+function isVisionHairstyleVolume(value: unknown): value is VisionHairstyleVolume {
+  return typeof value === "string" && visionHairstyleVolumes.includes(value as VisionHairstyleVolume);
+}
+
 function isHexColor(value: unknown): value is string {
   return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
 }
@@ -100,6 +135,116 @@ function normalizePalette(value: unknown, undertone: VisionUndertone): [string, 
   }
 
   return undertonePalettes[undertone];
+}
+
+function normalizeHexColor(value: unknown, fallback: string) {
+  return isHexColor(value) ? value.toUpperCase() : fallback;
+}
+
+function normalizeUndertone(value: unknown): VisionUndertone | null {
+  if (isVisionUndertone(value)) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.toLowerCase();
+
+  if (normalized.includes("warm") || normalized.includes("golden")) {
+    return "warm";
+  }
+
+  if (normalized.includes("cool") || normalized.includes("pink")) {
+    return "cool";
+  }
+
+  if (normalized.includes("neutral") || normalized.includes("olive")) {
+    return "neutral";
+  }
+
+  return null;
+}
+
+function normalizeBuildAndProportion(value: unknown, suggestedFitProfile: VisionFitProfile): VisionBuildAndProportion {
+  if (isVisionBuildAndProportion(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.toLowerCase();
+
+    if (normalized.includes("broad") || normalized.includes("athletic")) {
+      return "broad_athletic";
+    }
+
+    if (normalized.includes("lean") || normalized.includes("taper")) {
+      return "lean_tapered";
+    }
+
+    if (normalized.includes("relaxed") || normalized.includes("soft")) {
+      return "relaxed";
+    }
+  }
+
+  if (suggestedFitProfile === "slim" || suggestedFitProfile === "straight") {
+    return "lean_tapered";
+  }
+
+  if (suggestedFitProfile === "oversized") {
+    return "relaxed";
+  }
+
+  return "broad_athletic";
+}
+
+function normalizeGroomingState(value: unknown, demographic: VisionDemographic): VisionGroomingState {
+  if (isVisionGroomingState(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.toLowerCase();
+
+    if (normalized.includes("full") && normalized.includes("beard")) {
+      return "full_beard";
+    }
+
+    if (normalized.includes("stubble") || normalized.includes("heavy")) {
+      return "stubble_heavy_stubble";
+    }
+
+    if (normalized.includes("clean")) {
+      return "clean_shaven";
+    }
+  }
+
+  return demographic === "womenswear" ? "clean_shaven" : "stubble_heavy_stubble";
+}
+
+function normalizeHairstyleVolume(value: unknown, fallback: VisionHairstyleVolume = "medium"): VisionHairstyleVolume {
+  if (isVisionHairstyleVolume(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.toLowerCase();
+
+    if (normalized.includes("high") || normalized.includes("volume")) {
+      return "high";
+    }
+
+    if (normalized.includes("low") || normalized.includes("short")) {
+      return "low";
+    }
+
+    if (normalized.includes("medium")) {
+      return "medium";
+    }
+  }
+
+  return fallback;
 }
 
 function normalizeConfidence(value: unknown) {
@@ -134,8 +279,8 @@ function normalizeFaceShape(value: unknown): VisionProfile["detected_face_shape"
     return value;
   }
 
-  if (isFaceShape(value) && value === "oblong") {
-    return "rectangle";
+  if (isFaceShape(value) && value !== "heart") {
+    return value;
   }
 
   return "oval";
@@ -150,6 +295,7 @@ export function createVisionProfile(input: {
   primary_color_undertone?: unknown;
   profileId?: unknown;
   recommended_color_palette?: unknown;
+  skinUndertone?: unknown;
   suggested_fit_profile?: unknown;
 }): VisionProfile {
   const age_band = isVisionAgeBand(input.age_band)
@@ -158,11 +304,11 @@ export function createVisionProfile(input: {
       ? input.ageBand
       : "adult";
   const demographic = isVisionDemographic(input.demographic) ? input.demographic : "menswear";
-  const primary_color_undertone = isVisionUndertone(input.primary_color_undertone)
-    ? input.primary_color_undertone
-    : isVisionUndertone(input.profileId)
-      ? input.profileId
-      : "neutral";
+  const primary_color_undertone =
+    normalizeUndertone(input.primary_color_undertone) ??
+    normalizeUndertone(input.skinUndertone) ??
+    normalizeUndertone(input.profileId) ??
+    "neutral";
   const suggested_fit_profile = isVisionFitProfile(input.suggested_fit_profile)
     ? input.suggested_fit_profile
     : "relaxed";
@@ -188,6 +334,10 @@ function getDefaultVisibleCues(profile: VisionProfile) {
   ];
 }
 
+function getDefaultExtractedPalette(profile: VisionProfile): [string, string, string] {
+  return profile.recommended_color_palette;
+}
+
 function getDefaultOutfitStrategy(profile: VisionProfile) {
   const wardrobe = profile.demographic === "unisex" ? "unisex wardrobe" : profile.demographic;
   return `Use ${profile.suggested_fit_profile} ${wardrobe} pieces with ${profile.primary_color_undertone} palette control so the outfit matches the visible profile instead of generic trends.`;
@@ -211,20 +361,48 @@ function getDefaultAvoidNotes(profile: VisionProfile) {
 export function createVisionAnalysis(input: Parameters<typeof createVisionProfile>[0] & {
   analysis_confidence?: unknown;
   avoid_notes?: unknown;
+  build_and_proportion?: unknown;
+  buildAndProportion?: unknown;
+  dominant_color?: unknown;
+  dominantColor?: unknown;
+  extracted_palette?: unknown;
+  grooming_state?: unknown;
+  groomingState?: unknown;
   grooming_strategy?: unknown;
+  hairstyle_volume?: unknown;
+  hairstyleVolume?: unknown;
   outfit_strategy?: unknown;
+  palette?: unknown;
   visible_cues?: unknown;
 }): VisionAnalysis {
   const profile = createVisionProfile(input);
+  const extracted_palette = normalizePalette(
+    input.extracted_palette ?? input.palette,
+    profile.primary_color_undertone
+  );
 
   return {
     ...profile,
     analysis_confidence: normalizeConfidence(input.analysis_confidence),
     avoid_notes: normalizeStringArray(input.avoid_notes, getDefaultAvoidNotes(profile), 2),
+    build_and_proportion: normalizeBuildAndProportion(
+      input.build_and_proportion ?? input.buildAndProportion,
+      profile.suggested_fit_profile
+    ),
+    dominant_color: normalizeHexColor(
+      input.dominant_color ?? input.dominantColor,
+      extracted_palette[0] ?? getDefaultExtractedPalette(profile)[0]
+    ),
+    extracted_palette,
+    grooming_state: normalizeGroomingState(
+      input.grooming_state ?? input.groomingState,
+      profile.demographic
+    ),
     grooming_strategy: normalizeText(
       input.grooming_strategy,
       getDefaultGroomingStrategy(profile)
     ),
+    hairstyle_volume: normalizeHairstyleVolume(input.hairstyle_volume ?? input.hairstyleVolume),
     outfit_strategy: normalizeText(input.outfit_strategy, getDefaultOutfitStrategy(profile)),
     visible_cues: normalizeStringArray(input.visible_cues, getDefaultVisibleCues(profile), 3)
   };
@@ -240,10 +418,18 @@ export function parseVisionProfile(value: unknown, fallback: VisionProfile): Vis
   return createVisionProfile({
     age_band: payload.age_band ?? fallback.age_band,
     demographic: payload.demographic ?? fallback.demographic,
-    detected_face_shape: payload.detected_face_shape ?? fallback.detected_face_shape,
-    primary_color_undertone: payload.primary_color_undertone ?? fallback.primary_color_undertone,
+    detected_face_shape:
+      payload.detected_face_shape ??
+      (payload as { faceShape?: unknown }).faceShape ??
+      fallback.detected_face_shape,
+    primary_color_undertone:
+      payload.primary_color_undertone ??
+      (payload as { skinUndertone?: unknown }).skinUndertone ??
+      fallback.primary_color_undertone,
     recommended_color_palette:
-      payload.recommended_color_palette ?? fallback.recommended_color_palette,
+      payload.recommended_color_palette ??
+      (payload as { palette?: unknown }).palette ??
+      fallback.recommended_color_palette,
     suggested_fit_profile: payload.suggested_fit_profile ?? fallback.suggested_fit_profile
   });
 }
@@ -259,11 +445,37 @@ export function parseVisionAnalysis(value: unknown, fallback: VisionAnalysis): V
     age_band: payload.age_band ?? fallback.age_band,
     analysis_confidence: payload.analysis_confidence ?? fallback.analysis_confidence,
     avoid_notes: payload.avoid_notes ?? fallback.avoid_notes,
+    build_and_proportion:
+      payload.build_and_proportion ??
+      (payload as { buildAndProportion?: unknown }).buildAndProportion ??
+      fallback.build_and_proportion,
     demographic: payload.demographic ?? fallback.demographic,
-    detected_face_shape: payload.detected_face_shape ?? fallback.detected_face_shape,
+    detected_face_shape:
+      payload.detected_face_shape ??
+      (payload as { faceShape?: unknown }).faceShape ??
+      fallback.detected_face_shape,
+    dominant_color:
+      payload.dominant_color ??
+      (payload as { dominantColor?: unknown }).dominantColor ??
+      fallback.dominant_color,
+    extracted_palette:
+      payload.extracted_palette ??
+      (payload as { palette?: unknown }).palette ??
+      fallback.extracted_palette,
+    grooming_state:
+      payload.grooming_state ??
+      (payload as { groomingState?: unknown }).groomingState ??
+      fallback.grooming_state,
     grooming_strategy: payload.grooming_strategy ?? fallback.grooming_strategy,
+    hairstyle_volume:
+      payload.hairstyle_volume ??
+      (payload as { hairstyleVolume?: unknown }).hairstyleVolume ??
+      fallback.hairstyle_volume,
     outfit_strategy: payload.outfit_strategy ?? fallback.outfit_strategy,
-    primary_color_undertone: payload.primary_color_undertone ?? fallback.primary_color_undertone,
+    primary_color_undertone:
+      payload.primary_color_undertone ??
+      (payload as { skinUndertone?: unknown }).skinUndertone ??
+      fallback.primary_color_undertone,
     recommended_color_palette:
       payload.recommended_color_palette ?? fallback.recommended_color_palette,
     suggested_fit_profile: payload.suggested_fit_profile ?? fallback.suggested_fit_profile,

@@ -18,6 +18,14 @@ import {
 } from "@/lib/types";
 
 export type StyleProfileId = "warm" | "cool" | "neutral";
+export type BodyArchitecture = "tall_broad" | "athletic_tapered" | "lean_slim" | "curvy_relaxed";
+
+export const bodyArchitectureLabels: Record<BodyArchitecture, string> = {
+  athletic_tapered: "Athletic / Tapered",
+  curvy_relaxed: "Curvy / Relaxed",
+  lean_slim: "Lean / Slim",
+  tall_broad: "Tall & Broad"
+};
 
 export type StyleProfile = {
   id: StyleProfileId;
@@ -33,6 +41,7 @@ export type StyleProfile = {
 export type OutfitRecommendation = {
   id: string;
   title: string;
+  fitReason: string;
   garment: Garment;
   supportPieces: string[];
   trendSignal: string;
@@ -64,6 +73,7 @@ type StylingContext = {
 
 type RecommendationScoringInput = {
   ageBand?: VisionAgeBand;
+  bodyArchitecture?: BodyArchitecture;
   faceShape?: FaceShape;
   recommendedColorPalette?: string[];
   suggestedFitProfile?: FitProfile;
@@ -201,6 +211,12 @@ function normalize(value: string) {
   return value.toLowerCase();
 }
 
+function searchableGarmentText(garment: Garment) {
+  return normalize(
+    [garment.title, garment.description, garment.category, garment.fit_profile, ...garment.style_tags].join(" ")
+  );
+}
+
 function titleCase(value: string) {
   return value.replace(/\b\w/g, (char) => char.toUpperCase());
 }
@@ -321,6 +337,131 @@ function scoreFitMatch(garment: Garment, preferredFit?: FitProfile) {
   }
 
   return Math.max(10, 28 - index * 6);
+}
+
+function scoreKeywordMatches(searchable: string, keywords: string[], points: number, cap: number) {
+  const score = keywords.reduce((total, keyword) => {
+    return searchable.includes(normalize(keyword)) ? total + points : total;
+  }, 0);
+
+  return Math.min(score, cap);
+}
+
+function scoreBodyArchitectureMatch(garment: Garment, bodyArchitecture?: BodyArchitecture) {
+  if (!bodyArchitecture) {
+    return 0;
+  }
+
+  const searchable = searchableGarmentText(garment);
+
+  if (bodyArchitecture === "tall_broad" || bodyArchitecture === "athletic_tapered") {
+    const structureBoost = scoreKeywordMatches(
+      searchable,
+      [
+        "boxy",
+        "heavyweight",
+        "gsm",
+        "structured",
+        "relaxed taper",
+        "relaxed",
+        "straight",
+        "drop shoulder",
+        "dropped shoulders",
+        "wide-leg",
+        "pleated"
+      ],
+      8,
+      48
+    );
+    const categoryBoost = garment.category === "outerwear" || garment.category === "tops" || garment.category === "bottoms" ? 10 : 0;
+    const clingPenalty = scoreKeywordMatches(searchable, ["skinny", "clingy", "cropped", "ultra slim"], 16, 34);
+
+    return structureBoost + categoryBoost - clingPenalty;
+  }
+
+  if (bodyArchitecture === "lean_slim") {
+    const densityBoost = scoreKeywordMatches(
+      searchable,
+      [
+        "layer",
+        "layering",
+        "textured",
+        "texture",
+        "knit",
+        "corduroy",
+        "structured shoulder",
+        "overshirt",
+        "jacket",
+        "wool",
+        "cable",
+        "boxy"
+      ],
+      8,
+      50
+    );
+    const overwhelmPenalty = scoreKeywordMatches(searchable, ["balloon", "very oversized", "extra wide"], 12, 24);
+
+    return densityBoost - overwhelmPenalty;
+  }
+
+  const drapeBoost = scoreKeywordMatches(
+    searchable,
+    [
+      "relaxed",
+      "drape",
+      "draped",
+      "wide-leg",
+      "straight",
+      "soft",
+      "stretch",
+      "fluid",
+      "wrap",
+      "a-line",
+      "oversized"
+    ],
+    8,
+    52
+  );
+  const clingPenalty = scoreKeywordMatches(searchable, ["bodycon", "skinny", "clingy", "ultra slim"], 14, 34);
+
+  return drapeBoost - clingPenalty;
+}
+
+export function getBodyArchitectureFitReason(
+  garment: Garment,
+  bodyArchitecture: BodyArchitecture = "athletic_tapered"
+) {
+  const searchable = searchableGarmentText(garment);
+
+  if (bodyArchitecture === "tall_broad") {
+    if (/(boxy|heavyweight|structured|dropped shoulders|drop shoulder|straight|wide-leg)/.test(searchable)) {
+      return "Structured volume balances height and shoulder width without making the outfit cling.";
+    }
+
+    return "Clean proportions keep a taller or broader frame balanced from shoulder to hem.";
+  }
+
+  if (bodyArchitecture === "athletic_tapered") {
+    if (/(relaxed|straight|taper|pleated|boxy|structured)/.test(searchable)) {
+      return "Room through the shoulder and thigh keeps the athletic line sharp without pulling tight.";
+    }
+
+    return "The silhouette keeps definition while avoiding overly slim proportions.";
+  }
+
+  if (bodyArchitecture === "lean_slim") {
+    if (/(texture|textured|knit|corduroy|wool|layer|overshirt|jacket|boxy)/.test(searchable)) {
+      return "Texture and light structure add visual density without overwhelming a lean frame.";
+    }
+
+    return "The cleaner line adds shape while staying light enough for a slimmer frame.";
+  }
+
+  if (/(relaxed|drape|draped|wide-leg|straight|soft|stretch|fluid|wrap|a-line)/.test(searchable)) {
+    return "A relaxed, fluid cut gives movement while keeping the silhouette clean.";
+  }
+
+  return "The fit avoids harsh cling and keeps the profile balanced.";
 }
 
 function scoreAgeBandMatch(garment: Garment, ageBand?: VisionAgeBand) {
@@ -612,6 +753,10 @@ export function isStyleProfileId(value: unknown): value is StyleProfileId {
   return typeof value === "string" && styleProfiles.some((profile) => profile.id === value);
 }
 
+export function isBodyArchitecture(value: unknown): value is BodyArchitecture {
+  return typeof value === "string" && value in bodyArchitectureLabels;
+}
+
 export function detectDemographicFromImageSignal(seed: string, fallback: Demographic): Demographic {
   const normalizedSeed = normalize(seed);
 
@@ -737,6 +882,7 @@ export function buildStylistRecommendations(
         scoreGarment(garment, profile) +
         scoreContext(garment, context) +
         scoreAgeBandMatch(garment, scoringInput.ageBand) +
+        scoreBodyArchitectureMatch(garment, scoringInput.bodyArchitecture) +
         scoreFitMatch(garment, scoringInput.suggestedFitProfile) +
         scorePaletteMatch(garment, scoringInput.recommendedColorPalette) +
         scoreJsonFilterRules(garment, demographic, profile.id, context, scoringInput)
@@ -747,6 +893,7 @@ export function buildStylistRecommendations(
     .map(({ garment, score }, index) => ({
       id: `${profile.id}-${garment.id}`,
       title: garment.title || `${titleCase(garment.style_tags[0] ?? garment.category)} Outfit`,
+      fitReason: getBodyArchitectureFitReason(garment, scoringInput.bodyArchitecture),
       garment,
       score,
       supportPieces: supportPiecesForContext(demographic, profile.id, index, context),

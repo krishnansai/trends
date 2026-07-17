@@ -1,28 +1,22 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowUpRight,
   Check,
-  Loader2,
-  Palette,
   RotateCcw,
-  Ruler,
-  Scissors,
-  ShieldCheck,
   Sparkles,
   Upload,
-  UserRound,
   Wand2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { ARCHIVE_END_YEAR } from "@/lib/archive-window";
 import { analyzeStylistPhoto } from "@/lib/photo-analysis";
 import {
+  bodyArchitectureLabels,
   getStyleProfile,
+  type BodyArchitecture,
   type GroomingRecommendation,
   type GroomingRecommendationSet,
   type OutfitRecommendation,
@@ -31,9 +25,6 @@ import {
 import type { Demographic, FaceShape, StylingOccasion, StylingSeason } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
-  createVisionAnalysis,
-  createVisionProfile,
-  type VisionAgeBand,
   type VisionAnalysis,
   type VisionDemographic
 } from "@/lib/vision";
@@ -48,14 +39,6 @@ const demographicLabels: Record<Demographic, string> = {
   unisex: "Unisex"
 };
 
-const ageBandLabels: Record<VisionAgeBand, string> = {
-  adult: "Adult",
-  mature: "Mature",
-  young_adult: "Young adult"
-};
-
-const stylistDemographics = ["menswear", "womenswear", "unisex"] as const satisfies readonly VisionDemographic[];
-
 const occasionOptions: { label: string; value: StylingOccasion }[] = [
   { label: "Mall / Street", value: "mall" },
   { label: "Beach / Vacation", value: "beach" },
@@ -69,7 +52,15 @@ const seasonOptions: { label: string; value: StylingSeason }[] = [
   { label: "All-Season", value: "all-season" }
 ];
 
+const scanStatusTexts = [
+  "Reading facial geometry...",
+  "Extracting color palette...",
+  "Mapping proportions...",
+  "Matching archive..."
+];
+
 type RecommendationResponse = {
+  bodyArchitecture: BodyArchitecture;
   contextWarning?: string;
   demographic: VisionDemographic;
   faceShape: FaceShape;
@@ -212,6 +203,18 @@ function getPhotoFeedback(profile: VisionAnalysis): PhotoFeedback {
   ]);
 }
 
+function inferBodyArchitecture(profile: VisionAnalysis): BodyArchitecture {
+  if (profile.build_and_proportion === "lean_tapered") {
+    return "lean_slim";
+  }
+
+  if (profile.build_and_proportion === "relaxed") {
+    return "curvy_relaxed";
+  }
+
+  return profile.suggested_fit_profile === "oversized" ? "tall_broad" : "athletic_tapered";
+}
+
 export function AIPersonalStylist({
   archiveLookCount,
   isUsingSampleData
@@ -224,13 +227,13 @@ export function AIPersonalStylist({
   const [isScanning, setIsScanning] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [profileId, setProfileId] = useState<StyleProfileId>("neutral");
-  const [selectedDemographic, setSelectedDemographic] = useState<VisionDemographic>("menswear");
+  const selectedDemographic: VisionDemographic = "menswear";
   const [selectedOccasion, setSelectedOccasion] = useState<StylingOccasion>("mall");
   const [selectedSeason, setSelectedSeason] = useState<StylingSeason>("summer");
+  const [selectedBodyArchitecture, setSelectedBodyArchitecture] =
+    useState<BodyArchitecture>("athletic_tapered");
   const [detectedDemographic, setDetectedDemographic] = useState<VisionDemographic | null>(null);
   const [detectedFaceShape, setDetectedFaceShape] = useState<FaceShape | null>(null);
-  const [analysisSource, setAnalysisSource] = useState<PhotoAnalysisResponse["source"]>("browser-fallback");
-  const [analysisModel, setAnalysisModel] = useState<string | null>(null);
   const [visionProfile, setVisionProfile] = useState<VisionAnalysis | null>(null);
   const [recommendations, setRecommendations] = useState<OutfitRecommendation[]>([]);
   const [contextWarning, setContextWarning] = useState("");
@@ -240,7 +243,7 @@ export function AIPersonalStylist({
   });
   const [recommendationError, setRecommendationError] = useState("");
   const [photoFeedback, setPhotoFeedback] = useState<PhotoFeedback | null>(null);
-  const [photoSeed, setPhotoSeed] = useState("");
+  const [scanStatusIndex, setScanStatusIndex] = useState(0);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const photoFileRef = useRef<File | null>(null);
   const scanRunRef = useRef(0);
@@ -251,10 +254,8 @@ export function AIPersonalStylist({
     profile.palette[1],
     profile.palette[2]
   ];
-  const analysisSourceLabel =
-    analysisSource === "ollama"
-      ? `Ollama${analysisModel ? ` ${analysisModel}` : ""}`
-      : "Browser analysis";
+  const extractedPalette = visionProfile?.extracted_palette ?? profilePalette;
+  const dominantColor = visionProfile?.dominant_color ?? extractedPalette[0];
   const groomingCards = useMemo<GroomingRecommendation[]>(() => {
     return [grooming.hairstyle, grooming.beard].filter(
       (card): card is GroomingRecommendation => Boolean(card)
@@ -266,6 +267,7 @@ export function AIPersonalStylist({
   const selectedSeasonLabel =
     seasonOptions.find((option) => option.value === selectedSeason)?.label ??
     titleCase(selectedSeason);
+  const selectedBodyArchitectureLabel = bodyArchitectureLabels[selectedBodyArchitecture];
   const wardrobeProfileLabel = detectedDemographic
     ? demographicLabels[detectedDemographic]
     : "Unclassified";
@@ -273,12 +275,6 @@ export function AIPersonalStylist({
   const fitProfileLabel = visionProfile
     ? titleCase(visionProfile.suggested_fit_profile)
     : profile.fitType;
-  const undertoneLabel = visionProfile
-    ? `${titleCase(visionProfile.primary_color_undertone)} undertone`
-    : profile.title;
-  const ageBandLabel = visionProfile ? ageBandLabels[visionProfile.age_band] : "Adult";
-  const analysisConfidence = visionProfile?.analysis_confidence ?? 0;
-
   useEffect(() => {
     return () => {
       if (previewUrl) {
@@ -287,10 +283,23 @@ export function AIPersonalStylist({
     };
   }, [previewUrl]);
 
+  useEffect(() => {
+    if (!isScanning) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setScanStatusIndex((index) => (index + 1) % scanStatusTexts.length);
+    }, 1300);
+
+    return () => window.clearInterval(interval);
+  }, [isScanning]);
+
   async function loadRecommendations(
     nextVisionProfile: VisionAnalysis,
     nextOccasion = selectedOccasion,
-    nextSeason = selectedSeason
+    nextSeason = selectedSeason,
+    nextBodyArchitecture = selectedBodyArchitecture
   ) {
     setRecommendationError("");
 
@@ -301,6 +310,7 @@ export function AIPersonalStylist({
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
+          bodyArchitecture: nextBodyArchitecture,
           occasion: nextOccasion,
           season: nextSeason,
           visionData: nextVisionProfile
@@ -319,6 +329,7 @@ export function AIPersonalStylist({
       setGrooming(data.grooming);
       setProfileId(data.visionData.primary_color_undertone);
       setVisionProfile(data.visionData);
+      setSelectedBodyArchitecture(data.bodyArchitecture);
       setSelectedOccasion(data.occasion);
       setSelectedSeason(data.season);
       setIsReady(true);
@@ -344,9 +355,14 @@ export function AIPersonalStylist({
       formData.append("age_band", fallbackProfile.age_band);
       formData.append("analysis_confidence", String(fallbackProfile.analysis_confidence));
       formData.append("avoid_notes", JSON.stringify(fallbackProfile.avoid_notes));
+      formData.append("build_and_proportion", fallbackProfile.build_and_proportion);
       formData.append("demographic", fallbackProfile.demographic);
       formData.append("detected_face_shape", fallbackProfile.detected_face_shape);
+      formData.append("dominant_color", fallbackProfile.dominant_color);
+      formData.append("extracted_palette", JSON.stringify(fallbackProfile.extracted_palette));
+      formData.append("grooming_state", fallbackProfile.grooming_state);
       formData.append("grooming_strategy", fallbackProfile.grooming_strategy);
+      formData.append("hairstyle_volume", fallbackProfile.hairstyle_volume);
       formData.append("outfit_strategy", fallbackProfile.outfit_strategy);
       formData.append("primary_color_undertone", fallbackProfile.primary_color_undertone);
       formData.append("suggested_fit_profile", fallbackProfile.suggested_fit_profile);
@@ -367,14 +383,10 @@ export function AIPersonalStylist({
       }
 
       const data = (await response.json()) as PhotoAnalysisResponse;
-      setAnalysisSource(data.source);
-      setAnalysisModel(data.model);
 
       return data.visionData;
     } catch (error) {
       console.error(error);
-      setAnalysisSource("browser-fallback");
-      setAnalysisModel(null);
       return fallbackProfile;
     } finally {
       window.clearTimeout(timeout);
@@ -390,11 +402,20 @@ export function AIPersonalStylist({
     setRecommendationError("");
     setPhotoFeedback(null);
     setIsReady(false);
+    setScanStatusIndex(0);
     setIsScanning(true);
 
     try {
       const fallbackVisionProfile = await analyzeStylistPhoto(file, nextPreviewUrl, selectedDemographic);
+      const fallbackBodyArchitecture = inferBodyArchitecture(fallbackVisionProfile);
+      setProfileId(fallbackVisionProfile.primary_color_undertone);
+      setDetectedDemographic(fallbackVisionProfile.demographic);
+      setDetectedFaceShape(fallbackVisionProfile.detected_face_shape);
+      setSelectedBodyArchitecture(fallbackBodyArchitecture);
+      setVisionProfile(fallbackVisionProfile);
+
       const nextVisionProfile = await refinePhotoAnalysis(file, fallbackVisionProfile);
+      const nextBodyArchitecture = inferBodyArchitecture(nextVisionProfile);
 
       if (scanRun !== scanRunRef.current) {
         return;
@@ -403,6 +424,7 @@ export function AIPersonalStylist({
       setProfileId(nextVisionProfile.primary_color_undertone);
       setDetectedDemographic(nextVisionProfile.demographic);
       setDetectedFaceShape(nextVisionProfile.detected_face_shape);
+      setSelectedBodyArchitecture(nextBodyArchitecture);
       setVisionProfile(nextVisionProfile);
 
       const nextPhotoFeedback = getPhotoFeedback(nextVisionProfile);
@@ -417,7 +439,12 @@ export function AIPersonalStylist({
         return;
       }
 
-      await loadRecommendations(nextVisionProfile, selectedOccasion, selectedSeason);
+      await loadRecommendations(
+        nextVisionProfile,
+        selectedOccasion,
+        selectedSeason,
+        nextBodyArchitecture
+      );
     } catch (error) {
       console.error(error);
 
@@ -438,9 +465,7 @@ export function AIPersonalStylist({
     }
   }
 
-  function handleUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-
+  function handleSelectedPhoto(file: File) {
     if (!file) {
       return;
     }
@@ -454,12 +479,10 @@ export function AIPersonalStylist({
       setRecommendationError("");
       setIsReady(false);
       setIsScanning(false);
-      event.target.value = "";
       return;
     }
 
     const nextPreviewUrl = URL.createObjectURL(file);
-    const nextPhotoSeed = `${file.name}-${file.size}-${file.lastModified}`;
 
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
@@ -467,55 +490,56 @@ export function AIPersonalStylist({
 
     setPreviewUrl(nextPreviewUrl);
     setUploadName(file.name);
-    setPhotoSeed(nextPhotoSeed);
     photoFileRef.current = file;
-    event.target.value = "";
     void startScan(file, nextPreviewUrl);
+  }
+
+  function handleUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (file) {
+      handleSelectedPhoto(file);
+    }
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const file = event.dataTransfer.files?.[0];
+
+    if (file) {
+      handleSelectedPhoto(file);
+    }
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
   }
 
   function handleReset() {
     setPreviewUrl("");
     setUploadName("");
-    setPhotoSeed("");
     photoFileRef.current = null;
     scanRunRef.current += 1;
     setIsScanning(false);
     setIsReady(false);
     setProfileId("neutral");
-    setSelectedDemographic("menswear");
     setSelectedOccasion("mall");
     setSelectedSeason("summer");
+    setSelectedBodyArchitecture("athletic_tapered");
     setDetectedDemographic(null);
     setDetectedFaceShape(null);
-    setAnalysisSource("browser-fallback");
-    setAnalysisModel(null);
     setVisionProfile(null);
     setRecommendations([]);
     setContextWarning("");
     setGrooming({ beard: null, hairstyle: null });
     setRecommendationError("");
     setPhotoFeedback(null);
+    setScanStatusIndex(0);
 
     if (photoInputRef.current) {
       photoInputRef.current.value = "";
     }
-  }
-
-  function handleDemographicOverride(nextDemographic: VisionDemographic) {
-    setSelectedDemographic(nextDemographic);
-    setDetectedDemographic(nextDemographic);
-
-    const nextVisionProfile = createVisionAnalysis({
-      ...(visionProfile ?? createVisionProfile({})),
-      demographic: nextDemographic
-    });
-    setVisionProfile(nextVisionProfile);
-    setRecommendations([]);
-    setContextWarning("");
-    setGrooming({ beard: null, hairstyle: null });
-    setIsReady(false);
-    setIsScanning(true);
-    void loadRecommendations(nextVisionProfile, selectedOccasion, selectedSeason);
   }
 
   function handleOccasionChange(nextOccasion: StylingOccasion) {
@@ -530,7 +554,12 @@ export function AIPersonalStylist({
     setGrooming({ beard: null, hairstyle: null });
     setIsReady(false);
     setIsScanning(true);
-    void loadRecommendations(visionProfile, nextOccasion, selectedSeason);
+    void loadRecommendations(
+      visionProfile,
+      nextOccasion,
+      selectedSeason,
+      selectedBodyArchitecture
+    );
   }
 
   function handleSeasonChange(nextSeason: StylingSeason) {
@@ -544,7 +573,12 @@ export function AIPersonalStylist({
     setGrooming({ beard: null, hairstyle: null });
     setIsReady(false);
     setIsScanning(true);
-    void loadRecommendations(visionProfile, selectedOccasion, nextSeason);
+    void loadRecommendations(
+      visionProfile,
+      selectedOccasion,
+      nextSeason,
+      selectedBodyArchitecture
+    );
   }
 
   return (
@@ -579,32 +613,16 @@ export function AIPersonalStylist({
           </div>
 
           <div className="mt-6">
-            <div className="mb-5">
-              <Label>Wardrobe profile</Label>
-              <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                {stylistDemographics.map((demographic) => (
-                  <Button
-                    key={demographic}
-                    type="button"
-                    variant={selectedDemographic === demographic ? "default" : "outline"}
-                    size="sm"
-                    aria-pressed={selectedDemographic === demographic}
-                    onClick={() => setSelectedDemographic(demographic)}
-                  >
-                    {demographicLabels[demographic]}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
             <div
               className={cn(
-                "relative mt-3 flex min-h-[420px] w-full cursor-pointer flex-col items-center justify-center overflow-hidden border border-dashed border-[#BDAE9A] bg-[#F6F0E6] p-5 text-center transition-all duration-300 hover:border-[#7B5637] hover:bg-[#F0E5D6] focus-within:outline-none focus-within:ring-2 focus-within:ring-[#8A6A4F]/25",
-                previewUrl ? "border-solid border-[#D8CCBB] bg-white" : "",
+                "relative flex min-h-[500px] w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-md border border-dashed border-[#BDAE9A] bg-[#F8F3EB] p-5 text-center transition-all duration-300 hover:border-[#7B5637] hover:bg-[#F3E8DA] focus-within:outline-none focus-within:ring-2 focus-within:ring-[#8A6A4F]/25",
+                previewUrl ? "border-solid border-[#D8CCBB] bg-white p-3 shadow-sm" : "",
                 isScanning ? "pointer-events-none cursor-wait" : ""
               )}
               aria-label={previewUrl ? "Change styling profile photo" : "Select styling profile photo"}
               aria-disabled={isScanning}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
             >
               <input
                 id="stylist-photo"
@@ -624,45 +642,58 @@ export function AIPersonalStylist({
                 <img
                   src={previewUrl}
                   alt="Uploaded styling profile"
-                  className="h-full max-h-[620px] w-full object-contain"
+                  className="h-full max-h-[640px] w-full rounded-[4px] object-contain"
                 />
               ) : (
                 <>
-                  <span className="grid size-12 place-items-center border border-[#D8CCBB] bg-white/70">
+                  <span className="grid size-14 place-items-center rounded-full border border-[#D8CCBB] bg-white/80">
                     <Upload className="size-5" />
                   </span>
-                  <span className="mt-3 text-sm font-medium uppercase tracking-[0.16em] text-neutral-800">
-                    Select a photo
+                  <span className="mt-5 text-sm font-medium uppercase tracking-[0.2em] text-neutral-800">
+                    Drop your photo here, or tap to browse.
                   </span>
-                  <span className="mt-1 text-xs text-neutral-500">
-                    Portrait or full-body image works best
+                  <span className="mt-2 max-w-xs text-sm leading-6 text-neutral-500">
+                    A clear front-facing portrait or full-body outfit gives the most accurate styling read.
                   </span>
                 </>
               )}
 
               {isScanning ? (
-                <div className="absolute inset-0 z-30 overflow-hidden bg-stone-950/45 p-6 text-neutral-950 backdrop-blur-[2px]">
-                  <div className="scan-sweep absolute inset-x-0 top-0 h-24" />
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40" />
-                  <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 text-center">
-                    <div className="h-px w-40 bg-gradient-to-r from-transparent via-white to-transparent" />
-                    <div>
-                      <p className="font-mono text-xs uppercase tracking-[0.26em] text-neutral-700">
-                        ANALYZING AESTHETIC PROFILE & FACIAL STRUCTURE...
-                      </p>
-                      <p className="mt-3 text-xs uppercase tracking-[0.2em] text-neutral-500">
-                        Tone / Fit / Context / Grooming Matrix
-                      </p>
-                    </div>
-                  </div>
+                <div className="absolute inset-x-3 bottom-3 z-30 rounded-[4px] border border-white/50 bg-white/85 px-4 py-3 text-left shadow-sm backdrop-blur-xl">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-neutral-600">
+                    {scanStatusTexts[scanStatusIndex]}
+                  </p>
                 </div>
               ) : null}
             </div>
 
+            {previewUrl ? (
+              <div className="mt-4 rounded-md border border-[#D8CCBB] bg-white/70 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                    Canvas color read
+                  </p>
+                  <Badge>Dominant {dominantColor}</Badge>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {extractedPalette.map((color) => (
+                    <div
+                      key={color}
+                      className="flex h-12 items-end rounded-[4px] border border-black/5 p-2 text-[10px] font-medium uppercase tracking-[0.12em] text-white shadow-inner"
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    >
+                      {color}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {photoFeedback ? (
               <div
                 className={cn(
-                  "mt-4 flex items-start gap-3 border p-3 text-left shadow-sm",
+                  "mt-4 flex items-start gap-3 rounded-md border px-3 py-2 text-left shadow-sm",
                   photoFeedback.tone === "positive" &&
                     "border-[#C7D6BF] bg-[#F4FAF1] text-[#26361F]",
                   photoFeedback.tone === "warning" &&
@@ -682,90 +713,54 @@ export function AIPersonalStylist({
                   <span className="block text-xs font-semibold uppercase tracking-[0.16em]">
                     {photoFeedback.title}
                   </span>
-                  <span className="mt-1 block text-sm leading-6">{photoFeedback.message}</span>
+                  <span className="mt-1 block text-sm leading-6">
+                    {photoFeedback.tone === "error"
+                      ? "Please upload a clearer photo facing the camera for accurate styling."
+                      : photoFeedback.message}
+                  </span>
                 </span>
               </div>
             ) : null}
 
-            <div className="mt-5 grid gap-4">
-              <div>
-                <Label>Occasion</Label>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {occasionOptions.map((option) => (
-                    <Button
-                      key={option.value}
-                      type="button"
-                      variant={selectedOccasion === option.value ? "default" : "outline"}
-                      size="sm"
-                      aria-pressed={selectedOccasion === option.value}
-                      onClick={() => handleOccasionChange(option.value)}
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
+            <div className="mt-5 rounded-md border border-[#D8CCBB] bg-white/60 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {occasionOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={selectedOccasion === option.value ? "default" : "outline"}
+                    size="sm"
+                    aria-pressed={selectedOccasion === option.value}
+                    onClick={() => handleOccasionChange(option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
               </div>
-
-              <div>
-                <Label>Season</Label>
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                  {seasonOptions.map((option) => (
-                    <Button
-                      key={option.value}
-                      type="button"
-                      variant={selectedSeason === option.value ? "default" : "outline"}
-                      size="sm"
-                      aria-pressed={selectedSeason === option.value}
-                      onClick={() => handleSeasonChange(option.value)}
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {seasonOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={selectedSeason === option.value ? "default" : "outline"}
+                    size="sm"
+                    aria-pressed={selectedSeason === option.value}
+                    onClick={() => handleSeasonChange(option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
               </div>
             </div>
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="truncate text-sm text-neutral-500">
-                {uploadName || "No profile photo selected"}
+                {uploadName || "Waiting for one clear photo"}
               </p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {photoSeed ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isScanning}
-                    onClick={() => {
-                      if (photoFileRef.current) {
-                        void startScan(photoFileRef.current);
-                      }
-                    }}
-                  >
-                    {isScanning ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="size-4" />
-                    )}
-                    Analyze photo
-                  </Button>
-                ) : (
-                  <label
-                    htmlFor="stylist-photo"
-                    className={cn(
-                      buttonVariants({ variant: "outline" }),
-                      isScanning ? "pointer-events-none opacity-50" : "cursor-pointer"
-                    )}
-                    aria-disabled={isScanning}
-                  >
-                    <Upload className="size-4" />
-                    Select photo
-                  </label>
-                )}
-                <Button type="button" variant="outline" onClick={handleReset}>
-                  <RotateCcw className="size-4" />
-                  Reset
-                </Button>
-              </div>
+              <Button type="button" variant="outline" onClick={handleReset}>
+                <RotateCcw className="size-4" />
+                Reset
+              </Button>
             </div>
 
             {recommendationError ? (
@@ -773,6 +768,7 @@ export function AIPersonalStylist({
                 {recommendationError}
               </div>
             ) : null}
+
           </div>
         </section>
 
@@ -781,186 +777,42 @@ export function AIPersonalStylist({
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
-                  Styling Output
+                  Result
                 </p>
-                <h2 className="mt-2 text-2xl font-light text-neutral-950">Profile analysis</h2>
+                <h2 className="mt-2 text-2xl font-light text-neutral-950">Your style match</h2>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge>Analysis ready</Badge>
-                <Badge>{analysisSourceLabel}</Badge>
-                <Badge>{ARCHIVE_END_YEAR} trend forecast</Badge>
+                <Badge>{recommendations.length} looks</Badge>
               </div>
             </div>
 
-            <div className="mt-6 overflow-hidden border border-[#D8CCBB] bg-white/70">
-              <div className="grid lg:grid-cols-[1.08fr_0.92fr]">
-                <div className="border-b border-[#D8CCBB] p-5 lg:border-b-0 lg:border-r lg:p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-500">
-                        Style DNA
-                      </p>
-                      <h3 className="mt-3 text-2xl font-light leading-tight text-neutral-950">
-                        {wardrobeProfileLabel} · {ageBandLabel} · {fitProfileLabel}
-                      </h3>
-                    </div>
-                    <div className="grid size-11 shrink-0 place-items-center border border-[#D8CCBB] bg-white/70">
-                      <Sparkles className="size-5 text-neutral-800" />
-                    </div>
-                  </div>
-
-                  <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-600">
-                    The scan matched your profile to {undertoneLabel.toLowerCase()}, a {fitProfileLabel.toLowerCase()} fit direction, a {ageBandLabel.toLowerCase()} styling band, and a {selectedOccasionLabel.toLowerCase()} / {selectedSeasonLabel.toLowerCase()} context.
+            <div className="mt-6 rounded-md border border-[#D8CCBB] bg-white/70 p-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                    Style read
                   </p>
-
-                  <div className="mt-4 border border-[#D8CCBB] bg-[#F9F5EE] p-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
-                          AI suggestion
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-neutral-700">
-                          {visionProfile?.outfit_strategy}
-                        </p>
-                      </div>
-                      <Badge>{analysisConfidence}% confidence</Badge>
-                    </div>
-                    <p className="mt-3 border-t border-[#D8CCBB] pt-3 text-sm leading-6 text-neutral-700">
-                      {visionProfile?.grooming_strategy}
-                    </p>
-                  </div>
-
-                  <div className="mt-5">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-600">
-                      <Palette className="size-4" />
-                      Recommended palette
-                    </div>
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      {profilePalette.map((color) => (
-                        <div
-                          key={color}
-                          className="flex h-14 items-end border border-[#D8CCBB] p-2 text-[10px] font-medium uppercase tracking-[0.12em] text-white/80 shadow-inner"
-                          style={{ backgroundColor: color }}
-                          title={color}
-                        >
-                          {color}
-                        </div>
-                      ))}
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-neutral-600">{profile.dominantTones}</p>
-                  </div>
+                  <h3 className="mt-2 text-xl font-light text-neutral-950">
+                    {wardrobeProfileLabel} · {fitProfileLabel} · {titleCase(visionProfile?.primary_color_undertone ?? profileId)}
+                  </h3>
                 </div>
-
-                <div className="grid grid-cols-2 gap-px bg-[#D8CCBB] lg:grid-cols-3">
-                  <div className="bg-white/70 p-4">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                      <Ruler className="size-4" />
-                      Fit
-                    </div>
-                    <p className="mt-3 text-sm font-medium text-neutral-950">{fitProfileLabel}</p>
-                    <p className="mt-1 text-xs text-neutral-500">{undertoneLabel}</p>
-                  </div>
-
-                  <div className="bg-white/70 p-4">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                      <ShieldCheck className="size-4" />
-                      Wardrobe
-                    </div>
-                    <p className="mt-3 text-sm font-medium text-neutral-950">{wardrobeProfileLabel}</p>
-                    <p className="mt-1 text-xs text-neutral-500">Guardrail active</p>
-                  </div>
-
-                  <div className="bg-white/70 p-4">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                      <UserRound className="size-4" />
-                      Style band
-                    </div>
-                    <p className="mt-3 text-sm font-medium text-neutral-950">{ageBandLabel}</p>
-                    <p className="mt-1 text-xs text-neutral-500">Broad fit signal</p>
-                  </div>
-
-                  <div className="bg-white/70 p-4">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                      <Scissors className="size-4" />
-                      Face
-                    </div>
-                    <p className="mt-3 text-sm font-medium text-neutral-950">{faceShapeLabel}</p>
-                    <p className="mt-1 text-xs text-neutral-500">Grooming input</p>
-                  </div>
-
-                  <div className="bg-white/70 p-4">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                      <Sparkles className="size-4" />
-                      Context
-                    </div>
-                    <p className="mt-3 text-sm font-medium text-neutral-950">{selectedOccasionLabel}</p>
-                    <p className="mt-1 text-xs text-neutral-500">{selectedSeasonLabel}</p>
-                  </div>
-
-                  <div className="bg-white/70 p-4">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                      <Sparkles className="size-4" />
-                      Confidence
-                    </div>
-                    <p className="mt-3 text-sm font-medium text-neutral-950">{analysisConfidence}%</p>
-                    <p className="mt-1 text-xs text-neutral-500">
-                      {analysisSource === "ollama" ? "AI vision" : "Browser fallback"}
-                    </p>
-                  </div>
+                <div className="flex gap-1.5">
+                  {profilePalette.map((color) => (
+                    <span
+                      key={color}
+                      className="size-7 rounded-full border border-black/10 shadow-inner"
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
                 </div>
               </div>
 
-              {visionProfile ? (
-                <div className="grid gap-4 border-t border-[#D8CCBB] p-4 lg:grid-cols-2">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
-                      Visible cues
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {visionProfile.visible_cues.map((cue) => (
-                        <Badge key={cue}>{cue}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
-                      Avoid
-                    </p>
-                    <div className="mt-3 space-y-2 text-sm text-neutral-600">
-                      {visionProfile.avoid_notes.map((note) => (
-                        <p key={note} className="flex items-start gap-2">
-                          <Check className="mt-0.5 size-4 shrink-0 text-[#7B5637]" />
-                          <span>{note}</span>
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="flex flex-col gap-3 border-t border-[#D8CCBB] p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
-                    Wardrobe override
-                  </p>
-                  <p className="mt-1 text-xs text-neutral-500">
-                    Change only when the scan selected the wrong shopping section.
-                  </p>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {stylistDemographics.map((demographic) => (
-                    <Button
-                      key={demographic}
-                      type="button"
-                      variant={detectedDemographic === demographic ? "default" : "outline"}
-                      size="sm"
-                      aria-pressed={detectedDemographic === demographic}
-                      onClick={() => handleDemographicOverride(demographic)}
-                    >
-                      {demographicLabels[demographic]}
-                    </Button>
-                  ))}
-                </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Badge>{faceShapeLabel}</Badge>
+                <Badge>{selectedBodyArchitectureLabel}</Badge>
+                <Badge>{selectedOccasionLabel}</Badge>
+                <Badge>{selectedSeasonLabel}</Badge>
               </div>
             </div>
 
@@ -1010,6 +862,15 @@ export function AIPersonalStylist({
                         ))}
                       </div>
 
+                      <div className="border border-[#D8CCBB] bg-[#FBF7F0] p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                          Why this fits you
+                        </p>
+                        <p className="mt-2 text-xs leading-5 text-neutral-700">
+                          {recommendation.fitReason}
+                        </p>
+                      </div>
+
                       <div className="space-y-2 text-sm text-neutral-600">
                         {recommendation.supportPieces.map((piece) => (
                           <p key={piece} className="flex items-start gap-2">
@@ -1035,7 +896,7 @@ export function AIPersonalStylist({
 
             <div className="mt-8">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-xl font-light text-neutral-950">2026 Grooming Architecture</h3>
+                <h3 className="text-xl font-light text-neutral-950">Grooming</h3>
                 <Badge>{groomingCards.length} styles</Badge>
               </div>
 

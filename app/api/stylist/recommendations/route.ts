@@ -3,8 +3,11 @@ import { getGarments, getGroomingTrends } from "@/lib/data";
 import {
   buildGroomingRecommendations,
   buildStylistRecommendations,
+  bodyArchitectureLabels,
   getStyleProfile,
+  isBodyArchitecture,
   isStyleProfileId,
+  type BodyArchitecture,
   type StyleProfileId
 } from "@/lib/stylist";
 import {
@@ -23,6 +26,7 @@ import {
 
 type RecommendationRequest = {
   ageBand?: unknown;
+  bodyArchitecture?: unknown;
   demographic?: unknown;
   faceShape?: unknown;
   occasion?: unknown;
@@ -64,6 +68,21 @@ const seasonMapping: Record<string, StylingSeason> = {
   winter: "winter"
 };
 
+const bodyArchitectureMapping: Record<string, BodyArchitecture> = {
+  "athletic / tapered": "athletic_tapered",
+  "athletic tapered": "athletic_tapered",
+  athletic_tapered: "athletic_tapered",
+  "curvy / relaxed": "curvy_relaxed",
+  "curvy relaxed": "curvy_relaxed",
+  curvy_relaxed: "curvy_relaxed",
+  "lean / slim": "lean_slim",
+  "lean slim": "lean_slim",
+  lean_slim: "lean_slim",
+  "tall & broad": "tall_broad",
+  "tall and broad": "tall_broad",
+  tall_broad: "tall_broad"
+};
+
 function normalizeSelection(value: unknown) {
   return typeof value === "string"
     ? value.trim().toLowerCase().replace(/\s+/g, " ")
@@ -86,6 +105,29 @@ function normalizeSeason(value: unknown): StylingSeason {
 
   const normalized = normalizeSelection(value);
   return seasonMapping[normalized] ?? "all-season";
+}
+
+function normalizeBodyArchitecture(value: unknown): BodyArchitecture {
+  if (isBodyArchitecture(value)) {
+    return value;
+  }
+
+  const normalized = normalizeSelection(value).replace(/&/g, "and");
+  const mappedValue = bodyArchitectureMapping[normalized];
+
+  if (mappedValue) {
+    return mappedValue;
+  }
+
+  const matchingLabel = Object.entries(bodyArchitectureLabels).find(([, label]) => {
+    return normalizeSelection(label).replace(/&/g, "and") === normalized;
+  });
+
+  if (matchingLabel) {
+    return matchingLabel[0] as BodyArchitecture;
+  }
+
+  return "athletic_tapered";
 }
 
 function mergeGarments<T extends { id: string }>(primary: T[], secondary: T[]) {
@@ -150,8 +192,10 @@ export async function POST(request: Request) {
   const body = await readRecommendationRequest(request);
   const occasion = normalizeOccasion(body.occasion);
   const season = normalizeSeason(body.season);
+  const bodyArchitecture = normalizeBodyArchitecture(body.bodyArchitecture);
 
   console.log("[stylist/recommendations] context", {
+    bodyArchitecture,
     incomingOccasion: body.occasion,
     incomingSeason: body.season,
     normalizedOccasion: occasion,
@@ -199,6 +243,7 @@ export async function POST(request: Request) {
       ageBand: visionData.age_band,
       faceShape: visionData.detected_face_shape,
       recommendedColorPalette: visionData.recommended_color_palette,
+      bodyArchitecture,
       suggestedFitProfile: visionData.suggested_fit_profile
     }
   );
@@ -214,6 +259,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     demographic: visionData.demographic,
+    bodyArchitecture,
     faceShape: visionData.detected_face_shape,
     grooming,
     contextWarning,
