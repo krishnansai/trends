@@ -16,9 +16,9 @@ import {
   type StylingSeason
 } from "@/lib/types";
 import {
-  createVisionProfile,
-  parseVisionProfile,
-  type VisionProfile
+  createVisionAnalysis,
+  parseVisionAnalysis,
+  type VisionAnalysis
 } from "@/lib/vision";
 
 type RecommendationRequest = {
@@ -31,6 +31,24 @@ type RecommendationRequest = {
   suggestedFitProfile?: unknown;
   visionData?: unknown;
 };
+
+async function readRecommendationRequest(request: Request): Promise<RecommendationRequest> {
+  const text = await request.text();
+
+  if (!text.trim()) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text) as RecommendationRequest;
+  } catch (error) {
+    console.error("[stylist/recommendations] invalid JSON request", {
+      error: error instanceof Error ? error.message : "unknown JSON parse error",
+      preview: text.slice(0, 160)
+    });
+    return {};
+  }
+}
 
 const occasionMapping: Record<string, StylingOccasion> = {
   "beach / vacation": "beach",
@@ -98,7 +116,7 @@ function enforceCompatibleContext<T extends { occasion: StylingOccasion[]; seaso
 }
 
 async function getStrictClothingMatches(
-  visionData: VisionProfile,
+  visionData: VisionAnalysis,
   occasion: StylingOccasion,
   season: StylingSeason
 ) {
@@ -129,7 +147,7 @@ async function getStrictClothingMatches(
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => ({}))) as RecommendationRequest;
+  const body = await readRecommendationRequest(request);
   const occasion = normalizeOccasion(body.occasion);
   const season = normalizeSeason(body.season);
 
@@ -140,7 +158,7 @@ export async function POST(request: Request) {
     normalizedSeason: season
   });
 
-  const fallbackVisionData = createVisionProfile({
+  const fallbackVisionData = createVisionAnalysis({
     age_band: body.ageBand,
     demographic: body.demographic,
     faceShape: body.faceShape,
@@ -148,7 +166,7 @@ export async function POST(request: Request) {
     profileId: body.profileId,
     suggested_fit_profile: body.suggestedFitProfile
   });
-  const visionData = parseVisionProfile(body.visionData, fallbackVisionData);
+  const visionData = parseVisionAnalysis(body.visionData, fallbackVisionData);
   const profileId: StyleProfileId = isStyleProfileId(visionData.primary_color_undertone)
     ? visionData.primary_color_undertone
     : "neutral";
@@ -159,13 +177,13 @@ export async function POST(request: Request) {
     getGroomingTrends({
       category: "hairstyle",
       faceShape: visionData.detected_face_shape,
-      limit: 12
+      limit: 80
     }),
     shouldIncludeBeard
       ? getGroomingTrends({
           category: "beard",
           faceShape: visionData.detected_face_shape,
-          limit: 12
+          limit: 80
         })
       : Promise.resolve([])
   ]);

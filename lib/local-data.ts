@@ -135,6 +135,7 @@ export async function getLocalGarments() {
     readJsonArray<Garment>("garments-launch-pack.json"),
     readJsonArray<Garment>("garments-context-expansion.json"),
     readJsonArray<Garment>("garments-latest-trends-2026.json"),
+    readJsonArray<Garment>("garments-ultra-latest-2026.json"),
     readJsonArray<Garment>("garments-photo-profile-2026.json"),
     readGarmentCsv("garments-pro-launch.csv")
   ]);
@@ -149,6 +150,7 @@ export async function getLocalTrends() {
     readJsonArray<Trend>("trends-launch-pack.json"),
     readJsonArray<Trend>("trends-pro-launch.json"),
     readJsonArray<Trend>("trends-latest-2026.json"),
+    readJsonArray<Trend>("trends-ultra-latest-2026.json"),
     readJsonArray<Trend>("trends-photo-profile-2026.json")
   ]);
 
@@ -160,7 +162,8 @@ export async function getLocalGroomingTrends() {
     readJsonArray<GroomingTrend>("grooming-seed.json"),
     readJsonArray<GroomingTrend>("grooming-seed-v2.json"),
     readJsonArray<GroomingTrend>("grooming-launch-pack.json"),
-    readJsonArray<GroomingTrend>("grooming-pro-launch.json")
+    readJsonArray<GroomingTrend>("grooming-pro-launch.json"),
+    readJsonArray<GroomingTrend>("grooming-ultra-latest-2026.json")
   ]);
   return dedupeById(groomingSets.flat());
 }

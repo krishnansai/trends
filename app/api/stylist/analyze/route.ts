@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { analyzeImageWithOllama, isOllamaVisionEnabled } from "@/lib/ollama-vision";
-import { createVisionProfile, type VisionProfile } from "@/lib/vision";
+import { createVisionAnalysis, type VisionAnalysis } from "@/lib/vision";
 
 export const runtime = "nodejs";
 
@@ -32,14 +32,19 @@ function isUploadedFile(value: FormDataEntryValue | null): value is File {
   );
 }
 
-function getFallbackVisionProfile(formData: FormData): VisionProfile {
-  return createVisionProfile({
+function getFallbackVisionProfile(formData: FormData): VisionAnalysis {
+  return createVisionAnalysis({
     age_band: formValue(formData, "age_band"),
+    analysis_confidence: formValue(formData, "analysis_confidence"),
+    avoid_notes: formJsonValue(formData, "avoid_notes"),
     demographic: formValue(formData, "demographic"),
     detected_face_shape: formValue(formData, "detected_face_shape"),
+    grooming_strategy: formValue(formData, "grooming_strategy"),
+    outfit_strategy: formValue(formData, "outfit_strategy"),
     primary_color_undertone: formValue(formData, "primary_color_undertone"),
     recommended_color_palette: formJsonValue(formData, "recommended_color_palette"),
-    suggested_fit_profile: formValue(formData, "suggested_fit_profile")
+    suggested_fit_profile: formValue(formData, "suggested_fit_profile"),
+    visible_cues: formJsonValue(formData, "visible_cues")
   });
 }
 

@@ -1,0 +1,294 @@
+[
+  {
+    "id": "groom-ultra-hair-2026-01",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Low Taper Fade with Textured Top",
+    "description": "Soft low taper around the ears with choppy natural texture on top, giving a clean 2026 shape without harsh contrast.",
+    "face_shapes": ["oval", "square", "round", "heart"],
+    "style_tags": ["low-taper", "textured-top", "natural-texture", "low-maintenance"],
+    "maintenance_level": "Medium (Taper every 3-5 weeks)",
+    "recommended_products": [
+      { "name": "Matte Texture Powder", "search_query": "mens matte texture powder low taper textured top" },
+      { "name": "Low Shine Styling Clay", "search_query": "low shine styling clay natural texture men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=800"
+  },
+  {
+    "id": "groom-ultra-hair-2026-02",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "90s Heartthrob Curtains",
+    "description": "Middle-parted curtains with soft cheekbone framing and modern layering, updated from 90s nostalgia for a cleaner finish.",
+    "face_shapes": ["oval", "heart", "diamond", "rectangle"],
+    "style_tags": ["90s", "curtains", "middle-part", "soft-layers"],
+    "maintenance_level": "Medium (Trim every 5-7 weeks)",
+    "recommended_products": [
+      { "name": "Light Hold Styling Cream", "search_query": "mens light hold styling cream curtains hair" },
+      { "name": "Flexible Hair Spray", "search_query": "flexible hold hair spray men natural finish" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800"
+  },
+  {
+    "id": "groom-ultra-hair-2026-03",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Modern Caesar Crop",
+    "description": "Short forward crop with a compact fringe and softened taper, giving structure to the forehead without heavy styling.",
+    "face_shapes": ["oval", "square", "round"],
+    "style_tags": ["caesar", "crop", "short-hair", "clean"],
+    "maintenance_level": "Low (Trim every 4 weeks)",
+    "recommended_products": [
+      { "name": "Matte Fiber Paste", "search_query": "matte fiber paste caesar crop men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1552058544-f2b08422138a?w=800"
+  },
+  {
+    "id": "groom-ultra-hair-2026-04",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Soft Rounded Bowl Crop",
+    "description": "A controlled rounded crop with softened edges, taking the 90s bowl reference into a wearable editorial shape.",
+    "face_shapes": ["diamond", "heart", "oval"],
+    "style_tags": ["90s", "bowl-crop", "editorial", "soft-shape"],
+    "maintenance_level": "Medium (Shape every 4 weeks)",
+    "recommended_products": [
+      { "name": "Texture Cream", "search_query": "soft texture cream mens rounded crop" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800"
+  },
+  {
+    "id": "groom-ultra-hair-2026-05",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Burst Fade Modern Mullet",
+    "description": "Rounded burst fade around the ear with controlled nape length, built for modern mullet and streetwear profiles.",
+    "face_shapes": ["oval", "diamond", "square", "heart"],
+    "style_tags": ["burst-fade", "modern-mullet", "streetwear", "movement"],
+    "maintenance_level": "Medium (Fade every 3-4 weeks)",
+    "recommended_products": [
+      { "name": "Dry Texture Spray", "search_query": "dry texture spray modern mullet men" },
+      { "name": "Detail Trimmer", "search_query": "cordless detail trimmer burst fade neckline" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=800"
+  },
+  {
+    "id": "groom-ultra-hair-2026-06",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "High-Top Fade Recut",
+    "description": "Structured high-top height with a cleaner modern fade, useful for adding vertical proportion and strong profile architecture.",
+    "face_shapes": ["round", "oval", "square"],
+    "style_tags": ["high-top", "fade", "90s", "structured"],
+    "maintenance_level": "High (Shape every 2-3 weeks)",
+    "recommended_products": [
+      { "name": "Curl Sponge Kit", "search_query": "curl sponge high top fade kit men" },
+      { "name": "Moisturizing Curl Cream", "search_query": "moisturizing curl cream high top fade men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1522556189639-b150ed9c4330?w=800"
+  },
+  {
+    "id": "groom-ultra-hair-2026-07",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Soft Crew Cut with Low Taper",
+    "description": "Short crew cut with enough top length to avoid a harsh buzz, finished with a low taper for clean daily wear.",
+    "face_shapes": ["square", "oval", "diamond", "rectangle"],
+    "style_tags": ["crew-cut", "low-taper", "minimalist", "athletic"],
+    "maintenance_level": "Medium (Trim every 2-3 weeks)",
+    "recommended_products": [
+      { "name": "Scalp Moisturizer SPF", "search_query": "mens scalp moisturizer spf short hair" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800"
+  },
+  {
+    "id": "groom-ultra-hair-2026-08",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Loose Bro Flow with Tapered Nape",
+    "description": "Medium pushed-back flow with a tidier tapered nape, keeping the relaxed bro flow polished for office and resort wardrobes.",
+    "face_shapes": ["oval", "rectangle", "heart", "diamond"],
+    "style_tags": ["bro-flow", "medium-length", "resort", "natural"],
+    "maintenance_level": "Low (Trim every 8 weeks)",
+    "recommended_products": [
+      { "name": "Leave-In Conditioner", "search_query": "mens leave in conditioner medium length hair" },
+      { "name": "Sea Salt Spray", "search_query": "sea salt spray bro flow men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800"
+  },
+  {
+    "id": "groom-ultra-hair-2026-09",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Modern Slick Side Sweep",
+    "description": "Side-swept medium top with natural sheen and soft tapering, designed for formal tailoring without helmet-like shine.",
+    "face_shapes": ["oval", "square", "rectangle", "diamond"],
+    "style_tags": ["formal", "side-sweep", "tailoring", "natural-shine"],
+    "maintenance_level": "Medium (Trim every 4-5 weeks)",
+    "recommended_products": [
+      { "name": "Natural Shine Grooming Cream", "search_query": "natural shine grooming cream side swept hair men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800"
+  },
+  {
+    "id": "groom-ultra-hair-2026-10",
+    "year": 2026,
+    "category": "hairstyle",
+    "title": "Natural Texture Curly Taper",
+    "description": "Curly top left natural with a soft blended taper, prioritizing hydration and shape rather than rigid definition.",
+    "face_shapes": ["round", "oval", "square", "heart"],
+    "style_tags": ["curly", "natural-texture", "low-taper", "soft-blend"],
+    "maintenance_level": "Medium (Hydrate weekly and taper monthly)",
+    "recommended_products": [
+      { "name": "Curl Defining Leave-In Cream", "search_query": "curl defining leave in cream men natural texture" },
+      { "name": "Sulfate-Free Curl Shampoo", "search_query": "sulfate free curl shampoo men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1522556189639-b150ed9c4330?w=800"
+  },
+  {
+    "id": "groom-ultra-beard-2026-11",
+    "year": 2026,
+    "category": "beard",
+    "title": "Shadow Fade Beard",
+    "description": "Heavier growth around the jaw blended softly into shorter cheeks and sideburns, creating a clean fade effect through the beard.",
+    "face_shapes": ["round", "oval", "square", "heart"],
+    "style_tags": ["shadow-fade", "beard-fade", "sharp", "modern"],
+    "maintenance_level": "High (Blend every 7-10 days)",
+    "recommended_products": [
+      { "name": "Precision T-Blade Trimmer", "search_query": "precision t blade trimmer beard fade zero gap" },
+      { "name": "Beard Softening Oil", "search_query": "lightweight beard softening oil men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"
+  },
+  {
+    "id": "groom-ultra-beard-2026-12",
+    "year": 2026,
+    "category": "beard",
+    "title": "Short Boxed Beard with Hard Cheek Lines",
+    "description": "Clean short boxed beard with precise cheek corners and a controlled neckline for a sharp office-ready profile.",
+    "face_shapes": ["oval", "round", "square", "rectangle"],
+    "style_tags": ["short-boxed", "hard-cheek-line", "office", "precision"],
+    "maintenance_level": "High (Edge every 5-7 days)",
+    "recommended_products": [
+      { "name": "Transparent Shaving Gel", "search_query": "transparent shaving gel beard cheek line edging" },
+      { "name": "Adjustable Beard Trimmer", "search_query": "adjustable beard trimmer short boxed beard" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800"
+  },
+  {
+    "id": "groom-ultra-beard-2026-13",
+    "year": 2026,
+    "category": "beard",
+    "title": "Salt-and-Pepper Corporate Boxed Beard",
+    "description": "Short structured beard that keeps natural grey variation visible while maintaining a tight cheek and neckline.",
+    "face_shapes": ["square", "oval", "rectangle", "diamond"],
+    "style_tags": ["short-boxed", "salt-and-pepper", "mature", "office"],
+    "maintenance_level": "Medium (Weekly edging)",
+    "recommended_products": [
+      { "name": "Beard Balm Softener", "search_query": "light hold beard balm softener salt and pepper beard" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800"
+  },
+  {
+    "id": "groom-ultra-beard-2026-14",
+    "year": 2026,
+    "category": "beard",
+    "title": "Sculpted Heavy Stubble",
+    "description": "Even 3mm shadow with cleaned cheek and neck lines, giving bone structure without a full beard commitment.",
+    "face_shapes": ["round", "oval", "square", "heart", "diamond"],
+    "style_tags": ["heavy-stubble", "model-stubble", "minimalist", "low-maintenance"],
+    "maintenance_level": "Low (Trim every 3 days)",
+    "recommended_products": [
+      { "name": "Precision Stubble Trimmer", "search_query": "precision stubble trimmer 3mm adjustable men" },
+      { "name": "Exfoliating Face Scrub", "search_query": "mens exfoliating face scrub ingrown hair beard" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800"
+  },
+  {
+    "id": "groom-ultra-beard-2026-15",
+    "year": 2026,
+    "category": "beard",
+    "title": "Tapered Full Beard",
+    "description": "Fuller jaw and chin volume tapered through the cheeks to avoid bulk while keeping a mature winter-ready beard.",
+    "face_shapes": ["rectangle", "oval", "square", "diamond"],
+    "style_tags": ["full-beard", "tapered", "winter", "mature"],
+    "maintenance_level": "Medium (Shape weekly)",
+    "recommended_products": [
+      { "name": "Beard Wash and Conditioner", "search_query": "beard wash conditioner tapered full beard men" },
+      { "name": "Wood Beard Comb", "search_query": "wood beard comb full beard grooming" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"
+  },
+  {
+    "id": "groom-ultra-beard-2026-16",
+    "year": 2026,
+    "category": "beard",
+    "title": "Anchor Goatee Fade",
+    "description": "Clean cheeks with a defined chin anchor and moustache, useful when cheek growth is patchy but chin definition is strong.",
+    "face_shapes": ["round", "heart", "diamond", "oval"],
+    "style_tags": ["goatee", "anchor", "clean-cheeks", "sharp"],
+    "maintenance_level": "Medium (Contour weekly)",
+    "recommended_products": [
+      { "name": "Mini Foil Detail Shaver", "search_query": "mini foil shaver clean cheek line goatee" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=800"
+  },
+  {
+    "id": "groom-ultra-beard-2026-17",
+    "year": 2026,
+    "category": "beard",
+    "title": "Faded Beardstache",
+    "description": "Heavy moustache with cheeks faded down to designer stubble, making the beardstache cleaner and easier to wear daily.",
+    "face_shapes": ["oblong", "diamond", "square", "oval"],
+    "style_tags": ["beardstache", "moustache", "fade", "bold"],
+    "maintenance_level": "Medium (Shape moustache weekly)",
+    "recommended_products": [
+      { "name": "Moustache Styling Wax", "search_query": "natural moustache styling wax medium hold" },
+      { "name": "Adjustable Stubble Trimmer", "search_query": "adjustable stubble trimmer beardstache fade" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1541577141970-eebc83ebe30e?w=800"
+  },
+  {
+    "id": "groom-ultra-beard-2026-18",
+    "year": 2026,
+    "category": "beard",
+    "title": "Rounded Short Beard",
+    "description": "Short beard with softened corners and a rounded lower line to balance angular faces without making the jaw look boxy.",
+    "face_shapes": ["square", "rectangle", "diamond"],
+    "style_tags": ["short-beard", "rounded", "soft-shape", "balanced"],
+    "maintenance_level": "Medium (Shape every 7-10 days)",
+    "recommended_products": [
+      { "name": "Beard Shaping Tool", "search_query": "beard shaping tool rounded beard line" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800"
+  },
+  {
+    "id": "groom-ultra-beard-2026-19",
+    "year": 2026,
+    "category": "beard",
+    "title": "Clean Neckline Designer Stubble",
+    "description": "Very short stubble with a precise neckline and natural cheek fade for a low-effort but intentional finish.",
+    "face_shapes": ["oval", "round", "square", "rectangle", "heart"],
+    "style_tags": ["designer-stubble", "clean-neckline", "minimal", "daily"],
+    "maintenance_level": "Low (Trim every 2-3 days)",
+    "recommended_products": [
+      { "name": "Waterproof Stubble Trimmer", "search_query": "waterproof stubble trimmer clean neckline men" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800"
+  },
+  {
+    "id": "groom-ultra-beard-2026-20",
+    "year": 2026,
+    "category": "beard",
+    "title": "Soft Cheek Full Beard",
+    "description": "Full beard with natural cheek softness and conditioned texture, avoiding overly sharp lines for relaxed mature profiles.",
+    "face_shapes": ["oval", "rectangle", "heart", "square"],
+    "style_tags": ["full-beard", "soft-cheek", "natural", "conditioned"],
+    "maintenance_level": "Medium (Condition twice weekly)",
+    "recommended_products": [
+      { "name": "Sandalwood Beard Oil", "search_query": "sandalwood beard oil soft full beard men" },
+      { "name": "Beard Conditioner", "search_query": "hydrating beard conditioner soft full beard" }
+    ],
+    "image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"
+  }
+]

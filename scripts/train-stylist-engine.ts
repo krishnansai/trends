@@ -67,6 +67,7 @@ const garmentJsonFiles = [
   "garments-launch-pack.json",
   "garments-context-expansion.json",
   "garments-latest-trends-2026.json",
+  "garments-ultra-latest-2026.json",
   "garments-photo-profile-2026.json"
 ];
 const garmentCsvFiles = ["garments-pro-launch.csv"];
@@ -74,7 +75,8 @@ const groomingFiles = [
   "grooming-seed.json",
   "grooming-seed-v2.json",
   "grooming-launch-pack.json",
-  "grooming-pro-launch.json"
+  "grooming-pro-launch.json",
+  "grooming-ultra-latest-2026.json"
 ];
 
 const occasionGroups: Record<string, StylingOccasion[]> = {

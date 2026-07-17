@@ -293,7 +293,7 @@ function scorePaletteMatch(garment: Garment, preferredPalette?: string[]) {
       return total + closest;
     }, 0) / preferredColors.length;
 
-  return Math.max(0, 34 - (averageClosestDistance / 441) * 34);
+  return Math.max(0, 48 - (averageClosestDistance / 441) * 48);
 }
 
 function scoreFitMatch(garment: Garment, preferredFit?: FitProfile) {

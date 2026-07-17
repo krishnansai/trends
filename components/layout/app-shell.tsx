@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Archive,
-  Database,
   PanelLeft,
   Search,
   Settings,
@@ -69,15 +68,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="mt-auto space-y-3">
-            <div className="rounded-sm border border-[#D8CCBB] bg-white/70 p-4 shadow-sm backdrop-blur-xl">
-              <p className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
-                <Database className="size-3.5" />
-                Data Window
-              </p>
-              <p className="mt-3 text-2xl font-light leading-none tracking-[0.08em] text-neutral-950">
-                {ARCHIVE_YEAR_LABEL}
-              </p>
-              <p className="mt-2 text-xs text-neutral-500">Local archive and context filters</p>
+            <div className="flex items-center justify-between border-t border-[#D8CCBB] pt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+              <span>{ARCHIVE_YEAR_LABEL}</span>
+              <span className="inline-flex items-center gap-1.5 text-[#7B5637]">
+                <Sparkles className="size-3.5" />
+                Live archive
+              </span>
             </div>
           </div>
         </div>

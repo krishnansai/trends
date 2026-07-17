@@ -1,14 +1,14 @@
 import {
-  createVisionProfile,
-  parseVisionProfile,
+  createVisionAnalysis,
+  parseVisionAnalysis,
   VISION_IMAGE_ANALYZER_SYSTEM_PROMPT,
-  type VisionProfile
+  type VisionAnalysis
 } from "@/lib/vision";
 
 type OllamaVisionResult = {
   error?: string;
   model: string | null;
-  profile: VisionProfile;
+  profile: VisionAnalysis;
   source: "browser-fallback" | "ollama";
 };
 
@@ -53,7 +53,7 @@ function extractJsonPayload(value: string) {
   }
 }
 
-function buildPrompt(fallback: VisionProfile) {
+function buildPrompt(fallback: VisionAnalysis) {
   return `${VISION_IMAGE_ANALYZER_SYSTEM_PROMPT}
 
 If the image is unclear, use this fallback profile only for uncertain fields:
@@ -64,7 +64,7 @@ Return only strict minified JSON.`;
 
 export async function analyzeImageWithOllama(
   file: File,
-  fallback: VisionProfile
+  fallback: VisionAnalysis
 ): Promise<OllamaVisionResult> {
   const model = getOllamaVisionModel();
 
@@ -116,14 +116,14 @@ export async function analyzeImageWithOllama(
 
     return {
       model,
-      profile: parseVisionProfile(extractJsonPayload(payload.response), fallback),
+      profile: parseVisionAnalysis(extractJsonPayload(payload.response), fallback),
       source: "ollama"
     };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Ollama analysis failed.",
       model,
-      profile: createVisionProfile(fallback),
+      profile: createVisionAnalysis(fallback),
       source: "browser-fallback"
     };
   } finally {

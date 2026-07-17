@@ -60,7 +60,9 @@ The first migration creates:
 
 The stylist page works without a trained cloud model. It first runs a fast browser-side photo
 analysis, then can optionally send the uploaded image to a local Ollama vision model for stricter
-profile extraction.
+profile extraction. The normalized AI output includes wardrobe profile, broad age styling band,
+face shape, undertone, fit direction, confidence, visible cues, outfit strategy, grooming strategy,
+and avoid notes.
 
 CPU-only Ollama works, but image analysis can be slow. Keep the browser fallback enabled for launch
 so uploads still work if Ollama is not running.
@@ -82,6 +84,8 @@ OLLAMA_VISION_TIMEOUT_MS=30000
 ```
 
 The `/stylist` result panel shows whether analysis came from `Ollama` or `Browser analysis`.
+If Ollama is unavailable, the app keeps using browser analysis and still returns guarded
+recommendations from the local trend archive.
 
 ## Price Finder Provider Mode
 

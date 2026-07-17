@@ -30,7 +30,7 @@
     "id": "mens-mall-summer-cool-street",
     "demographics": ["menswear", "unisex"],
     "occasions": ["mall", "street", "casual"],
-    "seasons": ["summer", "all-season"],
+    "seasons": ["summer"],
     "undertones": ["cool", "neutral"],
     "face_shapes": ["oval", "square", "diamond", "rectangle"],
     "fit_profiles": ["oversized", "relaxed", "straight"],
@@ -83,7 +83,7 @@
     "id": "mens-office-summer-tailoring",
     "demographics": ["menswear"],
     "occasions": ["formal", "office"],
-    "seasons": ["summer", "all-season"],
+    "seasons": ["summer"],
     "undertones": ["warm", "neutral", "cool"],
     "face_shapes": ["oval", "square", "rectangle", "diamond"],
     "fit_profiles": ["straight", "regular", "relaxed"],
@@ -334,7 +334,7 @@
     "id": "latest-mens-ventilated-tailoring",
     "demographics": ["menswear"],
     "occasions": ["mall", "street", "office", "formal", "vacation"],
-    "seasons": ["summer", "all-season"],
+    "seasons": ["summer"],
     "undertones": ["warm", "cool", "neutral"],
     "face_shapes": ["oval", "square", "rectangle", "diamond"],
     "fit_profiles": ["straight", "relaxed", "regular"],
@@ -519,5 +519,136 @@
       "office": 14
     },
     "rationale": "Adult and mature womenswear office profiles should favor soft power tailoring, column dresses, and warm neutrals over youth-heavy Y2K pieces."
+  },
+  {
+    "id": "profile-womens-eyelet-shirtdress-summer",
+    "demographics": ["womenswear"],
+    "age_bands": ["adult", "mature", "young_adult"],
+    "occasions": ["mall", "office", "vacation", "travel", "casual"],
+    "seasons": ["summer"],
+    "undertones": ["warm", "neutral"],
+    "face_shapes": ["oval", "square", "round", "rectangle", "diamond", "heart"],
+    "fit_profiles": ["relaxed", "straight", "regular"],
+    "category_weights": {
+      "blouses": 32,
+      "dresses": 30,
+      "skirts": 18,
+      "footwear": 12
+    },
+    "tag_weights": {
+      "eyelet": 42,
+      "shirtdress": 38,
+      "linen": 30,
+      "poplin": 28,
+      "broderie": 26,
+      "summer": 18,
+      "polished": 16
+    },
+    "rationale": "Warm and neutral summer womenswear profiles should get breathable eyelet, poplin, linen, and shirtdress pieces before heavy layers."
+  },
+  {
+    "id": "profile-womens-capri-2026-variants",
+    "demographics": ["womenswear"],
+    "age_bands": ["young_adult", "adult"],
+    "occasions": ["mall", "street", "vacation", "travel", "gym", "athletic"],
+    "seasons": ["summer", "all-season"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "round", "rectangle", "diamond", "heart"],
+    "fit_profiles": ["slim", "straight", "relaxed"],
+    "category_weights": {
+      "bottoms": 42,
+      "footwear": 16,
+      "accessory_sunglasses": 12,
+      "tops": 10
+    },
+    "tag_weights": {
+      "capri": 46,
+      "pedal-pusher": 38,
+      "cargo": 28,
+      "technical": 26,
+      "gingham": 24,
+      "polka-dot": 24,
+      "toggle-hem": 20,
+      "y2k": 18
+    },
+    "rationale": "For young adult and adult summer profiles, 2026 capri variants should rank above generic trousers when the context is mall, street, travel, or light athletic."
+  },
+  {
+    "id": "profile-mens-2026-going-out-and-bags",
+    "demographics": ["menswear", "unisex"],
+    "age_bands": ["young_adult", "adult"],
+    "occasions": ["mall", "street", "formal", "travel"],
+    "seasons": ["summer", "all-season", "winter"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "round", "rectangle", "diamond"],
+    "fit_profiles": ["slim", "straight", "relaxed", "boxy", "oversized"],
+    "category_weights": {
+      "tops": 34,
+      "accessory_bag": 28,
+      "outerwear": 24,
+      "accessories": 16,
+      "bottoms": 12
+    },
+    "tag_weights": {
+      "going-out-top": 44,
+      "messenger-bag": 38,
+      "look-at-me-leather": 34,
+      "belt-buddy": 28,
+      "windbreaker": 24,
+      "art-deco": 22,
+      "statement": 18
+    },
+    "rationale": "Menswear profiles can read current through 2026 going-out tops, messenger bags, statement leather, and utility accessories while staying inside menswear categories."
+  },
+  {
+    "id": "profile-mens-mature-suiting-2026",
+    "demographics": ["menswear"],
+    "age_bands": ["adult", "mature"],
+    "occasions": ["formal", "office"],
+    "seasons": ["all-season", "winter"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "round", "rectangle", "diamond"],
+    "fit_profiles": ["straight", "relaxed", "regular"],
+    "category_weights": {
+      "outerwear": 34,
+      "bottoms": 28,
+      "footwear": 20,
+      "accessory_watch": 10
+    },
+    "tag_weights": {
+      "age-aware": 42,
+      "navy-suit": 36,
+      "monk-strap": 34,
+      "tailoring": 28,
+      "mature": 22,
+      "formal": 18,
+      "premiere": 16
+    },
+    "rationale": "Adult and mature menswear formal profiles should receive refined navy tailoring and polished shoes before youth-heavy streetwear."
+  },
+  {
+    "id": "profile-unisex-drawstring-travel-summer",
+    "demographics": ["menswear", "womenswear", "unisex"],
+    "age_bands": ["young_adult", "adult", "mature"],
+    "occasions": ["mall", "street", "travel", "vacation", "beach"],
+    "seasons": ["summer"],
+    "undertones": ["warm", "cool", "neutral"],
+    "face_shapes": ["oval", "square", "round", "rectangle", "diamond", "heart"],
+    "fit_profiles": ["relaxed", "straight", "regular", "oversized"],
+    "category_weights": {
+      "tops": 24,
+      "bottoms": 34,
+      "footwear": 18,
+      "accessory_sunglasses": 12
+    },
+    "tag_weights": {
+      "drawstring": 42,
+      "rib-tank": 34,
+      "travel": 28,
+      "wide-leg": 24,
+      "resort": 18,
+      "minimal": 14
+    },
+    "rationale": "Summer travel profiles should get the 2026 rib tank and drawstring-pant formula when the selected context is mall, beach, vacation, or travel."
   }
 ]

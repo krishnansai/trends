@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, Filter, Gauge, ImageOff, Layers3, TrendingUp, X } from "lucide-react";
+import { ArrowUpRight, Filter, Gauge, ImageOff, TrendingUp, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -111,41 +111,26 @@ export function HistoricalArchive({
     });
   }, [category, demographic, fromYear, garments, toYear]);
 
-  const demographicCounts = useMemo(() => {
-    return garments.reduce<Record<string, number>>(
-      (counts, garment) => ({
-        ...counts,
-        [garment.demographic]: (counts[garment.demographic] ?? 0) + 1
-      }),
-      {}
-    );
-  }, [garments]);
-
   return (
     <section className="mx-auto max-w-7xl animate-fade-in">
-      <div className="border border-[#D8CCBB] bg-white/80 p-5 backdrop-blur-xl md:p-7">
-        <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+      <div className="border-b border-[#D8CCBB] pb-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">
-              <Layers3 className="size-4" />
-              Archive Studio
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">
+              Personal Stylist Archive
             </p>
-            <h1 className="mt-3 max-w-3xl text-3xl font-light tracking-[-0.01em] text-neutral-950 md:text-5xl">
-              Visual archive and forecast
+            <h1 className="mt-3 text-3xl font-light tracking-[-0.01em] text-neutral-950 md:text-5xl">
+              Fashion archive
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-600">
-              Browse original fashion signals and switch into forecast mode without leaving the archive.
-            </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:min-w-80">
+          <div className="grid gap-2 sm:grid-cols-2 lg:min-w-72">
             <Button
               type="button"
               variant={view === "archive" ? "default" : "outline"}
               onClick={() => setView("archive")}
             >
               Archive
-              <span className="text-xs opacity-70">{filteredGarments.length}</span>
             </Button>
             <Button
               type="button"
@@ -153,34 +138,16 @@ export function HistoricalArchive({
               onClick={() => setView("forecast")}
             >
               Forecast
-              <span className="text-xs opacity-70">{trends.length}</span>
             </Button>
           </div>
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-[#D8CCBB] pt-4">
-          {isUsingSampleData ? <Badge>Sample data</Badge> : <Badge>Original data</Badge>}
-          <Badge>{garments.length} archive looks</Badge>
-          <Badge>{trends.length} forecasts</Badge>
         </div>
       </div>
 
       {view === "archive" ? (
         <>
-          <div className="mt-5 border border-[#D8CCBB] bg-white/80 p-4 backdrop-blur-xl">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
-                  <Filter className="size-4" />
-                  Refine Archive
-                </p>
-                <p className="mt-2 text-sm text-neutral-600">
-                  {filteredGarments.length} looks visible from {Math.min(fromYear, toYear)}-
-                  {Math.max(fromYear, toYear)}
-                </p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[420px]">
+          <div className="mt-5 border border-[#D8CCBB] bg-white/75 p-3 backdrop-blur-xl md:p-4">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div className="grid gap-3 sm:grid-cols-2 xl:w-[330px]">
                 <div>
                   <Label htmlFor="year-start">From</Label>
                   <Select
@@ -212,18 +179,10 @@ export function HistoricalArchive({
                   </Select>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
               <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant={demographic === "all" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setDemographic("all")}
-                >
+                <Button type="button" variant={demographic === "all" ? "default" : "outline"} size="sm" onClick={() => setDemographic("all")}>
                   All
-                  <span className="text-xs opacity-70">{garments.length}</span>
                 </Button>
                 {demographicOptions.map((option) => (
                   <Button
@@ -234,12 +193,11 @@ export function HistoricalArchive({
                     onClick={() => setDemographic(option)}
                   >
                     {demographicLabels[option]}
-                    <span className="text-xs opacity-70">{demographicCounts[option] ?? 0}</span>
                   </Button>
                 ))}
               </div>
 
-              <div>
+              <div className="xl:w-64">
                 <Label htmlFor="category-filter">Category</Label>
                 <Select
                   id="category-filter"
@@ -255,6 +213,16 @@ export function HistoricalArchive({
                   ))}
                 </Select>
               </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#D8CCBB] pt-3 text-xs text-neutral-500">
+              <span className="inline-flex items-center gap-2 font-semibold uppercase tracking-[0.16em] text-neutral-600">
+                <Filter className="size-3.5" />
+                {filteredGarments.length} looks
+              </span>
+              <span>{Math.min(fromYear, toYear)}-{Math.max(fromYear, toYear)}</span>
+              <span>{isUsingSampleData ? "Sample data" : "Original data"}</span>
+              <span>{trends.length} forecasts</span>
             </div>
           </div>
 

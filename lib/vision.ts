@@ -19,6 +19,14 @@ export type VisionProfile = {
   recommended_color_palette: [string, string, string];
 };
 
+export type VisionAnalysis = VisionProfile & {
+  analysis_confidence: number;
+  avoid_notes: string[];
+  grooming_strategy: string;
+  outfit_strategy: string;
+  visible_cues: string[];
+};
+
 export const VISION_IMAGE_ANALYZER_SYSTEM_PROMPT = `You are the core computer vision engine for a premium fashion and grooming platform. Analyze the uploaded user image and return a strict, minified JSON object. Do not include any markdown formatting, code blocks, or conversational text. Only return the JSON object.
 
 Analyze and extract these exact keys:
@@ -35,8 +43,20 @@ suggested_fit_profile: Based on their physical frame, determine if they look bes
 
 recommended_color_palette: Provide an array of 3 hex color codes that would look exceptionally flattering on them based on their undertone.
 
+analysis_confidence: Number from 0 to 100 based on image clarity, visible face, visible clothing, and lighting. Use lower confidence when the image is blurry, cropped, dark, or face/body cues are unclear.
+
+If the uploaded image is not a usable personal styling photo, such as a product-only image, scenery, document, screenshot, empty frame, or a photo without a clear person/profile, do not invent a profile. Set analysis_confidence to 20, use safe fallback values for required fields, set visible_cues to ["wrong image for stylist","no clear person detected","upload portrait or full-body photo"], and explain in outfit_strategy that the image is not suitable for a personal styling scan.
+
+visible_cues: Array of 3 short non-sensitive visual cues that explain the analysis, such as "clear jawline", "warm clothing tones", or "upper body only". Do not mention exact age, identity, ethnicity, or private attributes.
+
+outfit_strategy: One concise sentence explaining the best outfit direction based on wardrobe profile, undertone, fit, and selected visual proportions.
+
+grooming_strategy: One concise sentence explaining the haircut/beard direction based on detected face shape. If womenswear, make this a hair styling direction and do not force beard advice.
+
+avoid_notes: Array of 2 concise notes about what to avoid, based on fit, color, or context mismatch.
+
 Example JSON Output:
-{"demographic":"womenswear","age_band":"adult","detected_face_shape":"oval","primary_color_undertone":"warm","suggested_fit_profile":"relaxed","recommended_color_palette":["#1A1A1A","#4F5D4E","#D8C3A5"]}`;
+{"demographic":"womenswear","age_band":"adult","detected_face_shape":"oval","primary_color_undertone":"warm","suggested_fit_profile":"relaxed","recommended_color_palette":["#1A1A1A","#4F5D4E","#D8C3A5"],"analysis_confidence":82,"visible_cues":["clear face outline","warm skin and clothing tones","relaxed shoulder line"],"outfit_strategy":"Use relaxed warm neutrals with structured texture so the outfit looks polished without becoming stiff.","grooming_strategy":"Oval face shape can support soft layers or clean face-framing hair with balanced volume.","avoid_notes":["Avoid very cold neon colors near the face.","Avoid overly tight fits when relaxed structure is the better proportion."]}`;
 
 export const visionAgeBands = ["young_adult", "adult", "mature"] as const satisfies readonly VisionAgeBand[];
 export const visionDemographics = ["menswear", "womenswear", "unisex"] as const satisfies readonly VisionDemographic[];
@@ -80,6 +100,33 @@ function normalizePalette(value: unknown, undertone: VisionUndertone): [string, 
   }
 
   return undertonePalettes[undertone];
+}
+
+function normalizeConfidence(value: unknown) {
+  const numericValue = typeof value === "number" ? value : Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return 62;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(numericValue)));
+}
+
+function normalizeStringArray(value: unknown, fallback: string[], limit: number) {
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  const normalized = value
+    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .map((item) => item.trim())
+    .slice(0, limit);
+
+  return normalized.length > 0 ? normalized : fallback;
+}
+
+function normalizeText(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : fallback;
 }
 
 function normalizeFaceShape(value: unknown): VisionProfile["detected_face_shape"] {
@@ -133,6 +180,56 @@ export function createVisionProfile(input: {
   };
 }
 
+function getDefaultVisibleCues(profile: VisionProfile) {
+  return [
+    `${profile.primary_color_undertone} undertone signal`,
+    `${profile.suggested_fit_profile} fit direction`,
+    `${profile.detected_face_shape} face-shape estimate`
+  ];
+}
+
+function getDefaultOutfitStrategy(profile: VisionProfile) {
+  const wardrobe = profile.demographic === "unisex" ? "unisex wardrobe" : profile.demographic;
+  return `Use ${profile.suggested_fit_profile} ${wardrobe} pieces with ${profile.primary_color_undertone} palette control so the outfit matches the visible profile instead of generic trends.`;
+}
+
+function getDefaultGroomingStrategy(profile: VisionProfile) {
+  if (profile.demographic === "womenswear") {
+    return `${profile.detected_face_shape} face structure works best with balanced face-framing hair and controlled volume around the cheek and jaw line.`;
+  }
+
+  return `${profile.detected_face_shape} face structure should be paired with grooming that sharpens proportion without adding unnecessary bulk.`;
+}
+
+function getDefaultAvoidNotes(profile: VisionProfile) {
+  return [
+    `Avoid recommendations outside the ${profile.demographic} wardrobe guardrail.`,
+    `Avoid colors that fight the ${profile.primary_color_undertone} undertone signal.`
+  ];
+}
+
+export function createVisionAnalysis(input: Parameters<typeof createVisionProfile>[0] & {
+  analysis_confidence?: unknown;
+  avoid_notes?: unknown;
+  grooming_strategy?: unknown;
+  outfit_strategy?: unknown;
+  visible_cues?: unknown;
+}): VisionAnalysis {
+  const profile = createVisionProfile(input);
+
+  return {
+    ...profile,
+    analysis_confidence: normalizeConfidence(input.analysis_confidence),
+    avoid_notes: normalizeStringArray(input.avoid_notes, getDefaultAvoidNotes(profile), 2),
+    grooming_strategy: normalizeText(
+      input.grooming_strategy,
+      getDefaultGroomingStrategy(profile)
+    ),
+    outfit_strategy: normalizeText(input.outfit_strategy, getDefaultOutfitStrategy(profile)),
+    visible_cues: normalizeStringArray(input.visible_cues, getDefaultVisibleCues(profile), 3)
+  };
+}
+
 export function parseVisionProfile(value: unknown, fallback: VisionProfile): VisionProfile {
   if (!value || typeof value !== "object") {
     return fallback;
@@ -148,5 +245,28 @@ export function parseVisionProfile(value: unknown, fallback: VisionProfile): Vis
     recommended_color_palette:
       payload.recommended_color_palette ?? fallback.recommended_color_palette,
     suggested_fit_profile: payload.suggested_fit_profile ?? fallback.suggested_fit_profile
+  });
+}
+
+export function parseVisionAnalysis(value: unknown, fallback: VisionAnalysis): VisionAnalysis {
+  if (!value || typeof value !== "object") {
+    return fallback;
+  }
+
+  const payload = value as Partial<VisionAnalysis>;
+
+  return createVisionAnalysis({
+    age_band: payload.age_band ?? fallback.age_band,
+    analysis_confidence: payload.analysis_confidence ?? fallback.analysis_confidence,
+    avoid_notes: payload.avoid_notes ?? fallback.avoid_notes,
+    demographic: payload.demographic ?? fallback.demographic,
+    detected_face_shape: payload.detected_face_shape ?? fallback.detected_face_shape,
+    grooming_strategy: payload.grooming_strategy ?? fallback.grooming_strategy,
+    outfit_strategy: payload.outfit_strategy ?? fallback.outfit_strategy,
+    primary_color_undertone: payload.primary_color_undertone ?? fallback.primary_color_undertone,
+    recommended_color_palette:
+      payload.recommended_color_palette ?? fallback.recommended_color_palette,
+    suggested_fit_profile: payload.suggested_fit_profile ?? fallback.suggested_fit_profile,
+    visible_cues: payload.visible_cues ?? fallback.visible_cues
   });
 }

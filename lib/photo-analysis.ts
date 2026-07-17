@@ -1,7 +1,9 @@
 import type { Demographic } from "@/lib/types";
 import {
+  createVisionAnalysis,
   createVisionProfile,
   type VisionAgeBand,
+  type VisionAnalysis,
   type VisionDemographic,
   type VisionFitProfile,
   type VisionProfile,
@@ -39,6 +41,30 @@ function loadImage(src: string) {
     image.onerror = () => reject(new Error("Unable to read uploaded image."));
     image.src = src;
   });
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error("Unable to read uploaded image data."));
+    };
+    reader.onerror = () => reject(new Error("Unable to read uploaded image data."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function loadUploadedImage(file: File, previewUrl: string) {
+  try {
+    return await loadImage(previewUrl);
+  } catch {
+    return loadImage(await readFileAsDataUrl(file));
+  }
 }
 
 function rgbToHsl(r: number, g: number, b: number) {
@@ -95,6 +121,36 @@ function average(samples: PixelSample[]) {
     r: total.r / samples.length,
     s: total.s / samples.length
   };
+}
+
+function clampColor(value: number) {
+  return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+function componentToHex(value: number) {
+  return clampColor(value).toString(16).padStart(2, "0").toUpperCase();
+}
+
+function rgbToHex(value: Pick<PixelSample, "b" | "g" | "r">) {
+  return `#${componentToHex(value.r)}${componentToHex(value.g)}${componentToHex(value.b)}`;
+}
+
+function hexToRgb(hex: string) {
+  const normalized = hex.replace("#", "");
+
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) {
+    return null;
+  }
+
+  return {
+    b: Number.parseInt(normalized.slice(4, 6), 16),
+    g: Number.parseInt(normalized.slice(2, 4), 16),
+    r: Number.parseInt(normalized.slice(0, 2), 16)
+  };
+}
+
+function quantizeColor(value: number) {
+  return Math.max(0, Math.min(255, Math.round(value / 28) * 28));
 }
 
 function colorDistance(first: Pick<PixelSample, "b" | "g" | "r">, second: Pick<PixelSample, "b" | "g" | "r">) {
@@ -235,6 +291,94 @@ function detectForeground(samples: PixelSample[], width: number, height: number)
   });
 }
 
+function getDominantForegroundPalette(
+  foregroundSamples: PixelSample[],
+  undertone: VisionUndertone,
+  height: number
+): [string, string, string] {
+  const fallback = paletteByUndertone[undertone];
+  const candidates = foregroundSamples.filter((sample) => {
+    const isLikelyClothingRegion = sample.y > height * 0.16;
+    const isReadableColor = sample.l > 0.04 && sample.l < 0.96;
+
+    return isLikelyClothingRegion && isReadableColor && !isSkinLike(sample);
+  });
+
+  if (candidates.length < 24) {
+    return fallback;
+  }
+
+  const clusters = new Map<
+    string,
+    {
+      count: number;
+      score: number;
+      totalB: number;
+      totalG: number;
+      totalR: number;
+    }
+  >();
+
+  for (const sample of candidates) {
+    const key = `${quantizeColor(sample.r)}-${quantizeColor(sample.g)}-${quantizeColor(sample.b)}`;
+    const cluster = clusters.get(key) ?? {
+      count: 0,
+      score: 0,
+      totalB: 0,
+      totalG: 0,
+      totalR: 0
+    };
+    const saturationWeight = 1 + Math.min(sample.s, 0.9);
+    const centerWeight = sample.y > height * 0.32 ? 1.25 : 1;
+
+    cluster.count += 1;
+    cluster.score += saturationWeight * centerWeight;
+    cluster.totalB += sample.b;
+    cluster.totalG += sample.g;
+    cluster.totalR += sample.r;
+    clusters.set(key, cluster);
+  }
+
+  const rankedColors = Array.from(clusters.values())
+    .filter((cluster) => cluster.count >= 4)
+    .map((cluster) => ({
+      b: cluster.totalB / cluster.count,
+      g: cluster.totalG / cluster.count,
+      r: cluster.totalR / cluster.count,
+      score: cluster.score
+    }))
+    .sort((first, second) => second.score - first.score);
+
+  const selected: Pick<PixelSample, "b" | "g" | "r">[] = [];
+
+  for (const color of rankedColors) {
+    if (selected.length >= 3) {
+      break;
+    }
+
+    const isDistinct = selected.every((selectedColor) => colorDistance(color, selectedColor) > 44);
+
+    if (isDistinct) {
+      selected.push(color);
+    }
+  }
+
+  for (const fallbackColor of fallback) {
+    if (selected.length >= 3) {
+      break;
+    }
+
+    const rgb = hexToRgb(fallbackColor);
+
+    if (rgb && selected.every((selectedColor) => colorDistance(rgb, selectedColor) > 36)) {
+      selected.push(rgb);
+    }
+  }
+
+  const palette = selected.map(rgbToHex).slice(0, 3);
+  return palette.length === 3 ? (palette as [string, string, string]) : fallback;
+}
+
 function detectFitProfile(
   foregroundSamples: PixelSample[],
   skinSamples: PixelSample[],
@@ -271,6 +415,36 @@ function detectFitProfile(
   return "straight";
 }
 
+function getSignalRatios(
+  skinSamples: PixelSample[],
+  foregroundSamples: PixelSample[],
+  width: number,
+  height: number
+) {
+  const imageArea = Math.max(width * height, 1);
+
+  return {
+    foregroundRatio: foregroundSamples.length / imageArea,
+    skinRatio: skinSamples.length / imageArea
+  };
+}
+
+function hasWrongPhotoSignal(
+  skinSamples: PixelSample[],
+  foregroundSamples: PixelSample[],
+  width: number,
+  height: number
+) {
+  const { foregroundRatio, skinRatio } = getSignalRatios(
+    skinSamples,
+    foregroundSamples,
+    width,
+    height
+  );
+
+  return skinSamples.length < 12 && skinRatio < 0.012 && foregroundRatio < 0.08;
+}
+
 function clampDemographic(fallback: Demographic): VisionDemographic {
   return fallback;
 }
@@ -289,12 +463,83 @@ function detectAgeBandFromImageSignal(seed: string): VisionAgeBand {
   return "adult";
 }
 
+function scoreBrowserConfidence(
+  skinSamples: PixelSample[],
+  foregroundSamples: PixelSample[],
+  width: number,
+  height: number
+) {
+  const { foregroundRatio, skinRatio } = getSignalRatios(skinSamples, foregroundSamples, width, height);
+
+  if (hasWrongPhotoSignal(skinSamples, foregroundSamples, width, height)) {
+    return 24;
+  }
+
+  let confidence = 42;
+
+  if (skinSamples.length >= 48) {
+    confidence += 18;
+  }
+
+  if (skinRatio > 0.04) {
+    confidence += 8;
+  }
+
+  if (foregroundRatio > 0.12) {
+    confidence += 12;
+  }
+
+  if (foregroundRatio > 0.32) {
+    confidence += 8;
+  }
+
+  if (width >= 110 && height >= 110) {
+    confidence += 6;
+  }
+
+  if (skinSamples.length < 24) {
+    confidence -= 10;
+  }
+
+  if (skinSamples.length < 24 && foregroundRatio < 0.16) {
+    confidence -= 16;
+  }
+
+  return Math.max(35, Math.min(88, Math.round(confidence)));
+}
+
+function buildVisibleCues(
+  skinSamples: PixelSample[],
+  foregroundSamples: PixelSample[],
+  dominantPalette: [string, string, string],
+  width: number,
+  height: number,
+  undertone: VisionUndertone,
+  fitProfile: VisionFitProfile
+) {
+  const { foregroundRatio } = getSignalRatios(skinSamples, foregroundSamples, width, height);
+
+  if (hasWrongPhotoSignal(skinSamples, foregroundSamples, width, height)) {
+    return [
+      "wrong image for stylist",
+      "no clear person detected",
+      "upload portrait or full-body photo"
+    ];
+  }
+
+  const faceCue = skinSamples.length >= 48 ? "face outline detected" : "limited face detail";
+  const bodyCue = foregroundRatio > 0.28 ? "fuller body/clothing area visible" : "cropped upper-body signal";
+  const colorCue = `dominant colors ${dominantPalette.slice(0, 2).join(" / ")}`;
+
+  return [faceCue, colorCue, `${undertone} undertone + ${fitProfile} fit`, bodyCue].slice(0, 3);
+}
+
 export async function analyzeStylistPhoto(
   file: File,
   previewUrl: string,
   fallbackDemographic: Demographic
-): Promise<VisionProfile> {
-  const image = await loadImage(previewUrl);
+): Promise<VisionAnalysis> {
+  const image = await loadUploadedImage(file, previewUrl);
   const maxSide = 160;
   const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
   const width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -336,22 +581,56 @@ export async function analyzeStylistPhoto(
   const undertone = detectUndertone(skinSamples, samples);
   const faceShape = detectFaceShape(skinSamples, width, height);
   const fitProfile = detectFitProfile(foregroundSamples, skinSamples, width, height);
+  const dominantPalette = getDominantForegroundPalette(foregroundSamples, undertone, height);
+  const wrongPhotoSignal = hasWrongPhotoSignal(skinSamples, foregroundSamples, width, height);
   const fileSignal = `${file.name}-${file.size}-${file.lastModified}`.toLowerCase();
   const demographic =
     /(^|[^a-z])(female|woman|women|womens|womenswear|girl)([^a-z]|$)/.test(fileSignal)
       ? "womenswear"
       : /(^|[^a-z])(male|man|men|mens|menswear|boy)([^a-z]|$)/.test(fileSignal)
         ? "menswear"
-          : fileSignal.includes("unisex")
-            ? "unisex"
-            : clampDemographic(fallbackDemographic);
-
-  return createVisionProfile({
-    age_band: detectAgeBandFromImageSignal(fileSignal),
+        : fileSignal.includes("unisex")
+          ? "unisex"
+          : clampDemographic(fallbackDemographic);
+  const ageBand = detectAgeBandFromImageSignal(fileSignal);
+  const profile = createVisionProfile({
+    age_band: ageBand,
     demographic,
     detected_face_shape: faceShape,
     primary_color_undertone: undertone,
-    recommended_color_palette: paletteByUndertone[undertone],
+    recommended_color_palette: dominantPalette,
     suggested_fit_profile: fitProfile
+  });
+
+  return createVisionAnalysis({
+    ...profile,
+    analysis_confidence: scoreBrowserConfidence(skinSamples, foregroundSamples, width, height),
+    avoid_notes: wrongPhotoSignal
+      ? [
+          "Upload a clear portrait or full-body photo with face and outfit visible.",
+          "Avoid product-only, scenery, document, or very dark photos in the Stylist."
+        ]
+      : [
+          `Avoid pieces outside the ${demographic} wardrobe profile unless they are clearly unisex.`,
+          `Avoid colors that fight the detected photo palette ${dominantPalette.join(", ")}.`
+        ],
+    grooming_strategy:
+      wrongPhotoSignal
+        ? "Grooming cannot be read from this image because no clear face profile was detected."
+        : demographic === "womenswear"
+        ? `${faceShape} face structure works best with balanced face-framing hair and controlled volume.`
+        : `${faceShape} face structure works best with grooming that sharpens the jaw and keeps side volume controlled.`,
+    outfit_strategy: wrongPhotoSignal
+      ? "This image is not suitable for a personal styling scan. Upload a clear portrait or full-body outfit photo."
+      : `Prioritize ${fitProfile} ${demographic} pieces that match the detected photo palette ${dominantPalette.join(", ")}, then filter by the selected occasion and season.`,
+    visible_cues: buildVisibleCues(
+      skinSamples,
+      foregroundSamples,
+      dominantPalette,
+      width,
+      height,
+      undertone,
+      fitProfile
+    )
   });
 }

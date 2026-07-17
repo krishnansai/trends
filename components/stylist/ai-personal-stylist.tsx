@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertTriangle,
   ArrowUpRight,
   Check,
   Loader2,
@@ -30,10 +31,11 @@ import {
 import type { Demographic, FaceShape, StylingOccasion, StylingSeason } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
+  createVisionAnalysis,
   createVisionProfile,
   type VisionAgeBand,
-  type VisionDemographic,
-  type VisionProfile
+  type VisionAnalysis,
+  type VisionDemographic
 } from "@/lib/vision";
 
 function titleCase(value: string) {
@@ -75,7 +77,7 @@ type RecommendationResponse = {
   occasion: StylingOccasion;
   recommendations: OutfitRecommendation[];
   season: StylingSeason;
-  visionData: VisionProfile;
+  visionData: VisionAnalysis;
 };
 
 type PhotoAnalysisResponse = {
@@ -83,8 +85,132 @@ type PhotoAnalysisResponse = {
   error?: string;
   model: string | null;
   source: "browser-fallback" | "ollama";
-  visionData: VisionProfile;
+  visionData: VisionAnalysis;
 };
+
+type PhotoFeedback = {
+  message: string;
+  title: string;
+  tone: "error" | "positive" | "warning";
+};
+
+const ANALYSIS_REFINE_TIMEOUT_MS = 8000;
+
+function isSupportedImageFile(file: File) {
+  return file.type.startsWith("image/") || /\.(avif|gif|heic|heif|jpe?g|png|webp)$/i.test(file.name);
+}
+
+function hasWrongImageSignal(profile: VisionAnalysis) {
+  return (
+    profile.analysis_confidence < 34 ||
+    profile.visible_cues.some((cue) => /wrong image|no clear person|not suitable/i.test(cue))
+  );
+}
+
+function pickFeedbackCopy(profile: VisionAnalysis, options: PhotoFeedback[]) {
+  const seed = [
+    profile.demographic,
+    profile.detected_face_shape,
+    profile.primary_color_undertone,
+    profile.suggested_fit_profile,
+    profile.analysis_confidence,
+    ...profile.visible_cues
+  ].join("|");
+  const index = seed.split("").reduce((total, char) => total + char.charCodeAt(0), 0) % options.length;
+
+  return options[index];
+}
+
+function getPhotoFeedback(profile: VisionAnalysis): PhotoFeedback {
+  if (hasWrongImageSignal(profile)) {
+    return pickFeedbackCopy(profile, [
+      {
+        message:
+          "This does not look like a usable styling photo. Upload a clear portrait or full-body outfit image.",
+        title: "Wrong image for Stylist",
+        tone: "error"
+      },
+      {
+        message:
+          "The stylist cannot read face, fit, or clothing cues here. Try a brighter photo with the person centered.",
+        title: "Profile not visible",
+        tone: "error"
+      },
+      {
+        message:
+          "This looks like the wrong upload for personal styling. Use a selfie, portrait, or full-body outfit shot.",
+        title: "Need a person photo",
+        tone: "error"
+      },
+      {
+        message:
+          "The image is too unclear for accurate styling. Upload one where the face and outfit are both visible.",
+        title: "Scan needs a clearer photo",
+        tone: "error"
+      }
+    ]);
+  }
+
+  if (
+    profile.analysis_confidence < 56 ||
+    profile.visible_cues.some((cue) => /limited face|cropped upper/i.test(cue))
+  ) {
+    return pickFeedbackCopy(profile, [
+      {
+        message:
+          "The scan worked, but a brighter full-body photo will improve color, fit, and grooming accuracy.",
+        title: "Readable, but could be sharper",
+        tone: "warning"
+      },
+      {
+        message:
+          "Good start. For a stronger recommendation, use a photo with more outfit detail and clearer face lighting.",
+        title: "More detail will help",
+        tone: "warning"
+      },
+      {
+        message:
+          "The stylist found enough cues to continue, but a less cropped photo will make the result more accurate.",
+        title: "Partial profile detected",
+        tone: "warning"
+      },
+      {
+        message:
+          "The image is usable. Better lighting will make the undertone and grooming match more precise.",
+        title: "Scan quality is moderate",
+        tone: "warning"
+      }
+    ]);
+  }
+
+  return pickFeedbackCopy(profile, [
+    {
+      message: `Nice photo. I can read your ${profile.primary_color_undertone} color direction, ${profile.suggested_fit_profile} fit, and ${demographicLabels[profile.demographic]} wardrobe profile.`,
+      title: "Looks ready for styling",
+      tone: "positive"
+    },
+    {
+      message: `Looks sharp. The scan has enough face, color, and proportion cues for a cleaner ${demographicLabels[profile.demographic]} recommendation.`,
+      title: "Strong profile read",
+      tone: "positive"
+    },
+    {
+      message: `Good upload. The stylist can now match color palette, fit profile, and grooming direction with better confidence.`,
+      title: "Profile scan is clean",
+      tone: "positive"
+    },
+    {
+      message: `This works well. The visible tones and proportions are clear enough for a personalized outfit match.`,
+      title: "Style cues detected",
+      tone: "positive"
+    },
+    {
+      message: `Nice profile shot. The image gives enough detail to filter by wardrobe profile, season, and occasion.`,
+      title: "Ready to style",
+      tone: "positive"
+    }
+  ]);
+}
 
 export function AIPersonalStylist({
   archiveLookCount,
@@ -105,7 +231,7 @@ export function AIPersonalStylist({
   const [detectedFaceShape, setDetectedFaceShape] = useState<FaceShape | null>(null);
   const [analysisSource, setAnalysisSource] = useState<PhotoAnalysisResponse["source"]>("browser-fallback");
   const [analysisModel, setAnalysisModel] = useState<string | null>(null);
-  const [visionProfile, setVisionProfile] = useState<VisionProfile | null>(null);
+  const [visionProfile, setVisionProfile] = useState<VisionAnalysis | null>(null);
   const [recommendations, setRecommendations] = useState<OutfitRecommendation[]>([]);
   const [contextWarning, setContextWarning] = useState("");
   const [grooming, setGrooming] = useState<GroomingRecommendationSet>({
@@ -113,6 +239,7 @@ export function AIPersonalStylist({
     hairstyle: null
   });
   const [recommendationError, setRecommendationError] = useState("");
+  const [photoFeedback, setPhotoFeedback] = useState<PhotoFeedback | null>(null);
   const [photoSeed, setPhotoSeed] = useState("");
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const photoFileRef = useRef<File | null>(null);
@@ -150,6 +277,7 @@ export function AIPersonalStylist({
     ? `${titleCase(visionProfile.primary_color_undertone)} undertone`
     : profile.title;
   const ageBandLabel = visionProfile ? ageBandLabels[visionProfile.age_band] : "Adult";
+  const analysisConfidence = visionProfile?.analysis_confidence ?? 0;
 
   useEffect(() => {
     return () => {
@@ -160,7 +288,7 @@ export function AIPersonalStylist({
   }, [previewUrl]);
 
   async function loadRecommendations(
-    nextVisionProfile: VisionProfile,
+    nextVisionProfile: VisionAnalysis,
     nextOccasion = selectedOccasion,
     nextSeason = selectedSeason
   ) {
@@ -206,15 +334,23 @@ export function AIPersonalStylist({
     }
   }
 
-  async function refinePhotoAnalysis(file: File, fallbackProfile: VisionProfile) {
+  async function refinePhotoAnalysis(file: File, fallbackProfile: VisionAnalysis) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), ANALYSIS_REFINE_TIMEOUT_MS);
+
     try {
       const formData = new FormData();
       formData.append("photo", file);
       formData.append("age_band", fallbackProfile.age_band);
+      formData.append("analysis_confidence", String(fallbackProfile.analysis_confidence));
+      formData.append("avoid_notes", JSON.stringify(fallbackProfile.avoid_notes));
       formData.append("demographic", fallbackProfile.demographic);
       formData.append("detected_face_shape", fallbackProfile.detected_face_shape);
+      formData.append("grooming_strategy", fallbackProfile.grooming_strategy);
+      formData.append("outfit_strategy", fallbackProfile.outfit_strategy);
       formData.append("primary_color_undertone", fallbackProfile.primary_color_undertone);
       formData.append("suggested_fit_profile", fallbackProfile.suggested_fit_profile);
+      formData.append("visible_cues", JSON.stringify(fallbackProfile.visible_cues));
       formData.append(
         "recommended_color_palette",
         JSON.stringify(fallbackProfile.recommended_color_palette)
@@ -222,7 +358,8 @@ export function AIPersonalStylist({
 
       const response = await fetch("/api/stylist/analyze", {
         body: formData,
-        method: "POST"
+        method: "POST",
+        signal: controller.signal
       });
 
       if (!response.ok) {
@@ -239,6 +376,8 @@ export function AIPersonalStylist({
       setAnalysisSource("browser-fallback");
       setAnalysisModel(null);
       return fallbackProfile;
+    } finally {
+      window.clearTimeout(timeout);
     }
   }
 
@@ -249,6 +388,7 @@ export function AIPersonalStylist({
     setContextWarning("");
     setGrooming({ beard: null, hairstyle: null });
     setRecommendationError("");
+    setPhotoFeedback(null);
     setIsReady(false);
     setIsScanning(true);
 
@@ -264,6 +404,19 @@ export function AIPersonalStylist({
       setDetectedDemographic(nextVisionProfile.demographic);
       setDetectedFaceShape(nextVisionProfile.detected_face_shape);
       setVisionProfile(nextVisionProfile);
+
+      const nextPhotoFeedback = getPhotoFeedback(nextVisionProfile);
+      setPhotoFeedback(nextPhotoFeedback);
+
+      if (nextPhotoFeedback.tone === "error") {
+        setRecommendations([]);
+        setContextWarning("");
+        setGrooming({ beard: null, hairstyle: null });
+        setIsReady(false);
+        setIsScanning(false);
+        return;
+      }
+
       await loadRecommendations(nextVisionProfile, selectedOccasion, selectedSeason);
     } catch (error) {
       console.error(error);
@@ -273,6 +426,11 @@ export function AIPersonalStylist({
       }
 
       setRecommendationError("Photo analysis could not read this image. Try a clearer portrait or full-body photo.");
+      setPhotoFeedback({
+        message: "Upload a clear portrait or full-body image and scan again.",
+        title: "Photo could not be read",
+        tone: "error"
+      });
       setRecommendations([]);
       setGrooming({ beard: null, hairstyle: null });
       setIsReady(false);
@@ -287,6 +445,19 @@ export function AIPersonalStylist({
       return;
     }
 
+    if (!isSupportedImageFile(file)) {
+      setPhotoFeedback({
+        message: "This file is not an image. Upload a portrait or full-body photo in JPG, PNG, WebP, HEIC, or similar image format.",
+        title: "Wrong file type",
+        tone: "error"
+      });
+      setRecommendationError("");
+      setIsReady(false);
+      setIsScanning(false);
+      event.target.value = "";
+      return;
+    }
+
     const nextPreviewUrl = URL.createObjectURL(file);
     const nextPhotoSeed = `${file.name}-${file.size}-${file.lastModified}`;
 
@@ -298,6 +469,7 @@ export function AIPersonalStylist({
     setUploadName(file.name);
     setPhotoSeed(nextPhotoSeed);
     photoFileRef.current = file;
+    event.target.value = "";
     void startScan(file, nextPreviewUrl);
   }
 
@@ -322,6 +494,7 @@ export function AIPersonalStylist({
     setContextWarning("");
     setGrooming({ beard: null, hairstyle: null });
     setRecommendationError("");
+    setPhotoFeedback(null);
 
     if (photoInputRef.current) {
       photoInputRef.current.value = "";
@@ -332,7 +505,7 @@ export function AIPersonalStylist({
     setSelectedDemographic(nextDemographic);
     setDetectedDemographic(nextDemographic);
 
-    const nextVisionProfile = createVisionProfile({
+    const nextVisionProfile = createVisionAnalysis({
       ...(visionProfile ?? createVisionProfile({})),
       demographic: nextDemographic
     });
@@ -424,24 +597,29 @@ export function AIPersonalStylist({
               </div>
             </div>
 
-            <input
-              id="stylist-photo"
-              type="file"
-              accept="image/*"
-              ref={photoInputRef}
-              className="sr-only"
-              onChange={handleUpload}
-            />
-            <button
-              type="button"
+            <div
               className={cn(
-                "relative mt-3 flex min-h-[420px] w-full flex-col items-center justify-center overflow-hidden border border-dashed border-[#BDAE9A] bg-[#F6F0E6] p-5 text-center transition-all duration-300 hover:border-[#7B5637] hover:bg-[#F0E5D6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8A6A4F]/25 disabled:cursor-wait",
-                previewUrl ? "border-solid border-[#D8CCBB] bg-white" : ""
+                "relative mt-3 flex min-h-[420px] w-full cursor-pointer flex-col items-center justify-center overflow-hidden border border-dashed border-[#BDAE9A] bg-[#F6F0E6] p-5 text-center transition-all duration-300 hover:border-[#7B5637] hover:bg-[#F0E5D6] focus-within:outline-none focus-within:ring-2 focus-within:ring-[#8A6A4F]/25",
+                previewUrl ? "border-solid border-[#D8CCBB] bg-white" : "",
+                isScanning ? "pointer-events-none cursor-wait" : ""
               )}
-              disabled={isScanning}
               aria-label={previewUrl ? "Change styling profile photo" : "Select styling profile photo"}
-              onClick={() => photoInputRef.current?.click()}
+              aria-disabled={isScanning}
             >
+              <input
+                id="stylist-photo"
+                type="file"
+                accept="image/*"
+                ref={photoInputRef}
+                className="absolute inset-0 z-20 h-full w-full cursor-pointer opacity-0 disabled:cursor-wait"
+                disabled={isScanning}
+                aria-label={previewUrl ? "Change styling profile photo" : "Select styling profile photo"}
+                onClick={(event) => {
+                  event.currentTarget.value = "";
+                }}
+                onChange={handleUpload}
+              />
+
               {previewUrl ? (
                 <img
                   src={previewUrl}
@@ -463,7 +641,7 @@ export function AIPersonalStylist({
               )}
 
               {isScanning ? (
-                <div className="absolute inset-0 overflow-hidden bg-stone-950/45 p-6 text-neutral-950 backdrop-blur-[2px]">
+                <div className="absolute inset-0 z-30 overflow-hidden bg-stone-950/45 p-6 text-neutral-950 backdrop-blur-[2px]">
                   <div className="scan-sweep absolute inset-x-0 top-0 h-24" />
                   <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40" />
                   <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 text-center">
@@ -479,7 +657,35 @@ export function AIPersonalStylist({
                   </div>
                 </div>
               ) : null}
-            </button>
+            </div>
+
+            {photoFeedback ? (
+              <div
+                className={cn(
+                  "mt-4 flex items-start gap-3 border p-3 text-left shadow-sm",
+                  photoFeedback.tone === "positive" &&
+                    "border-[#C7D6BF] bg-[#F4FAF1] text-[#26361F]",
+                  photoFeedback.tone === "warning" &&
+                    "border-[#E2C98D] bg-[#FFF8E6] text-[#5B4318]",
+                  photoFeedback.tone === "error" &&
+                    "border-[#E4B4A6] bg-[#FFF1EC] text-[#6B2A1D]"
+                )}
+              >
+                <span className="mt-0.5 grid size-8 shrink-0 place-items-center border border-current/20 bg-white/55">
+                  {photoFeedback.tone === "positive" ? (
+                    <Sparkles className="size-4" />
+                  ) : (
+                    <AlertTriangle className="size-4" />
+                  )}
+                </span>
+                <span>
+                  <span className="block text-xs font-semibold uppercase tracking-[0.16em]">
+                    {photoFeedback.title}
+                  </span>
+                  <span className="mt-1 block text-sm leading-6">{photoFeedback.message}</span>
+                </span>
+              </div>
+            ) : null}
 
             <div className="mt-5 grid gap-4">
               <div>
@@ -524,30 +730,37 @@ export function AIPersonalStylist({
                 {uploadName || "No profile photo selected"}
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isScanning}
-                  onClick={() => {
-                    if (photoSeed) {
+                {photoSeed ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isScanning}
+                    onClick={() => {
                       if (photoFileRef.current) {
                         void startScan(photoFileRef.current);
                       }
-                      return;
-                    }
-
-                    photoInputRef.current?.click();
-                  }}
-                >
-                  {isScanning ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : photoSeed ? (
-                    <Sparkles className="size-4" />
-                  ) : (
+                    }}
+                  >
+                    {isScanning ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="size-4" />
+                    )}
+                    Analyze photo
+                  </Button>
+                ) : (
+                  <label
+                    htmlFor="stylist-photo"
+                    className={cn(
+                      buttonVariants({ variant: "outline" }),
+                      isScanning ? "pointer-events-none opacity-50" : "cursor-pointer"
+                    )}
+                    aria-disabled={isScanning}
+                  >
                     <Upload className="size-4" />
-                  )}
-                  {photoSeed ? "Analyze photo" : "Select photo"}
-                </Button>
+                    Select photo
+                  </label>
+                )}
                 <Button type="button" variant="outline" onClick={handleReset}>
                   <RotateCcw className="size-4" />
                   Reset
@@ -599,6 +812,23 @@ export function AIPersonalStylist({
                   <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-600">
                     The scan matched your profile to {undertoneLabel.toLowerCase()}, a {fitProfileLabel.toLowerCase()} fit direction, a {ageBandLabel.toLowerCase()} styling band, and a {selectedOccasionLabel.toLowerCase()} / {selectedSeasonLabel.toLowerCase()} context.
                   </p>
+
+                  <div className="mt-4 border border-[#D8CCBB] bg-[#F9F5EE] p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                          AI suggestion
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-neutral-700">
+                          {visionProfile?.outfit_strategy}
+                        </p>
+                      </div>
+                      <Badge>{analysisConfidence}% confidence</Badge>
+                    </div>
+                    <p className="mt-3 border-t border-[#D8CCBB] pt-3 text-sm leading-6 text-neutral-700">
+                      {visionProfile?.grooming_strategy}
+                    </p>
+                  </div>
 
                   <div className="mt-5">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-600">
@@ -666,8 +896,47 @@ export function AIPersonalStylist({
                     <p className="mt-3 text-sm font-medium text-neutral-950">{selectedOccasionLabel}</p>
                     <p className="mt-1 text-xs text-neutral-500">{selectedSeasonLabel}</p>
                   </div>
+
+                  <div className="bg-white/70 p-4">
+                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                      <Sparkles className="size-4" />
+                      Confidence
+                    </div>
+                    <p className="mt-3 text-sm font-medium text-neutral-950">{analysisConfidence}%</p>
+                    <p className="mt-1 text-xs text-neutral-500">
+                      {analysisSource === "ollama" ? "AI vision" : "Browser fallback"}
+                    </p>
+                  </div>
                 </div>
               </div>
+
+              {visionProfile ? (
+                <div className="grid gap-4 border-t border-[#D8CCBB] p-4 lg:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                      Visible cues
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {visionProfile.visible_cues.map((cue) => (
+                        <Badge key={cue}>{cue}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                      Avoid
+                    </p>
+                    <div className="mt-3 space-y-2 text-sm text-neutral-600">
+                      {visionProfile.avoid_notes.map((note) => (
+                        <p key={note} className="flex items-start gap-2">
+                          <Check className="mt-0.5 size-4 shrink-0 text-[#7B5637]" />
+                          <span>{note}</span>
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="flex flex-col gap-3 border-t border-[#D8CCBB] p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
