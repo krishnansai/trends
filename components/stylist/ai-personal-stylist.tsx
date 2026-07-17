@@ -4,25 +4,37 @@ import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "re
 import {
   AlertTriangle,
   ArrowUpRight,
-  Check,
+  Bookmark,
+  Copy,
+  Download,
   RotateCcw,
+  Shuffle,
   Sparkles,
   Upload,
-  Wand2
+  Wand2,
+  X
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { analyzeStylistPhoto } from "@/lib/photo-analysis";
 import {
+  adviceModeLabels,
   bodyArchitectureLabels,
   getStyleProfile,
+  type AdviceMode,
   type BodyArchitecture,
   type GroomingRecommendation,
   type GroomingRecommendationSet,
   type OutfitRecommendation,
   type StyleProfileId
 } from "@/lib/stylist";
-import type { Demographic, FaceShape, StylingOccasion, StylingSeason } from "@/lib/types";
+import {
+  readStyleVault,
+  removeStyleVaultItem,
+  upsertStyleVaultItem,
+  type StyleVaultItem
+} from "@/lib/style-vault";
+import type { Demographic, FaceShape, Garment, StylingOccasion, StylingSeason } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
   type VisionAnalysis,
@@ -52,6 +64,11 @@ const seasonOptions: { label: string; value: StylingSeason }[] = [
   { label: "All-Season", value: "all-season" }
 ];
 
+const adviceModeOptions: { label: string; value: AdviceMode }[] = [
+  { label: adviceModeLabels.style_own, value: "style_own" },
+  { label: adviceModeLabels.discover_new, value: "discover_new" }
+];
+
 const scanStatusTexts = [
   "Reading facial geometry...",
   "Extracting color palette...",
@@ -60,6 +77,7 @@ const scanStatusTexts = [
 ];
 
 type RecommendationResponse = {
+  adviceMode: AdviceMode;
   bodyArchitecture: BodyArchitecture;
   contextWarning?: string;
   demographic: VisionDemographic;
@@ -83,6 +101,29 @@ type PhotoFeedback = {
   message: string;
   title: string;
   tone: "error" | "positive" | "warning";
+};
+
+type ShuffleResponse = {
+  error?: string;
+  garment?: Garment;
+};
+
+type OutfitGridPiece = {
+  accentColor: string;
+  garment?: Garment;
+  id: string;
+  imageUrl?: string;
+  meta: string;
+  role: "Top / Layer" | "Bottom" | "Footwear";
+  title: string;
+};
+
+type ThreePieceOutfit = {
+  id: string;
+  pieces: OutfitGridPiece[];
+  recommendation: OutfitRecommendation;
+  summary: string;
+  title: string;
 };
 
 const ANALYSIS_REFINE_TIMEOUT_MS = 8000;
@@ -215,6 +256,277 @@ function inferBodyArchitecture(profile: VisionAnalysis): BodyArchitecture {
   return profile.suggested_fit_profile === "oversized" ? "tall_broad" : "athletic_tapered";
 }
 
+function getGeometryDescriptor(faceShape: FaceShape | null) {
+  if (!faceShape) {
+    return "Balanced";
+  }
+
+  if (faceShape === "square" || faceShape === "diamond" || faceShape === "rectangle") {
+    return "Angular";
+  }
+
+  if (faceShape === "round") {
+    return "Soft / Rounded";
+  }
+
+  if (faceShape === "oblong") {
+    return "Long / Vertical";
+  }
+
+  return "Balanced";
+}
+
+function getHairstyleBreakdown(card: GroomingRecommendation | null, profile: VisionAnalysis | null) {
+  if (!card) {
+    return "No hairstyle match is available for this scan yet.";
+  }
+
+  const faceShape = profile?.detected_face_shape ?? card.matchedFaceShape;
+  const volume = profile?.hairstyle_volume ?? "medium";
+
+  if (faceShape === "round") {
+    return `Controlled ${volume} volume on top adds vertical lift, while tighter sides prevent extra width around the temples.`;
+  }
+
+  if (faceShape === "square" || faceShape === "diamond") {
+    return `Textured movement softens the strongest angles while keeping the side profile clean and intentional.`;
+  }
+
+  if (faceShape === "oblong" || faceShape === "rectangle") {
+    return `Balanced top length avoids making the profile look longer, while tapering keeps the outline polished.`;
+  }
+
+  return `Balanced volume works with the natural outline, keeping the haircut flexible without distorting the face shape.`;
+}
+
+function getBeardBreakdown(card: GroomingRecommendation | null, profile: VisionAnalysis | null) {
+  if (!card) {
+    return "No beard match is available for this scan.";
+  }
+
+  const faceShape = profile?.detected_face_shape ?? card.matchedFaceShape;
+
+  if (faceShape === "round") {
+    return "A cleaner cheek line and tighter sideburn blend create more jaw definition without adding cheek width.";
+  }
+
+  if (faceShape === "square" || faceShape === "diamond") {
+    return "A controlled cheek line keeps the natural angles sharp while the neckline prevents the beard from looking heavy.";
+  }
+
+  if (faceShape === "oblong" || faceShape === "rectangle") {
+    return "Moderate beard length adds structure at the chin while avoiding too much vertical extension.";
+  }
+
+  return "A balanced beard outline frames the jaw while keeping the face shape proportional.";
+}
+
+function getHairBarberSpecs(card: GroomingRecommendation | null) {
+  if (!card) {
+    return "Hair: keep top balanced with light texture; clean taper around sides and neckline.";
+  }
+
+  const title = card.title.toLowerCase();
+
+  if (title.includes("crop")) {
+    return "Hair: 1.5-2.5 inches choppy texture on top; low skin fade from #0/#0.5 into #2; matte clay or styling powder.";
+  }
+
+  if (title.includes("burr") || title.includes("buzz")) {
+    return "Hair: #3 or #4 guard on top; temple taper from #0.5 to #2; soft lineup; lightweight scalp moisturizer.";
+  }
+
+  if (title.includes("flow") || title.includes("shag")) {
+    return "Hair: 3-5 inches layered scissor cut; keep sides natural; remove bulk around ears; sea salt spray or light cream.";
+  }
+
+  return `Hair: ask for ${card.title}; keep texture natural, sides clean, and avoid high-shine gel.`;
+}
+
+function getBeardBarberSpecs(card: GroomingRecommendation | null) {
+  if (!card) {
+    return "Beard: keep cheek line natural; clean neckline; blend sideburns softly.";
+  }
+
+  const title = card.title.toLowerCase();
+
+  if (title.includes("fade")) {
+    return "Beard: blend sideburns from #0.5 into 3-6mm beard; square cheek line lightly; clean neckline one finger above Adam's apple.";
+  }
+
+  if (title.includes("boxed")) {
+    return "Beard: 4-8mm short boxed shape; lower cheek line slightly; crisp neck cleanup; finish with beard oil.";
+  }
+
+  if (title.includes("beardstache")) {
+    return "Beard: keep moustache heavier at 8-12mm; cheeks at 2-3mm stubble; define lip line with moustache wax.";
+  }
+
+  return `Beard: ask for ${card.title}; keep cheek and neck lines clean with natural density through the jaw.`;
+}
+
+function loadLookcardImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Unable to render uploaded photo."));
+    image.src = src;
+  });
+}
+
+function drawImageCover(
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) {
+  const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+  const drawWidth = image.naturalWidth * scale;
+  const drawHeight = image.naturalHeight * scale;
+  const drawX = x + (width - drawWidth) / 2;
+  const drawY = y + (height - drawHeight) / 2;
+
+  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+        return;
+      }
+
+      reject(new Error("Could not export lookcard."));
+    }, "image/png");
+  });
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 250);
+}
+
+function drawFittedText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number
+) {
+  if (context.measureText(text).width <= maxWidth) {
+    context.fillText(text, x, y);
+    return;
+  }
+
+  let nextText = text;
+
+  while (nextText.length > 0 && context.measureText(`${nextText}...`).width > maxWidth) {
+    nextText = nextText.slice(0, -1);
+  }
+
+  context.fillText(`${nextText}...`, x, y);
+}
+
+function supportPieceForRole(
+  supportPieces: string[],
+  role: OutfitGridPiece["role"],
+  usedPieces: Set<string>
+) {
+  const matchers: Record<OutfitGridPiece["role"], RegExp> = {
+    "Bottom": /denim|jean|pant|short|skirt|trouser|wide-leg/i,
+    "Footwear": /boot|loafer|sandal|shoe|sneaker|trainer/i,
+    "Top / Layer": /blazer|hoodie|jacket|knit|layer|overshirt|polo|shirt|tank|tee/i
+  };
+  const matchingPiece = supportPieces.find(
+    (piece) => !usedPieces.has(piece) && matchers[role].test(piece)
+  );
+
+  if (matchingPiece) {
+    usedPieces.add(matchingPiece);
+    return matchingPiece;
+  }
+
+  const fallbackPiece = supportPieces.find((piece) => !usedPieces.has(piece));
+
+  if (fallbackPiece) {
+    usedPieces.add(fallbackPiece);
+    return fallbackPiece;
+  }
+
+  const fallbackByRole: Record<OutfitGridPiece["role"], string> = {
+    "Bottom": "clean straight-leg bottom",
+    "Footwear": "low-profile everyday shoe",
+    "Top / Layer": "light structured top layer"
+  };
+
+  return fallbackByRole[role];
+}
+
+function roleForGarment(category: OutfitRecommendation["garment"]["category"]): OutfitGridPiece["role"] {
+  if (category === "bottoms" || category === "skirts") {
+    return "Bottom";
+  }
+
+  if (category === "footwear") {
+    return "Footwear";
+  }
+
+  return "Top / Layer";
+}
+
+function buildThreePieceOutfit(
+  recommendation: OutfitRecommendation,
+  index: number,
+  palette: string[],
+  occasionLabel: string,
+  seasonLabel: string
+): ThreePieceOutfit {
+  const roles: OutfitGridPiece["role"][] = ["Top / Layer", "Bottom", "Footwear"];
+  const usedPieces = new Set<string>();
+  const primaryRole = roleForGarment(recommendation.garment.category);
+  const pieces = roles.map((role, roleIndex): OutfitGridPiece => {
+    if (role === primaryRole) {
+      return {
+        accentColor: palette[roleIndex % palette.length] ?? "#D8CCBB",
+        garment: recommendation.garment,
+        id: `${recommendation.id}-${role}`,
+        imageUrl: recommendation.garment.image_url,
+        meta: `${recommendation.garment.year} · ${titleCase(recommendation.garment.fit_profile)}`,
+        role,
+        title: recommendation.title
+      };
+    }
+
+    const supportPiece = supportPieceForRole(recommendation.supportPieces, role, usedPieces);
+
+    return {
+      accentColor: palette[roleIndex % palette.length] ?? "#D8CCBB",
+      id: `${recommendation.id}-${role}`,
+      meta: "Styling support",
+      role,
+      title: supportPiece
+    };
+  });
+
+  return {
+    id: recommendation.id,
+    pieces,
+    recommendation,
+    summary: `The ${recommendation.garment.fit_profile} anchor piece works with balanced bottoms and clean footwear for ${occasionLabel.toLowerCase()} in ${seasonLabel.toLowerCase()}.`,
+    title: `Look ${index + 1}`
+  };
+}
+
 export function AIPersonalStylist({
   archiveLookCount,
   isUsingSampleData
@@ -228,6 +540,7 @@ export function AIPersonalStylist({
   const [isReady, setIsReady] = useState(false);
   const [profileId, setProfileId] = useState<StyleProfileId>("neutral");
   const selectedDemographic: VisionDemographic = "menswear";
+  const [selectedAdviceMode, setSelectedAdviceMode] = useState<AdviceMode>("discover_new");
   const [selectedOccasion, setSelectedOccasion] = useState<StylingOccasion>("mall");
   const [selectedSeason, setSelectedSeason] = useState<StylingSeason>("summer");
   const [selectedBodyArchitecture, setSelectedBodyArchitecture] =
@@ -243,17 +556,31 @@ export function AIPersonalStylist({
   });
   const [recommendationError, setRecommendationError] = useState("");
   const [photoFeedback, setPhotoFeedback] = useState<PhotoFeedback | null>(null);
+  const [isGroomingDrawerOpen, setIsGroomingDrawerOpen] = useState(false);
+  const [barberCopyStatus, setBarberCopyStatus] = useState("");
+  const [isExportingLookcard, setIsExportingLookcard] = useState(false);
+  const [lookcardError, setLookcardError] = useState("");
+  const [vaultIds, setVaultIds] = useState<Set<string>>(new Set());
+  const [pieceOverrides, setPieceOverrides] = useState<
+    Record<string, Partial<Record<OutfitGridPiece["role"], OutfitGridPiece>>>
+  >({});
+  const [shuffleHistory, setShuffleHistory] = useState<Record<string, string[]>>({});
+  const [shuffleLoadingIds, setShuffleLoadingIds] = useState<Set<string>>(new Set());
   const [scanStatusIndex, setScanStatusIndex] = useState(0);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const photoFileRef = useRef<File | null>(null);
   const scanRunRef = useRef(0);
 
   const profile = useMemo(() => getStyleProfile(profileId), [profileId]);
-  const profilePalette = visionProfile?.recommended_color_palette ?? [
-    profile.palette[0],
-    profile.palette[1],
-    profile.palette[2]
-  ];
+  const profilePalette = useMemo(
+    () =>
+      visionProfile?.recommended_color_palette ?? [
+        profile.palette[0],
+        profile.palette[1],
+        profile.palette[2]
+      ],
+    [profile.palette, visionProfile?.recommended_color_palette]
+  );
   const extractedPalette = visionProfile?.extracted_palette ?? profilePalette;
   const dominantColor = visionProfile?.dominant_color ?? extractedPalette[0];
   const groomingCards = useMemo<GroomingRecommendation[]>(() => {
@@ -275,6 +602,29 @@ export function AIPersonalStylist({
   const fitProfileLabel = visionProfile
     ? titleCase(visionProfile.suggested_fit_profile)
     : profile.fitType;
+  const hairstyleBreakdown = getHairstyleBreakdown(grooming.hairstyle, visionProfile);
+  const beardBreakdown = getBeardBreakdown(grooming.beard, visionProfile);
+  const hairBarberSpecs = getHairBarberSpecs(grooming.hairstyle);
+  const beardBarberSpecs = getBeardBarberSpecs(grooming.beard);
+  const barberClipboardText = [
+    `Detected geometry: ${detectedFaceShape ? titleCase(detectedFaceShape) : "Balanced"} / ${getGeometryDescriptor(detectedFaceShape)}`,
+    hairBarberSpecs,
+    beardBarberSpecs
+  ].join("\n");
+  const outfitGroups = useMemo(
+    () =>
+      recommendations.map((recommendation, index) =>
+        buildThreePieceOutfit(
+          recommendation,
+          index,
+          profilePalette,
+          selectedOccasionLabel,
+          selectedSeasonLabel
+        )
+      ),
+    [profilePalette, recommendations, selectedOccasionLabel, selectedSeasonLabel]
+  );
+
   useEffect(() => {
     return () => {
       if (previewUrl) {
@@ -295,11 +645,28 @@ export function AIPersonalStylist({
     return () => window.clearInterval(interval);
   }, [isScanning]);
 
+  useEffect(() => {
+    const syncVaultIds = () => {
+      setVaultIds(new Set(readStyleVault().map((item) => item.id)));
+    };
+    const timeout = window.setTimeout(syncVaultIds, 0);
+
+    window.addEventListener("style-vault-updated", syncVaultIds);
+    window.addEventListener("storage", syncVaultIds);
+
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener("style-vault-updated", syncVaultIds);
+      window.removeEventListener("storage", syncVaultIds);
+    };
+  }, []);
+
   async function loadRecommendations(
     nextVisionProfile: VisionAnalysis,
     nextOccasion = selectedOccasion,
     nextSeason = selectedSeason,
-    nextBodyArchitecture = selectedBodyArchitecture
+    nextBodyArchitecture = selectedBodyArchitecture,
+    nextAdviceMode = selectedAdviceMode
   ) {
     setRecommendationError("");
 
@@ -310,6 +677,7 @@ export function AIPersonalStylist({
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
+          adviceMode: nextAdviceMode,
           bodyArchitecture: nextBodyArchitecture,
           occasion: nextOccasion,
           season: nextSeason,
@@ -323,12 +691,16 @@ export function AIPersonalStylist({
 
       const data = (await response.json()) as RecommendationResponse;
       setRecommendations(data.recommendations);
+      setPieceOverrides({});
+      setShuffleHistory({});
+      setShuffleLoadingIds(new Set());
       setContextWarning(data.contextWarning ?? "");
       setDetectedDemographic(data.demographic);
       setDetectedFaceShape(data.faceShape);
       setGrooming(data.grooming);
       setProfileId(data.visionData.primary_color_undertone);
       setVisionProfile(data.visionData);
+      setSelectedAdviceMode(data.adviceMode);
       setSelectedBodyArchitecture(data.bodyArchitecture);
       setSelectedOccasion(data.occasion);
       setSelectedSeason(data.season);
@@ -363,6 +735,7 @@ export function AIPersonalStylist({
       formData.append("grooming_state", fallbackProfile.grooming_state);
       formData.append("grooming_strategy", fallbackProfile.grooming_strategy);
       formData.append("hairstyle_volume", fallbackProfile.hairstyle_volume);
+      formData.append("lighting_quality", fallbackProfile.lighting_quality);
       formData.append("outfit_strategy", fallbackProfile.outfit_strategy);
       formData.append("primary_color_undertone", fallbackProfile.primary_color_undertone);
       formData.append("suggested_fit_profile", fallbackProfile.suggested_fit_profile);
@@ -397,9 +770,13 @@ export function AIPersonalStylist({
     const scanRun = scanRunRef.current + 1;
     scanRunRef.current = scanRun;
     setRecommendations([]);
+    setPieceOverrides({});
+    setShuffleHistory({});
+    setShuffleLoadingIds(new Set());
     setContextWarning("");
     setGrooming({ beard: null, hairstyle: null });
     setRecommendationError("");
+    setLookcardError("");
     setPhotoFeedback(null);
     setIsReady(false);
     setScanStatusIndex(0);
@@ -443,7 +820,8 @@ export function AIPersonalStylist({
         nextVisionProfile,
         selectedOccasion,
         selectedSeason,
-        nextBodyArchitecture
+        nextBodyArchitecture,
+        selectedAdviceMode
       );
     } catch (error) {
       console.error(error);
@@ -524,6 +902,7 @@ export function AIPersonalStylist({
     setIsScanning(false);
     setIsReady(false);
     setProfileId("neutral");
+    setSelectedAdviceMode("discover_new");
     setSelectedOccasion("mall");
     setSelectedSeason("summer");
     setSelectedBodyArchitecture("athletic_tapered");
@@ -531,9 +910,13 @@ export function AIPersonalStylist({
     setDetectedFaceShape(null);
     setVisionProfile(null);
     setRecommendations([]);
+    setPieceOverrides({});
+    setShuffleHistory({});
+    setShuffleLoadingIds(new Set());
     setContextWarning("");
     setGrooming({ beard: null, hairstyle: null });
     setRecommendationError("");
+    setLookcardError("");
     setPhotoFeedback(null);
     setScanStatusIndex(0);
 
@@ -558,7 +941,8 @@ export function AIPersonalStylist({
       visionProfile,
       nextOccasion,
       selectedSeason,
-      selectedBodyArchitecture
+      selectedBodyArchitecture,
+      selectedAdviceMode
     );
   }
 
@@ -577,8 +961,256 @@ export function AIPersonalStylist({
       visionProfile,
       selectedOccasion,
       nextSeason,
-      selectedBodyArchitecture
+      selectedBodyArchitecture,
+      selectedAdviceMode
     );
+  }
+
+  function handleAdviceModeChange(nextAdviceMode: AdviceMode) {
+    setSelectedAdviceMode(nextAdviceMode);
+
+    if (!visionProfile) {
+      return;
+    }
+
+    setRecommendations([]);
+    setContextWarning("");
+    setGrooming({ beard: null, hairstyle: null });
+    setIsReady(false);
+    setIsScanning(true);
+    void loadRecommendations(
+      visionProfile,
+      selectedOccasion,
+      selectedSeason,
+      selectedBodyArchitecture,
+      nextAdviceMode
+    );
+  }
+
+  async function handleCopyBarberSpecs() {
+    try {
+      await navigator.clipboard.writeText(barberClipboardText);
+      setBarberCopyStatus("Copied");
+      window.setTimeout(() => setBarberCopyStatus(""), 1800);
+    } catch (error) {
+      console.error(error);
+      setBarberCopyStatus("Copy failed");
+      window.setTimeout(() => setBarberCopyStatus(""), 1800);
+    }
+  }
+
+  function toggleVaultItem(item: StyleVaultItem) {
+    const nextItems = vaultIds.has(item.id)
+      ? removeStyleVaultItem(item.id)
+      : upsertStyleVaultItem(item);
+
+    setVaultIds(new Set(nextItems.map((nextItem) => nextItem.id)));
+  }
+
+  function getVisibleOutfitPieces(outfit: ThreePieceOutfit) {
+    return outfit.pieces.map((piece) => pieceOverrides[outfit.id]?.[piece.role] ?? piece);
+  }
+
+  function createPieceFromGarment(
+    outfitId: string,
+    role: OutfitGridPiece["role"],
+    garment: Garment
+  ): OutfitGridPiece {
+    return {
+      accentColor: garment.color_palette[0] ?? "#D8CCBB",
+      garment,
+      id: `${outfitId}-${role}-${garment.id}`,
+      imageUrl: garment.image_url,
+      meta: `${garment.year} · ${titleCase(garment.fit_profile)}`,
+      role,
+      title: garment.title
+    };
+  }
+
+  async function handleShufflePiece(outfit: ThreePieceOutfit, piece: OutfitGridPiece) {
+    const pieceKey = `${outfit.id}-${piece.role}`;
+    const visiblePieces = getVisibleOutfitPieces(outfit);
+    const existingIds = visiblePieces
+      .map((visiblePiece) => visiblePiece.garment?.id)
+      .filter((id): id is string => Boolean(id));
+    const excludeIds = Array.from(new Set([...existingIds, ...(shuffleHistory[pieceKey] ?? [])]));
+
+    setShuffleLoadingIds((ids) => new Set([...ids, pieceKey]));
+
+    try {
+      const response = await fetch("/api/stylist/shuffle", {
+        body: JSON.stringify({
+          demographic: detectedDemographic ?? outfit.recommendation.garment.demographic,
+          excludeIds,
+          occasion: selectedOccasion,
+          palette: profilePalette,
+          role: piece.role,
+          season: selectedSeason
+        }),
+        headers: {
+          "Content-Type": "application/json"
+        },
+        method: "POST"
+      });
+      const data = (await response.json()) as ShuffleResponse;
+
+      if (!response.ok || !data.garment) {
+        setRecommendationError(data.error ?? "No alternate piece found for this slot.");
+        return;
+      }
+
+      const garment = data.garment;
+      const nextPiece = createPieceFromGarment(outfit.id, piece.role, garment);
+      setPieceOverrides((currentOverrides) => ({
+        ...currentOverrides,
+        [outfit.id]: {
+          ...currentOverrides[outfit.id],
+          [piece.role]: nextPiece
+        }
+      }));
+      setShuffleHistory((currentHistory) => ({
+        ...currentHistory,
+        [pieceKey]: Array.from(new Set([...(currentHistory[pieceKey] ?? []), garment.id]))
+      }));
+      setRecommendationError("");
+    } catch (error) {
+      console.error(error);
+      setRecommendationError("Could not shuffle this outfit slot. Try again.");
+    } finally {
+      setShuffleLoadingIds((ids) => {
+        const nextIds = new Set(ids);
+        nextIds.delete(pieceKey);
+        return nextIds;
+      });
+    }
+  }
+
+  function buildOutfitVaultItem(
+    outfit: ThreePieceOutfit,
+    visiblePieces: OutfitGridPiece[]
+  ): StyleVaultItem {
+    return {
+      id: `outfit-${outfit.id}`,
+      imageUrl: visiblePieces.find((piece) => piece.imageUrl)?.imageUrl,
+      payload: {
+        context: `${selectedOccasionLabel} · ${selectedSeasonLabel}`,
+        fitReason: outfit.recommendation.fitReason,
+        palette: profilePalette,
+        pieces: visiblePieces,
+        summary: outfit.summary,
+        trendSignal: outfit.recommendation.trendSignal
+      },
+      savedAt: new Date().toISOString(),
+      subtitle: `${selectedOccasionLabel} · ${selectedSeasonLabel}`,
+      title: outfit.title,
+      type: "outfit"
+    };
+  }
+
+  function buildGroomingVaultItem(card: GroomingRecommendation): StyleVaultItem {
+    const specs = card.category === "hairstyle" ? getHairBarberSpecs(card) : getBeardBarberSpecs(card);
+
+    return {
+      id: `grooming-${card.id}`,
+      imageUrl: card.imageUrl,
+      payload: {
+        affiliateUrl: card.affiliateUrl,
+        barberSpecs: specs,
+        faceShape: card.matchedFaceShape,
+        product: card.product,
+        rationale: card.rationale
+      },
+      savedAt: new Date().toISOString(),
+      subtitle: `${titleCase(card.category)} · ${titleCase(card.matchedFaceShape)} face`,
+      title: card.title,
+      type: "grooming"
+    };
+  }
+
+  async function handleDownloadLookcard() {
+    if (!previewUrl || !visionProfile) {
+      setLookcardError("Upload and analyze a photo before downloading a lookcard.");
+      return;
+    }
+
+    setIsExportingLookcard(true);
+    setLookcardError("");
+
+    try {
+      const image = await loadLookcardImage(previewUrl);
+      const canvas = document.createElement("canvas");
+      canvas.width = 1080;
+      canvas.height = 1920;
+
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        throw new Error("Could not create lookcard canvas.");
+      }
+
+      context.fillStyle = "#FBF7F0";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.strokeStyle = "#D8CCBB";
+      context.lineWidth = 2;
+      context.strokeRect(54, 54, 972, 1812);
+
+      context.fillStyle = "#2E251D";
+      context.font = "600 34px Arial";
+      context.fillText("PERSONAL STYLIST // ARCHIVE", 90, 130);
+      context.font = "28px Arial";
+      context.fillStyle = "#7B6A5B";
+      context.fillText(`${selectedOccasionLabel.toUpperCase()} · ${selectedSeasonLabel.toUpperCase()}`, 90, 184);
+
+      context.save();
+      context.beginPath();
+      context.rect(90, 250, 900, 980);
+      context.clip();
+      drawImageCover(context, image, 90, 250, 900, 980);
+      context.restore();
+      context.strokeStyle = "#BDAE9A";
+      context.strokeRect(90, 250, 900, 980);
+
+      context.fillStyle = "#2E251D";
+      context.font = "300 62px Arial";
+      drawFittedText(context, "STYLE PROFILE", 90, 1330, 900);
+
+      const metrics = [
+        ["FACE SHAPE", faceShapeLabel],
+        ["UNDERTONE", titleCase(visionProfile.primary_color_undertone)],
+        ["PROPORTION", selectedBodyArchitectureLabel]
+      ];
+
+      context.font = "600 24px Arial";
+      metrics.forEach(([label, value], index) => {
+        const y = 1408 + index * 84;
+        context.fillStyle = "#8A7867";
+        context.fillText(label, 90, y);
+        context.fillStyle = "#2E251D";
+        context.font = "400 34px Arial";
+        drawFittedText(context, value.toUpperCase(), 90, y + 40, 760);
+        context.font = "600 24px Arial";
+      });
+
+      const swatches = extractedPalette.slice(0, 3);
+      context.font = "600 22px Arial";
+      swatches.forEach((color, index) => {
+        const x = 90 + index * 300;
+        context.fillStyle = color;
+        context.fillRect(x, 1700, 250, 86);
+        context.strokeStyle = "#D8CCBB";
+        context.strokeRect(x, 1700, 250, 86);
+        context.fillStyle = "#2E251D";
+        context.fillText(color.toUpperCase(), x, 1832);
+      });
+
+      const blob = await canvasToBlob(canvas);
+      downloadBlob(blob, "personal-stylist-lookcard.png");
+    } catch (error) {
+      console.error(error);
+      setLookcardError("Lookcard export failed. Try again after the photo finishes loading.");
+    } finally {
+      setIsExportingLookcard(false);
+    }
   }
 
   return (
@@ -687,6 +1319,11 @@ export function AIPersonalStylist({
                     </div>
                   ))}
                 </div>
+                {visionProfile?.lighting_quality === "suboptimal" ? (
+                  <div className="mt-3 rounded-md border border-[#D8B26E] bg-[#FFF8E6] px-3 py-2 text-sm leading-6 text-[#5B4318]">
+                    Low lighting detected. Color swatches may appear warmer or darker than real life. For better precision, face a natural light source.
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
@@ -723,6 +1360,21 @@ export function AIPersonalStylist({
             ) : null}
 
             <div className="mt-5 rounded-md border border-[#D8CCBB] bg-white/60 p-3">
+              <div className="mb-3 grid grid-cols-2 gap-2 rounded-md bg-[#F4EDE2] p-1">
+                {adviceModeOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={selectedAdviceMode === option.value ? "default" : "ghost"}
+                    size="sm"
+                    aria-pressed={selectedAdviceMode === option.value}
+                    onClick={() => handleAdviceModeChange(option.value)}
+                    className="justify-center"
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 {occasionOptions.map((option) => (
                   <Button
@@ -779,12 +1431,30 @@ export function AIPersonalStylist({
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
                   Result
                 </p>
-                <h2 className="mt-2 text-2xl font-light text-neutral-950">Your style match</h2>
+                <h2 className="mt-2 text-2xl font-light text-neutral-950">
+                  {selectedAdviceMode === "style_own" ? "Closet styling ideas" : "Your style match"}
+                </h2>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge>{recommendations.length} looks</Badge>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isExportingLookcard || !previewUrl}
+                  onClick={() => void handleDownloadLookcard()}
+                >
+                  <Download className="size-4" />
+                  {isExportingLookcard ? "Rendering" : "Download Lookcard"}
+                </Button>
               </div>
             </div>
+
+            {lookcardError ? (
+              <div className="mt-4 border border-[#E4B4A6] bg-[#FFF1EC] p-3 text-sm text-[#6B2A1D]">
+                {lookcardError}
+              </div>
+            ) : null}
 
             <div className="mt-6 rounded-md border border-[#D8CCBB] bg-white/70 p-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -818,74 +1488,122 @@ export function AIPersonalStylist({
 
             <div className="mt-8">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-xl font-light text-neutral-950">Trending Matches for You</h3>
+                <h3 className="text-xl font-light text-neutral-950">
+                  {selectedAdviceMode === "style_own" ? "Use What You Own" : "Trending Matches for You"}
+                </h3>
                 <Badge>{recommendations.length} outfits</Badge>
               </div>
 
-              {recommendations.length ? (
-                <div className="mt-4 grid gap-4 lg:grid-cols-3">
-                  {recommendations.map((recommendation) => (
-                  <article
-                    key={recommendation.id}
-                    className="group overflow-hidden border border-[#D8CCBB] bg-white"
-                  >
-                    <div className="relative aspect-[4/5] overflow-hidden bg-[#EEE5D7]">
-                      <img
-                        src={recommendation.garment.image_url}
-                        alt={recommendation.garment.description}
-                        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                      />
-                      <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-                        <Badge className="bg-white/90 text-[#3A2A1E]">
-                          {recommendation.garment.demographic} • {selectedSeason}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="space-y-4 p-4">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                          {recommendation.garment.year} - {titleCase(recommendation.garment.category)}
-                        </p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <h4 className="text-base font-medium text-neutral-950">{recommendation.title}</h4>
-                          <Badge>
-                            {demographicLabels[recommendation.garment.demographic]}
-                          </Badge>
+              {outfitGroups.length ? (
+                <div className="mt-4 space-y-5">
+                  {outfitGroups.map((outfit) => {
+                    const visiblePieces = getVisibleOutfitPieces(outfit);
+                    const vaultItem = buildOutfitVaultItem(outfit, visiblePieces);
+                    const isSaved = vaultIds.has(vaultItem.id);
+
+                    return (
+                      <article
+                        key={outfit.id}
+                        className="overflow-hidden border border-[#D8CCBB] bg-white"
+                      >
+                        <div className="flex flex-col gap-3 border-b border-[#D8CCBB] bg-[#FBF7F0] p-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                              {outfit.title} · {demographicLabels[outfit.recommendation.garment.demographic]}
+                            </p>
+                            <h4 className="mt-1 text-lg font-medium text-neutral-950">
+                              {outfit.recommendation.title}
+                            </h4>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleVaultItem(vaultItem)}
+                          >
+                            <Bookmark
+                              className={cn("size-4", isSaved && "fill-[#3A2A1E] text-[#3A2A1E]")}
+                            />
+                            {isSaved ? "Saved" : "Save"}
+                          </Button>
                         </div>
-                      </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        {recommendation.garment.style_tags.slice(0, 2).map((tag) => (
-                          <Badge key={tag}>
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
+                        <div className="grid border-b border-[#D8CCBB] md:grid-cols-3">
+                          {visiblePieces.map((piece) => {
+                            const pieceKey = `${outfit.id}-${piece.role}`;
+                            const isShuffling = shuffleLoadingIds.has(pieceKey);
 
-                      <div className="border border-[#D8CCBB] bg-[#FBF7F0] p-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-                          Why this fits you
-                        </p>
-                        <p className="mt-2 text-xs leading-5 text-neutral-700">
-                          {recommendation.fitReason}
-                        </p>
-                      </div>
+                            return (
+                              <div
+                                key={piece.id}
+                                className="group animate-fade-in border-b border-[#D8CCBB] last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0"
+                              >
+                                <div className="relative aspect-[4/5] overflow-hidden bg-[#EEE5D7]">
+                                  {piece.imageUrl ? (
+                                    <img
+                                      src={piece.imageUrl}
+                                      alt={piece.title}
+                                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                                    />
+                                  ) : (
+                                    <div
+                                      className="flex h-full w-full items-end p-4"
+                                      style={{
+                                        background: `linear-gradient(135deg, ${piece.accentColor}, #F8F3EB)`
+                                      }}
+                                    >
+                                      <span className="max-w-[14rem] text-lg font-light leading-tight text-white drop-shadow">
+                                        {piece.title}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className="absolute left-3 top-3">
+                                    <Badge className="bg-white/90 text-[#3A2A1E]">
+                                      {piece.role}
+                                    </Badge>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    aria-label={`Shuffle ${piece.role}`}
+                                    className="absolute right-3 top-3 size-9 bg-white/90"
+                                    disabled={isShuffling}
+                                    onClick={() => void handleShufflePiece(outfit, piece)}
+                                  >
+                                    <Shuffle className={cn("size-4", isShuffling && "animate-spin")} />
+                                  </Button>
+                                </div>
+                                <div className="p-4">
+                                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                                    {piece.meta}
+                                  </p>
+                                  <p className="mt-1 text-sm font-medium leading-5 text-neutral-950">
+                                    {piece.title}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
 
-                      <div className="space-y-2 text-sm text-neutral-600">
-                        {recommendation.supportPieces.map((piece) => (
-                          <p key={piece} className="flex items-start gap-2">
-                            <Check className="mt-0.5 size-4 shrink-0 text-[#7B5637]" />
-                            <span>{piece}</span>
+                        <div className="space-y-3 p-4">
+                          <p className="text-sm leading-6 text-neutral-700">{outfit.summary}</p>
+                          <div className="border border-[#D8CCBB] bg-[#FBF7F0] p-3">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                              Why this fits you
+                            </p>
+                            <p className="mt-2 text-xs leading-5 text-neutral-700">
+                              {outfit.recommendation.fitReason}
+                            </p>
+                          </div>
+                          <p className="border-t border-[#D8CCBB] pt-3 text-xs font-medium text-neutral-700">
+                            {outfit.recommendation.trendSignal}
                           </p>
-                        ))}
-                      </div>
-
-                      <p className="border-t border-[#D8CCBB] pt-3 text-xs font-medium text-neutral-700">
-                        {recommendation.trendSignal}
-                      </p>
-                    </div>
-                  </article>
-                  ))}
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="mt-4 border border-[#D8CCBB] bg-white/70 p-4 text-sm text-neutral-600">
@@ -902,56 +1620,82 @@ export function AIPersonalStylist({
 
               {groomingCards.length ? (
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  {groomingCards.map((card) => (
-                    <article
-                      key={card.id}
-                      className="group overflow-hidden border border-[#D8CCBB] bg-white"
-                    >
-                      <div className="relative aspect-[16/10] overflow-hidden bg-[#EEE5D7]">
-                        <img
-                          src={card.imageUrl}
-                          alt={card.title}
-                          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                        />
-                        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-                          <Badge className="bg-white/90 text-[#3A2A1E]">
-                            {titleCase(card.category)} • {titleCase(card.matchedFaceShape)}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="space-y-4 p-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge>{titleCase(card.category)}</Badge>
-                          <Badge>{titleCase(card.matchedFaceShape)} face</Badge>
-                          {card.maintenanceLevel ? (
-                            <Badge>{card.maintenanceLevel}</Badge>
-                          ) : null}
-                        </div>
+                  {groomingCards.map((card) => {
+                    const vaultItem = buildGroomingVaultItem(card);
+                    const isSaved = vaultIds.has(vaultItem.id);
 
-                        <div>
-                          <h4 className="text-base font-medium text-neutral-950">{card.title}</h4>
-                          <p className="mt-2 text-sm leading-6 text-neutral-600">
-                            {card.description}
+                    return (
+                      <article
+                        key={card.id}
+                        className="group overflow-hidden border border-[#D8CCBB] bg-white"
+                      >
+                        <div className="relative aspect-[16/10] overflow-hidden bg-[#EEE5D7]">
+                          <img
+                            src={card.imageUrl}
+                            alt={card.title}
+                            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                          />
+                          <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                            <Badge className="bg-white/90 text-[#3A2A1E]">
+                              {titleCase(card.category)} • {titleCase(card.matchedFaceShape)}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="space-y-4 p-4">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge>{titleCase(card.category)}</Badge>
+                            <Badge>{titleCase(card.matchedFaceShape)} face</Badge>
+                            {card.maintenanceLevel ? (
+                              <Badge>{card.maintenanceLevel}</Badge>
+                            ) : null}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleVaultItem(vaultItem)}
+                            >
+                              <Bookmark
+                                className={cn("size-4", isSaved && "fill-[#3A2A1E] text-[#3A2A1E]")}
+                              />
+                              {isSaved ? "Saved" : "Save"}
+                            </Button>
+                          </div>
+
+                          <div>
+                            <h4 className="text-base font-medium text-neutral-950">{card.title}</h4>
+                            <p className="mt-2 text-sm leading-6 text-neutral-600">
+                              {card.description}
+                            </p>
+                          </div>
+
+                          <p className="border-t border-[#D8CCBB] pt-3 text-sm leading-6 text-neutral-700">
+                            {card.rationale}
                           </p>
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => setIsGroomingDrawerOpen(true)}
+                          >
+                            View Architectural Breakdown
+                            <ArrowUpRight className="size-4" />
+                          </Button>
+
+                          <a
+                            href={card.affiliateUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={buttonVariants({ className: "w-full" })}
+                          >
+                            <ArrowUpRight className="size-4" />
+                            Get Styling Product
+                          </a>
+                          <p className="text-xs text-neutral-500">{card.product.name}</p>
                         </div>
-
-                        <p className="border-t border-[#D8CCBB] pt-3 text-sm leading-6 text-neutral-700">
-                          {card.rationale}
-                        </p>
-
-                        <a
-                          href={card.affiliateUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={buttonVariants({ className: "w-full" })}
-                        >
-                          <ArrowUpRight className="size-4" />
-                          Get Styling Product
-                        </a>
-                        <p className="text-xs text-neutral-500">{card.product.name}</p>
-                      </div>
-                    </article>
-                  ))}
+                      </article>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="mt-4 border border-[#D8CCBB] bg-white/70 p-4 text-sm text-neutral-600">
@@ -970,6 +1714,75 @@ export function AIPersonalStylist({
           </section>
         ) : null}
       </div>
+
+      {isGroomingDrawerOpen ? (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm">
+          <button
+            type="button"
+            className="absolute inset-0 cursor-default"
+            aria-label="Close grooming breakdown"
+            onClick={() => setIsGroomingDrawerOpen(false)}
+          />
+          <aside className="relative h-full w-full max-w-xl overflow-y-auto border-l border-[#D8CCBB] bg-[#FBF7F0] p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
+                  Grooming Breakdown
+                </p>
+                <h3 className="mt-3 text-2xl font-light text-neutral-950">
+                  Detected Geometry: {detectedFaceShape ? titleCase(detectedFaceShape) : "Balanced"} / {getGeometryDescriptor(detectedFaceShape)}
+                </h3>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Close grooming breakdown"
+                onClick={() => setIsGroomingDrawerOpen(false)}
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+
+            <div className="mt-8 space-y-5">
+              <div className="rounded-md border border-[#D8CCBB] bg-white/75 p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                  Why the Hairstyle Works
+                </p>
+                <h4 className="mt-2 text-lg font-medium text-neutral-950">
+                  {grooming.hairstyle?.title ?? "Hairstyle"}
+                </h4>
+                <p className="mt-3 text-sm leading-6 text-neutral-700">{hairstyleBreakdown}</p>
+                <p className="mt-3 border-t border-[#D8CCBB] pt-3 text-sm leading-6 text-neutral-600">
+                  {hairBarberSpecs}
+                </p>
+              </div>
+
+              <div className="rounded-md border border-[#D8CCBB] bg-white/75 p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                  Why the Beard Works
+                </p>
+                <h4 className="mt-2 text-lg font-medium text-neutral-950">
+                  {grooming.beard?.title ?? "Beard shape"}
+                </h4>
+                <p className="mt-3 text-sm leading-6 text-neutral-700">{beardBreakdown}</p>
+                <p className="mt-3 border-t border-[#D8CCBB] pt-3 text-sm leading-6 text-neutral-600">
+                  {beardBarberSpecs}
+                </p>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              className="mt-6 w-full"
+              onClick={() => void handleCopyBarberSpecs()}
+            >
+              <Copy className="size-4" />
+              {barberCopyStatus || "Copy Specs for Barber"}
+            </Button>
+          </aside>
+        </div>
+      ) : null}
     </section>
   );
 }

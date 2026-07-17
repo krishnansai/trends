@@ -1,15 +1,17 @@
 "use client";
 
-import { ArrowUpRight, Filter, Gauge, ImageOff, TrendingUp, X } from "lucide-react";
+import { ArrowUpRight, Filter, Gauge, ImageOff, Search, TrendingUp, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select } from "@/components/ui/select";
 import { ARCHIVE_END_YEAR, ARCHIVE_START_YEAR } from "@/lib/archive-window";
 import type { Demographic, Garment, Trend } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { filterAndRankGarmentsByVibe, parseVibeSearch } from "@/lib/vibe-search";
 
 const yearMin = ARCHIVE_START_YEAR;
 const yearMax = ARCHIVE_END_YEAR;
@@ -86,6 +88,7 @@ export function HistoricalArchive({
   const [toYear, setToYear] = useState(yearMax);
   const [category, setCategory] = useState("all");
   const [demographic, setDemographic] = useState("all");
+  const [vibeQuery, setVibeQuery] = useState("");
   const [selected, setSelected] = useState<Garment | null>(null);
 
   const categoryOptions = useMemo(
@@ -98,18 +101,22 @@ export function HistoricalArchive({
     [garments]
   );
 
+  const vibeIntent = useMemo(() => parseVibeSearch(vibeQuery), [vibeQuery]);
+
   const filteredGarments = useMemo(() => {
     const lowerYear = Math.min(fromYear, toYear);
     const upperYear = Math.max(fromYear, toYear);
 
-    return garments.filter((garment) => {
+    const baseGarments = garments.filter((garment) => {
       const inYear = garment.year >= lowerYear && garment.year <= upperYear;
       const inCategory = category === "all" || garment.category === category;
       const inDemographic = demographic === "all" || garment.demographic === demographic;
 
       return inYear && inCategory && inDemographic;
     });
-  }, [category, demographic, fromYear, garments, toYear]);
+
+    return filterAndRankGarmentsByVibe(baseGarments, vibeIntent);
+  }, [category, demographic, fromYear, garments, toYear, vibeIntent]);
 
   return (
     <section className="mx-auto max-w-7xl animate-fade-in">
@@ -146,6 +153,31 @@ export function HistoricalArchive({
       {view === "archive" ? (
         <>
           <div className="mt-5 border border-[#D8CCBB] bg-white/75 p-3 backdrop-blur-xl md:p-4">
+            <div className="mb-4 border-b border-[#D8CCBB] pb-4">
+              <Label htmlFor="vibe-search">Vibe Search</Label>
+              <div className="relative mt-2">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
+                <Input
+                  id="vibe-search"
+                  value={vibeQuery}
+                  onChange={(event) => setVibeQuery(event.target.value)}
+                  placeholder="Describe your vibe (e.g., minimalist office streetwear, breathable beach wedding)..."
+                  className="pl-10"
+                />
+              </div>
+              {vibeIntent.hasIntent ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Badge>{vibeIntent.summary}</Badge>
+                  {vibeIntent.matchedKeywords.slice(0, 5).map((keyword) => (
+                    <Badge key={keyword}>{keyword}</Badge>
+                  ))}
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setVibeQuery("")}>
+                    Clear
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div className="grid gap-3 sm:grid-cols-2 xl:w-[330px]">
                 <div>
@@ -223,6 +255,7 @@ export function HistoricalArchive({
               <span>{Math.min(fromYear, toYear)}-{Math.max(fromYear, toYear)}</span>
               <span>{isUsingSampleData ? "Sample data" : "Original data"}</span>
               <span>{trends.length} forecasts</span>
+              {vibeIntent.hasIntent ? <span>Vibe ranked</span> : null}
             </div>
           </div>
 

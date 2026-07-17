@@ -1,0 +1,11 @@
+.git
+.next
+.env
+.env.*
+Dockerfile
+docker-compose.yml
+node_modules
+npm-debug.log*
+README.md
+services
+tsconfig.tsbuildinfo

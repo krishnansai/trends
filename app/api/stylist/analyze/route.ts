@@ -45,6 +45,7 @@ function getFallbackVisionProfile(formData: FormData): VisionAnalysis {
     grooming_state: formValue(formData, "grooming_state"),
     grooming_strategy: formValue(formData, "grooming_strategy"),
     hairstyle_volume: formValue(formData, "hairstyle_volume"),
+    lighting_quality: formValue(formData, "lighting_quality"),
     outfit_strategy: formValue(formData, "outfit_strategy"),
     primary_color_undertone: formValue(formData, "primary_color_undertone"),
     recommended_color_palette: formJsonValue(formData, "recommended_color_palette"),

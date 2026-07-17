@@ -62,7 +62,17 @@ type SerpApiResponse = {
   shopping_results?: SerpApiShoppingResult[];
 };
 
-type PriceFinderProvider = "local" | "serpapi";
+type PriceFinderProvider = "crawlee" | "local" | "serpapi";
+
+type CrawleeScrapeResponse = {
+  availability?: string;
+  currency?: string;
+  error?: string;
+  imageUrl?: string | null;
+  price?: number | null;
+  title?: string | null;
+  url?: string;
+};
 
 const fallbackMatches: PriceMatch[] = [
   {
@@ -877,6 +887,69 @@ function buildFallbackMetadataFromUrl(productUrl: URL): ProductMetadata {
   };
 }
 
+function getScraperUrl() {
+  const configuredUrl = process.env.PRICE_SCRAPER_URL;
+
+  if (!configuredUrl) {
+    return null;
+  }
+
+  try {
+    const url = new URL(configuredUrl);
+
+    if (!["http:", "https:"].includes(url.protocol)) {
+      return null;
+    }
+
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeCrawleeMetadata(payload: CrawleeScrapeResponse, productUrl: URL): ProductMetadata {
+  const finalUrl = payload.url ? new URL(payload.url, productUrl) : productUrl;
+  const retailer = getRetailerProfile(finalUrl);
+  const title = payload.title ? normalizeWhitespace(payload.title) : titleFromUrl(productUrl);
+
+  return {
+    availability: payload.availability,
+    currency: payload.currency ?? "INR",
+    imageUrl: payload.imageUrl ?? undefined,
+    price: typeof payload.price === "number" && Number.isFinite(payload.price) ? payload.price : undefined,
+    retailer: retailer.name,
+    sku: extractSku(finalUrl),
+    title,
+    url: finalUrl.toString()
+  };
+}
+
+async function fetchProductMetadataViaCrawlee(productUrl: URL) {
+  const scraperUrl = getScraperUrl();
+
+  if (!scraperUrl) {
+    throw new Error("PRICE_SCRAPER_URL is not configured.");
+  }
+
+  const response = await fetch(scraperUrl, {
+    body: JSON.stringify({
+      url: productUrl.toString()
+    }),
+    headers: {
+      "Content-Type": "application/json"
+    },
+    method: "POST",
+    signal: AbortSignal.timeout(6500)
+  });
+  const payload = (await response.json().catch(() => ({}))) as CrawleeScrapeResponse;
+
+  if (!response.ok) {
+    throw new Error(payload.error || `Crawlee scraper failed with ${response.status}`);
+  }
+
+  return normalizeCrawleeMetadata(payload, productUrl);
+}
+
 function inferBasePrice(title: string) {
   const normalized = title.toLowerCase();
 
@@ -1025,7 +1098,15 @@ function buildLiveMatch(result: SerpApiShoppingResult, index: number): PriceMatc
 }
 
 function getPriceFinderProvider(): PriceFinderProvider {
-  return process.env.PRICE_FINDER_LIVE_PROVIDER === "serpapi" ? "serpapi" : "local";
+  if (process.env.PRICE_FINDER_LIVE_PROVIDER === "serpapi") {
+    return "serpapi";
+  }
+
+  if (process.env.PRICE_FINDER_LIVE_PROVIDER === "crawlee") {
+    return "crawlee";
+  }
+
+  return "local";
 }
 
 async function fetchLiveProductMatches(query: string): Promise<PriceMatch[]> {
@@ -1205,7 +1286,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const metadata = await fetchProductMetadata(productUrl);
+    const metadata =
+      getPriceFinderProvider() === "crawlee"
+        ? await fetchProductMetadataViaCrawlee(productUrl).catch(async (error) => {
+            console.error("Unable to fetch Crawlee product metadata", error);
+            return fetchProductMetadata(productUrl);
+          })
+        : await fetchProductMetadata(productUrl);
     const exactMatch = buildExactMatch(metadata, productUrl);
     const typicalBasePrice = detectQueryIntent(metadata.title).basePrice;
     const comparisonMatches = buildComparisonMatches(metadata.title, {

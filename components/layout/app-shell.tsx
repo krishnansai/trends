@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Archive,
+  Bookmark,
   PanelLeft,
   Search,
   Settings,
@@ -25,6 +26,7 @@ const navigation: NavigationItem[] = [
   { href: "/archive", label: "Historical Archive", shortLabel: "Archive", icon: Archive, primary: true },
   { href: "/price-finder", label: "Price Finder", shortLabel: "Prices", icon: Search, primary: true },
   { href: "/stylist", label: "AI Personal Stylist", shortLabel: "Stylist", icon: Sparkles, primary: true },
+  { href: "/vault", label: "My Vault", shortLabel: "Vault", icon: Bookmark, primary: true },
   { href: "/settings", label: "Settings", shortLabel: "Settings", icon: Settings }
 ];
 

@@ -12,6 +12,7 @@ export type VisionFitProfile = Extract<FitProfile, "relaxed" | "oversized" | "st
 export type VisionBuildAndProportion = "broad_athletic" | "lean_tapered" | "relaxed";
 export type VisionGroomingState = "clean_shaven" | "stubble_heavy_stubble" | "full_beard";
 export type VisionHairstyleVolume = "low" | "medium" | "high";
+export type VisionLightingQuality = "optimal" | "suboptimal";
 
 export type VisionProfile = {
   age_band: VisionAgeBand;
@@ -31,6 +32,7 @@ export type VisionAnalysis = VisionProfile & {
   grooming_state: VisionGroomingState;
   grooming_strategy: string;
   hairstyle_volume: VisionHairstyleVolume;
+  lighting_quality: VisionLightingQuality;
   outfit_strategy: string;
   visible_cues: string[];
 };
@@ -63,6 +65,8 @@ dominant_color: One exact hex code for the dominant visible outfit color. If cli
 
 extracted_palette: Array of exactly 3 hex color codes from the visible uploaded image. If client-side swatches are provided, preserve fallback.extracted_palette unless the image clearly contradicts it.
 
+lighting_quality: Choose exactly one from ["optimal","suboptimal"]. If fallback.lighting_quality is "suboptimal", do not trust hex colors too literally; allow tolerance for shadows, glare, or warm indoor lighting.
+
 analysis_confidence: Number from 0 to 100 based on image clarity, visible face, visible clothing, and lighting. Use lower confidence when the image is blurry, cropped, dark, or face/body cues are unclear.
 
 If the uploaded image is not a usable personal styling photo, such as a product-only image, scenery, document, screenshot, empty frame, or a photo without a clear person/profile, do not invent a profile. Set analysis_confidence to 20, use safe fallback values for required fields, set visible_cues to ["wrong image for stylist","no clear person detected","upload portrait or full-body photo"], and explain in outfit_strategy that the image is not suitable for a personal styling scan.
@@ -76,7 +80,7 @@ grooming_strategy: One concise sentence explaining the haircut/beard direction b
 avoid_notes: Array of 2 concise notes about what to avoid, based on fit, color, or context mismatch.
 
 Example JSON Output:
-{"demographic":"womenswear","age_band":"adult","detected_face_shape":"oval","grooming_state":"clean_shaven","hairstyle_volume":"medium","build_and_proportion":"relaxed","primary_color_undertone":"warm","suggested_fit_profile":"relaxed","dominant_color":"#6B705C","extracted_palette":["#6B705C","#D8C3A5","#1A1A1A"],"recommended_color_palette":["#1A1A1A","#4F5D4E","#D8C3A5"],"analysis_confidence":82,"visible_cues":["clear face outline","warm skin and clothing tones","relaxed shoulder line"],"outfit_strategy":"Use relaxed warm neutrals with structured texture so the outfit looks polished without becoming stiff.","grooming_strategy":"Oval face shape can support soft layers or clean face-framing hair with balanced volume.","avoid_notes":["Avoid very cold neon colors near the face.","Avoid overly tight fits when relaxed structure is the better proportion."]}`;
+{"demographic":"womenswear","age_band":"adult","detected_face_shape":"oval","grooming_state":"clean_shaven","hairstyle_volume":"medium","build_and_proportion":"relaxed","primary_color_undertone":"warm","suggested_fit_profile":"relaxed","dominant_color":"#6B705C","extracted_palette":["#6B705C","#D8C3A5","#1A1A1A"],"lighting_quality":"optimal","recommended_color_palette":["#1A1A1A","#4F5D4E","#D8C3A5"],"analysis_confidence":82,"visible_cues":["clear face outline","warm skin and clothing tones","relaxed shoulder line"],"outfit_strategy":"Use relaxed warm neutrals with structured texture so the outfit looks polished without becoming stiff.","grooming_strategy":"Oval face shape can support soft layers or clean face-framing hair with balanced volume.","avoid_notes":["Avoid very cold neon colors near the face.","Avoid overly tight fits when relaxed structure is the better proportion."]}`;
 
 export const visionAgeBands = ["young_adult", "adult", "mature"] as const satisfies readonly VisionAgeBand[];
 export const visionDemographics = ["menswear", "womenswear", "unisex"] as const satisfies readonly VisionDemographic[];
@@ -86,6 +90,7 @@ export const visionFitProfiles = ["relaxed", "oversized", "straight", "slim"] as
 export const visionBuildAndProportions = ["broad_athletic", "lean_tapered", "relaxed"] as const satisfies readonly VisionBuildAndProportion[];
 export const visionGroomingStates = ["clean_shaven", "stubble_heavy_stubble", "full_beard"] as const satisfies readonly VisionGroomingState[];
 export const visionHairstyleVolumes = ["low", "medium", "high"] as const satisfies readonly VisionHairstyleVolume[];
+export const visionLightingQualities = ["optimal", "suboptimal"] as const satisfies readonly VisionLightingQuality[];
 
 const undertonePalettes: Record<VisionUndertone, [string, string, string]> = {
   cool: ["#111111", "#C7D0D8", "#0057B8"],
@@ -123,6 +128,10 @@ function isVisionGroomingState(value: unknown): value is VisionGroomingState {
 
 function isVisionHairstyleVolume(value: unknown): value is VisionHairstyleVolume {
   return typeof value === "string" && visionHairstyleVolumes.includes(value as VisionHairstyleVolume);
+}
+
+function isVisionLightingQuality(value: unknown): value is VisionLightingQuality {
+  return typeof value === "string" && visionLightingQualities.includes(value as VisionLightingQuality);
 }
 
 function isHexColor(value: unknown): value is string {
@@ -245,6 +254,26 @@ function normalizeHairstyleVolume(value: unknown, fallback: VisionHairstyleVolum
   }
 
   return fallback;
+}
+
+function normalizeLightingQuality(value: unknown): VisionLightingQuality {
+  if (isVisionLightingQuality(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.toLowerCase();
+
+    if (normalized.includes("suboptimal") || normalized.includes("dark") || normalized.includes("glare")) {
+      return "suboptimal";
+    }
+
+    if (normalized.includes("optimal") || normalized.includes("good")) {
+      return "optimal";
+    }
+  }
+
+  return "optimal";
 }
 
 function normalizeConfidence(value: unknown) {
@@ -371,6 +400,8 @@ export function createVisionAnalysis(input: Parameters<typeof createVisionProfil
   grooming_strategy?: unknown;
   hairstyle_volume?: unknown;
   hairstyleVolume?: unknown;
+  lighting_quality?: unknown;
+  lightingQuality?: unknown;
   outfit_strategy?: unknown;
   palette?: unknown;
   visible_cues?: unknown;
@@ -403,6 +434,7 @@ export function createVisionAnalysis(input: Parameters<typeof createVisionProfil
       getDefaultGroomingStrategy(profile)
     ),
     hairstyle_volume: normalizeHairstyleVolume(input.hairstyle_volume ?? input.hairstyleVolume),
+    lighting_quality: normalizeLightingQuality(input.lighting_quality ?? input.lightingQuality),
     outfit_strategy: normalizeText(input.outfit_strategy, getDefaultOutfitStrategy(profile)),
     visible_cues: normalizeStringArray(input.visible_cues, getDefaultVisibleCues(profile), 3)
   };
@@ -471,6 +503,10 @@ export function parseVisionAnalysis(value: unknown, fallback: VisionAnalysis): V
       payload.hairstyle_volume ??
       (payload as { hairstyleVolume?: unknown }).hairstyleVolume ??
       fallback.hairstyle_volume,
+    lighting_quality:
+      payload.lighting_quality ??
+      (payload as { lightingQuality?: unknown }).lightingQuality ??
+      fallback.lighting_quality,
     outfit_strategy: payload.outfit_strategy ?? fallback.outfit_strategy,
     primary_color_undertone:
       payload.primary_color_undertone ??

@@ -13,6 +13,7 @@ const garmentFiles = [
   "garments.json",
   "garments-sourced.json",
   "garments-visuals.json",
+  "garments-unsplash.json",
   "garments-womenswear.json",
   "garments-launch-pack.json",
   "garments-context-expansion.json",

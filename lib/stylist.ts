@@ -19,12 +19,18 @@ import {
 
 export type StyleProfileId = "warm" | "cool" | "neutral";
 export type BodyArchitecture = "tall_broad" | "athletic_tapered" | "lean_slim" | "curvy_relaxed";
+export type AdviceMode = "style_own" | "discover_new";
 
 export const bodyArchitectureLabels: Record<BodyArchitecture, string> = {
   athletic_tapered: "Athletic / Tapered",
   curvy_relaxed: "Curvy / Relaxed",
   lean_slim: "Lean / Slim",
   tall_broad: "Tall & Broad"
+};
+
+export const adviceModeLabels: Record<AdviceMode, string> = {
+  discover_new: "Discover New Pieces",
+  style_own: "Style What I Own"
 };
 
 export type StyleProfile = {
@@ -72,6 +78,7 @@ type StylingContext = {
 };
 
 type RecommendationScoringInput = {
+  adviceMode?: AdviceMode;
   ageBand?: VisionAgeBand;
   bodyArchitecture?: BodyArchitecture;
   faceShape?: FaceShape;
@@ -647,8 +654,41 @@ function supportPiecesForContext(
   demographic: Demographic,
   profileId: StyleProfileId,
   index: number,
-  context?: StylingContext
+  context?: StylingContext,
+  adviceMode: AdviceMode = "discover_new"
 ) {
+  if (adviceMode === "style_own") {
+    if (context?.occasion === "beach") {
+      return [
+        "Use an open-collar shirt or relaxed tee as the base.",
+        "Keep shorts or linen trousers loose enough for airflow.",
+        "Repeat one photo palette color through sandals, sunglasses, or a tote."
+      ];
+    }
+
+    if (context?.occasion === "formal" || context?.occasion === "office") {
+      return [
+        "Start with a clean oxford, knit polo, blouse, or simple fitted base.",
+        "Tuck only the front or align the waistband to sharpen proportions.",
+        "Use one quiet accessory color that matches the extracted palette."
+      ];
+    }
+
+    if (context?.occasion === "gym") {
+      return [
+        "Use one fitted performance layer and one relaxed outer layer.",
+        "Keep shoes and socks in the same color family for a cleaner line.",
+        "Avoid heavy accessories so the outfit stays functional."
+      ];
+    }
+
+    return [
+      "Build from a plain tee, oxford shirt, tank, or clean knit you already own.",
+      "Cuff denim or trousers once to make the footwear look intentional.",
+      "Layer a neutral overshirt, jacket, or cardigan if the palette needs depth."
+    ];
+  }
+
   if (context?.occasion === "beach") {
     if (demographic === "womenswear") {
       return [
@@ -896,9 +936,17 @@ export function buildStylistRecommendations(
       fitReason: getBodyArchitectureFitReason(garment, scoringInput.bodyArchitecture),
       garment,
       score,
-      supportPieces: supportPiecesForContext(demographic, profile.id, index, context),
+      supportPieces: supportPiecesForContext(
+        demographic,
+        profile.id,
+        index,
+        context,
+        scoringInput.adviceMode
+      ),
       trendSignal:
-        getJsonFilterRuleSignal(garment, demographic, profile.id, context, scoringInput) ??
-        `${ARCHIVE_END_YEAR} signal: ${profile.trendSignals[index] ?? profile.trendSignals[0]}`
+        scoringInput.adviceMode === "style_own"
+          ? "Closet mode: use this as a styling reference for staples you already own."
+          : (getJsonFilterRuleSignal(garment, demographic, profile.id, context, scoringInput) ??
+            `${ARCHIVE_END_YEAR} signal: ${profile.trendSignals[index] ?? profile.trendSignals[0]}`)
     }));
 }

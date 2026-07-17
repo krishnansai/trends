@@ -9,6 +9,7 @@ import {
   type VisionFitProfile,
   type VisionGroomingState,
   type VisionHairstyleVolume,
+  type VisionLightingQuality,
   type VisionProfile,
   type VisionUndertone
 } from "@/lib/vision";
@@ -524,6 +525,24 @@ function detectHairstyleVolume(
   return "medium";
 }
 
+function getAverageLuminance(samples: PixelSample[]) {
+  if (samples.length === 0) {
+    return 128;
+  }
+
+  const total = samples.reduce((sum, sample) => {
+    return sum + 0.299 * sample.r + 0.587 * sample.g + 0.114 * sample.b;
+  }, 0);
+
+  return total / samples.length;
+}
+
+function detectLightingQuality(samples: PixelSample[]): VisionLightingQuality {
+  const averageLuminance = getAverageLuminance(samples);
+
+  return averageLuminance < 58 || averageLuminance > 218 ? "suboptimal" : "optimal";
+}
+
 function scoreBrowserConfidence(
   skinSamples: PixelSample[],
   foregroundSamples: PixelSample[],
@@ -643,6 +662,7 @@ export async function analyzeStylistPhoto(
   const faceShape = detectFaceShape(skinSamples, width, height);
   const fitProfile = detectFitProfile(foregroundSamples, skinSamples, width, height);
   const dominantPalette = getDominantForegroundPalette(foregroundSamples, undertone, height);
+  const lightingQuality = detectLightingQuality(samples);
   const wrongPhotoSignal = hasWrongPhotoSignal(skinSamples, foregroundSamples, width, height);
   const fileSignal = `${file.name}-${file.size}-${file.lastModified}`.toLowerCase();
   const demographic =
@@ -689,6 +709,7 @@ export async function analyzeStylistPhoto(
         ? `${faceShape} face structure works best with balanced face-framing hair and controlled volume.`
         : `${faceShape} face structure works best with grooming that sharpens the jaw and keeps side volume controlled.`,
     hairstyle_volume: hairstyleVolume,
+    lighting_quality: lightingQuality,
     outfit_strategy: wrongPhotoSignal
       ? "This image is not suitable for a personal styling scan. Upload a clear portrait or full-body outfit photo."
       : `Prioritize ${fitProfile} ${demographic} pieces that match the detected photo palette ${dominantPalette.join(", ")}, then filter by the selected occasion and season.`,

@@ -131,6 +131,7 @@ export async function getLocalGarments() {
     readJsonArray<Garment>("garments.json"),
     readJsonArray<Garment>("garments-sourced.json"),
     readJsonArray<Garment>("garments-visuals.json"),
+    readJsonArray<Garment>("garments-unsplash.json"),
     readJsonArray<Garment>("garments-womenswear.json"),
     readJsonArray<Garment>("garments-launch-pack.json"),
     readJsonArray<Garment>("garments-context-expansion.json"),

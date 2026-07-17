@@ -7,6 +7,7 @@ import {
   getStyleProfile,
   isBodyArchitecture,
   isStyleProfileId,
+  type AdviceMode,
   type BodyArchitecture,
   type StyleProfileId
 } from "@/lib/stylist";
@@ -25,6 +26,7 @@ import {
 } from "@/lib/vision";
 
 type RecommendationRequest = {
+  adviceMode?: unknown;
   ageBand?: unknown;
   bodyArchitecture?: unknown;
   demographic?: unknown;
@@ -83,6 +85,15 @@ const bodyArchitectureMapping: Record<string, BodyArchitecture> = {
   tall_broad: "tall_broad"
 };
 
+const adviceModeMapping: Record<string, AdviceMode> = {
+  "discover new": "discover_new",
+  "discover new pieces": "discover_new",
+  discover_new: "discover_new",
+  "style what i own": "style_own",
+  "style own": "style_own",
+  style_own: "style_own"
+};
+
 function normalizeSelection(value: unknown) {
   return typeof value === "string"
     ? value.trim().toLowerCase().replace(/\s+/g, " ")
@@ -128,6 +139,11 @@ function normalizeBodyArchitecture(value: unknown): BodyArchitecture {
   }
 
   return "athletic_tapered";
+}
+
+function normalizeAdviceMode(value: unknown): AdviceMode {
+  const normalized = normalizeSelection(value);
+  return adviceModeMapping[normalized] ?? "discover_new";
 }
 
 function mergeGarments<T extends { id: string }>(primary: T[], secondary: T[]) {
@@ -193,8 +209,10 @@ export async function POST(request: Request) {
   const occasion = normalizeOccasion(body.occasion);
   const season = normalizeSeason(body.season);
   const bodyArchitecture = normalizeBodyArchitecture(body.bodyArchitecture);
+  const adviceMode = normalizeAdviceMode(body.adviceMode);
 
   console.log("[stylist/recommendations] context", {
+    adviceMode,
     bodyArchitecture,
     incomingOccasion: body.occasion,
     incomingSeason: body.season,
@@ -241,6 +259,7 @@ export async function POST(request: Request) {
     },
     {
       ageBand: visionData.age_band,
+      adviceMode,
       faceShape: visionData.detected_face_shape,
       recommendedColorPalette: visionData.recommended_color_palette,
       bodyArchitecture,
@@ -259,6 +278,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     demographic: visionData.demographic,
+    adviceMode,
     bodyArchitecture,
     faceShape: visionData.detected_face_shape,
     grooming,
