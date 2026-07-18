@@ -1,5 +1,12 @@
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase";
-import { getLocalGarments, getLocalGroomingTrends, getLocalTrends } from "@/lib/local-data";
+import {
+  dedupeGarmentsByMedia,
+  dedupeGroomingTrendsByMedia,
+  dedupeTrendsByMedia,
+  getLocalGarments,
+  getLocalGroomingTrends,
+  getLocalTrends
+} from "@/lib/local-data";
 import { sampleGarments, sampleTrends } from "@/lib/sample-data";
 import {
   getOccasionMatches,
@@ -81,7 +88,7 @@ function filterSampleGarments(options: GarmentQueryOptions = {}) {
 
 async function getGarmentFallback(options: GarmentQueryOptions = {}) {
   if (shouldUseSampleData()) {
-    return filterSampleGarments(options);
+    return dedupeGarmentsByMedia(filterSampleGarments(options));
   }
 
   const categories =
@@ -169,7 +176,7 @@ export async function getGarments(options: GarmentQueryOptions = {}): Promise<Ga
 
   const fallback = await getGarmentFallback(options);
 
-  return ((data ?? fallback) as Garment[]).filter((garment) => {
+  const filteredGarments = ((data ?? fallback) as Garment[]).filter((garment) => {
     const inWindow = isInArchiveWindow(garment.year);
     const inDemographic = options.demographic
       ? isAllowedForDemographic(garment, options.demographic, options.includeUnisex ?? true)
@@ -187,17 +194,19 @@ export async function getGarments(options: GarmentQueryOptions = {}): Promise<Ga
 
     return inWindow && inDemographic && inCategory && inFitProfile && inOccasion && inSeason;
   });
+
+  return dedupeGarmentsByMedia(filteredGarments);
 }
 
 export async function getTrends(): Promise<Trend[]> {
   if (!hasSupabaseConfig()) {
-    return shouldUseSampleData() ? sampleTrends : getLocalTrends();
+    return shouldUseSampleData() ? dedupeTrendsByMedia(sampleTrends) : getLocalTrends();
   }
 
   const supabase = createSupabaseBrowserClient();
 
   if (!supabase) {
-    return shouldUseSampleData() ? sampleTrends : getLocalTrends();
+    return shouldUseSampleData() ? dedupeTrendsByMedia(sampleTrends) : getLocalTrends();
   }
 
   const { data, error } = await supabase
@@ -207,12 +216,12 @@ export async function getTrends(): Promise<Trend[]> {
 
   if (error) {
     console.error("Unable to fetch trends from Supabase", error);
-    return shouldUseSampleData() ? sampleTrends : getLocalTrends();
+    return shouldUseSampleData() ? dedupeTrendsByMedia(sampleTrends) : getLocalTrends();
   }
 
   const fallback = shouldUseSampleData() ? sampleTrends : await getLocalTrends();
 
-  return (data ?? fallback) as Trend[];
+  return dedupeTrendsByMedia((data ?? fallback) as Trend[]);
 }
 
 async function getGroomingFallback(options: GroomingQueryOptions = {}) {
@@ -255,7 +264,9 @@ export async function getGroomingTrends(
 
   const fallback = await getGroomingFallback(options);
 
-  return filterGroomingTrends((data ?? fallback) as GroomingTrend[], options);
+  return dedupeGroomingTrendsByMedia(
+    filterGroomingTrends((data ?? fallback) as GroomingTrend[], options)
+  );
 }
 
 export function isUsingSampleData() {

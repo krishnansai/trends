@@ -126,6 +126,112 @@ function dedupeById<T extends { id: string }>(items: T[]) {
   return Array.from(itemMap.values());
 }
 
+function normalizeMediaKey(value?: string) {
+  if (!value) {
+    return "";
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  try {
+    const url = new URL(trimmed, "https://personal-stylist.local");
+    url.search = "";
+    url.hash = "";
+
+    if (url.origin === "https://personal-stylist.local") {
+      return url.pathname.toLowerCase();
+    }
+
+    return `${url.origin}${url.pathname}`.toLowerCase();
+  } catch {
+    return trimmed.split("#")[0].split("?")[0].toLowerCase();
+  }
+}
+
+function scoreGarmentQuality(garment: Garment) {
+  return (
+    garment.year * 1000 +
+    garment.style_tags.length * 12 +
+    garment.occasion.length * 8 +
+    garment.season.length * 8 +
+    garment.color_palette.length * 4 +
+    (garment.description ? Math.min(garment.description.length, 240) / 20 : 0) +
+    (garment.source_url ? 6 : 0)
+  );
+}
+
+function scoreTrendQuality(trend: Trend) {
+  return (
+    trend.forecast_year * 1000 +
+    trend.confidence_score +
+    (trend.description ? Math.min(trend.description.length, 240) / 20 : 0) +
+    (trend.source_url ? 6 : 0)
+  );
+}
+
+function scoreGroomingQuality(grooming: GroomingTrend) {
+  return (
+    grooming.year * 1000 +
+    grooming.face_shapes.length * 10 +
+    grooming.style_tags.length * 8 +
+    grooming.recommended_products.length * 6 +
+    (grooming.description ? Math.min(grooming.description.length, 240) / 20 : 0)
+  );
+}
+
+function dedupeByMedia<T extends { id: string }>(
+  items: T[],
+  getMediaUrl: (item: T) => string | undefined,
+  scoreItem: (item: T) => number
+) {
+  const dedupedById = dedupeById(items);
+  const itemMap = new Map<string, T>();
+  const mediaKeyToId = new Map<string, string>();
+
+  for (const item of dedupedById) {
+    const mediaKey = normalizeMediaKey(getMediaUrl(item));
+
+    if (!mediaKey) {
+      itemMap.set(item.id, item);
+      continue;
+    }
+
+    const existingId = mediaKeyToId.get(mediaKey);
+
+    if (!existingId) {
+      mediaKeyToId.set(mediaKey, item.id);
+      itemMap.set(item.id, item);
+      continue;
+    }
+
+    const existing = itemMap.get(existingId);
+
+    if (!existing || scoreItem(item) > scoreItem(existing)) {
+      itemMap.delete(existingId);
+      mediaKeyToId.set(mediaKey, item.id);
+      itemMap.set(item.id, item);
+    }
+  }
+
+  return Array.from(itemMap.values());
+}
+
+export function dedupeGarmentsByMedia(items: Garment[]) {
+  return dedupeByMedia(items, (garment) => garment.image_url, scoreGarmentQuality);
+}
+
+export function dedupeTrendsByMedia(items: Trend[]) {
+  return dedupeByMedia(items, (trend) => trend.forecast_image_url, scoreTrendQuality);
+}
+
+export function dedupeGroomingTrendsByMedia(items: GroomingTrend[]) {
+  return dedupeByMedia(items, (grooming) => grooming.image_url, scoreGroomingQuality);
+}
+
 export async function getLocalGarments() {
   const garmentSets = await Promise.all([
     readJsonArray<Garment>("garments.json"),
@@ -144,7 +250,7 @@ export async function getLocalGarments() {
     readGarmentCsv("garments-pro-launch.csv")
   ]);
 
-  return dedupeById(garmentSets.flat());
+  return dedupeGarmentsByMedia(garmentSets.flat());
 }
 
 export async function getLocalTrends() {
@@ -158,7 +264,7 @@ export async function getLocalTrends() {
     readJsonArray<Trend>("trends-photo-profile-2026.json")
   ]);
 
-  return dedupeById(trendSets.flat());
+  return dedupeTrendsByMedia(trendSets.flat());
 }
 
 export async function getLocalGroomingTrends() {
@@ -169,5 +275,5 @@ export async function getLocalGroomingTrends() {
     readJsonArray<GroomingTrend>("grooming-pro-launch.json"),
     readJsonArray<GroomingTrend>("grooming-ultra-latest-2026.json")
   ]);
-  return dedupeById(groomingSets.flat());
+  return dedupeGroomingTrendsByMedia(groomingSets.flat());
 }
