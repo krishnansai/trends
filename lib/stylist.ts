@@ -1,11 +1,14 @@
 import { generateAffiliateLink } from "@/lib/affiliate";
 import { ARCHIVE_END_YEAR, ARCHIVE_START_YEAR } from "@/lib/archive-window";
+import { isColdClimate, isHotClimate, isRainClimate, type ClimateContext } from "@/lib/climate";
+import { scorePreferenceMatch, type StylistPreferences } from "@/lib/stylist-preferences";
 import stylistFilterRules from "@/data/stylist-filter-rules.json";
 import type { VisionAgeBand } from "@/lib/vision";
 import {
   getOccasionMatches,
   getSeasonMatches,
   isAllowedForDemographic,
+  isMenswearSafeFootwear,
   type Demographic,
   type FaceShape,
   type FitProfile,
@@ -49,6 +52,7 @@ export type OutfitRecommendation = {
   title: string;
   fitReason: string;
   garment: Garment;
+  supportGarments?: Garment[];
   supportPieces: string[];
   trendSignal: string;
   score: number;
@@ -81,7 +85,9 @@ type RecommendationScoringInput = {
   adviceMode?: AdviceMode;
   ageBand?: VisionAgeBand;
   bodyArchitecture?: BodyArchitecture;
+  climateContext?: ClimateContext | null;
   faceShape?: FaceShape;
+  preferences?: StylistPreferences;
   recommendedColorPalette?: string[];
   suggestedFitProfile?: FitProfile;
 };
@@ -434,6 +440,53 @@ function scoreBodyArchitectureMatch(garment: Garment, bodyArchitecture?: BodyArc
   return drapeBoost - clingPenalty;
 }
 
+function scoreClimateMatch(garment: Garment, climate?: ClimateContext | null) {
+  if (!climate) {
+    return 0;
+  }
+
+  const searchable = searchableGarmentText(garment);
+  let score = 0;
+
+  if (isHotClimate(climate)) {
+    score += scoreKeywordMatches(
+      searchable,
+      ["breathable", "linen", "lightweight", "open-collar", "resort", "cotton", "airflow"],
+      11,
+      58
+    );
+    score += garment.season.includes("summer") ? 22 : 0;
+    score -= scoreKeywordMatches(
+      searchable,
+      ["heavyweight", "240gsm", "300gsm", "450gsm", "wool", "fleece", "puffer", "parka"],
+      26,
+      130
+    );
+  }
+
+  if (isColdClimate(climate)) {
+    score += scoreKeywordMatches(
+      searchable,
+      ["layer", "layering", "jacket", "outerwear", "heavyweight", "wool", "thermal", "puffer", "parka"],
+      11,
+      64
+    );
+    score += garment.season.includes("winter") ? 24 : 0;
+    score -= garment.season.includes("summer") && !garment.season.includes("all-season") ? 32 : 0;
+  }
+
+  if (isRainClimate(climate)) {
+    score += scoreKeywordMatches(
+      searchable,
+      ["weather-resistant", "water-resistant", "nylon", "shell", "trench", "boot", "dark"],
+      12,
+      60
+    );
+  }
+
+  return score;
+}
+
 export function getBodyArchitectureFitReason(
   garment: Garment,
   bodyArchitecture: BodyArchitecture = "athletic_tapered"
@@ -611,6 +664,67 @@ function isPrimaryRecommendationCategory(category: Garment["category"], context?
   }
 
   return primaryRecommendationCategories.has(category);
+}
+
+type RecommendationPieceRole = "Bottom" | "Footwear" | "Top / Layer";
+
+function roleForRecommendationGarment(category: Garment["category"]): RecommendationPieceRole {
+  if (category === "bottoms" || category === "skirts") {
+    return "Bottom";
+  }
+
+  if (category === "footwear") {
+    return "Footwear";
+  }
+
+  return "Top / Layer";
+}
+
+function garmentIdentityKey(garment: Garment) {
+  return `${normalize(garment.title)}|${garment.image_url}`;
+}
+
+function pickSupportGarmentsForOutfit<T extends { garment: Garment; score: number }>(
+  anchor: Garment,
+  scoredGarments: T[],
+  demographic: Demographic,
+  usedGarmentIds: Set<string>,
+  usedGarmentKeys: Set<string>
+) {
+  const roles: RecommendationPieceRole[] = ["Top / Layer", "Bottom", "Footwear"];
+  const anchorRole = roleForRecommendationGarment(anchor.category);
+  const localUsedIds = new Set([...usedGarmentIds, anchor.id]);
+  const localUsedKeys = new Set([...usedGarmentKeys, garmentIdentityKey(anchor)]);
+  const supportGarments: Garment[] = [];
+
+  for (const role of roles) {
+    if (role === anchorRole) {
+      continue;
+    }
+
+    const match = scoredGarments.find((item) => {
+      const identityKey = garmentIdentityKey(item.garment);
+
+      return (
+        !localUsedIds.has(item.garment.id) &&
+        !localUsedKeys.has(identityKey) &&
+        Boolean(item.garment.image_url) &&
+        isAllowedForDemographic(item.garment, demographic) &&
+        (demographic !== "menswear" || isMenswearSafeFootwear(item.garment)) &&
+        roleForRecommendationGarment(item.garment.category) === role
+      );
+    });
+
+    if (match) {
+      supportGarments.push(match.garment);
+      localUsedIds.add(match.garment.id);
+      localUsedKeys.add(garmentIdentityKey(match.garment));
+      usedGarmentIds.add(match.garment.id);
+      usedGarmentKeys.add(garmentIdentityKey(match.garment));
+    }
+  }
+
+  return supportGarments;
 }
 
 function pickDiverseRecommendations<T extends { garment: Garment; score: number }>(
@@ -923,19 +1037,34 @@ export function buildStylistRecommendations(
         scoreContext(garment, context) +
         scoreAgeBandMatch(garment, scoringInput.ageBand) +
         scoreBodyArchitectureMatch(garment, scoringInput.bodyArchitecture) +
+        scoreClimateMatch(garment, scoringInput.climateContext) +
         scoreFitMatch(garment, scoringInput.suggestedFitProfile) +
         scorePaletteMatch(garment, scoringInput.recommendedColorPalette) +
+        scorePreferenceMatch(garment, scoringInput.preferences) +
         scoreJsonFilterRules(garment, demographic, profile.id, context, scoringInput)
     }))
     .sort((first, second) => second.score - first.score || second.garment.year - first.garment.year);
 
-  return pickDiverseRecommendations(scoredGarments, context)
+  const selectedRecommendations = pickDiverseRecommendations(scoredGarments, context);
+  const usedGarmentIds = new Set(selectedRecommendations.map((item) => item.garment.id));
+  const usedGarmentKeys = new Set(
+    selectedRecommendations.map((item) => garmentIdentityKey(item.garment))
+  );
+
+  return selectedRecommendations
     .map(({ garment, score }, index) => ({
       id: `${profile.id}-${garment.id}`,
       title: garment.title || `${titleCase(garment.style_tags[0] ?? garment.category)} Outfit`,
       fitReason: getBodyArchitectureFitReason(garment, scoringInput.bodyArchitecture),
       garment,
       score,
+      supportGarments: pickSupportGarmentsForOutfit(
+        garment,
+        scoredGarments,
+        demographic,
+        usedGarmentIds,
+        usedGarmentKeys
+      ),
       supportPieces: supportPiecesForContext(
         demographic,
         profile.id,

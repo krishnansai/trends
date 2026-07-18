@@ -449,8 +449,111 @@ function hasWrongPhotoSignal(
   return skinSamples.length < 12 && skinRatio < 0.012 && foregroundRatio < 0.08;
 }
 
+function detectDemographicFromFileSignal(seed: string): VisionDemographic | null {
+  const normalizedSeed = seed.toLowerCase();
+
+  if (/(^|[^a-z])(female|woman|women|womens|womenswear|girl|lady|ladies)([^a-z]|$)/.test(normalizedSeed)) {
+    return "womenswear";
+  }
+
+  if (/(^|[^a-z])(male|man|men|mens|menswear|boy|gent|gentleman)([^a-z]|$)/.test(normalizedSeed)) {
+    return "menswear";
+  }
+
+  if (/(^|[^a-z])(unisex|genderless|gender-neutral)([^a-z]|$)/.test(normalizedSeed)) {
+    return "unisex";
+  }
+
+  return null;
+}
+
 function clampDemographic(fallback: Demographic): VisionDemographic {
-  return fallback;
+  return fallback === "menswear" || fallback === "womenswear" || fallback === "unisex"
+    ? fallback
+    : "unisex";
+}
+
+function detectWardrobePresentation(
+  seed: string,
+  skinSamples: PixelSample[],
+  foregroundSamples: PixelSample[],
+  width: number,
+  height: number,
+  fallback: Demographic
+): VisionDemographic {
+  const fileDemographic = detectDemographicFromFileSignal(seed);
+
+  if (fileDemographic) {
+    return fileDemographic;
+  }
+
+  if (hasWrongPhotoSignal(skinSamples, foregroundSamples, width, height)) {
+    return "unisex";
+  }
+
+  const foregroundBounds = boundsFor(foregroundSamples);
+  const skinBounds = boundsFor(skinSamples);
+
+  if (!foregroundBounds) {
+    return "unisex";
+  }
+
+  const foregroundHeightRatio = (foregroundBounds.maxY - foregroundBounds.minY + 1) / Math.max(height, 1);
+  const foregroundCoverage = foregroundSamples.length / Math.max(width * height, 1);
+  const faceAreaRatio = skinBounds
+    ? ((skinBounds.maxX - skinBounds.minX + 1) * (skinBounds.maxY - skinBounds.minY + 1)) /
+      Math.max(width * height, 1)
+    : 0;
+  const tolerance = Math.max(2, Math.round(height * 0.055));
+  const upperWidth = widthNearY(foregroundSamples, height * 0.34, tolerance);
+  const waistWidth = widthNearY(foregroundSamples, height * 0.54, tolerance);
+  const lowerWidth = widthNearY(foregroundSamples, height * 0.74, tolerance);
+  const shoulderToLowerRatio = upperWidth / Math.max(lowerWidth, 1);
+  const lowerToUpperRatio = lowerWidth / Math.max(upperWidth, 1);
+  const lowerToWaistRatio = lowerWidth / Math.max(waistWidth, 1);
+  const hairVolume = detectHairstyleVolume(skinSamples, foregroundSamples, width, height);
+  const faceOnlyPhoto = faceAreaRatio > 0.16 && foregroundCoverage < 0.24;
+  let womenswearScore = 0;
+  let menswearScore = 0;
+
+  if (foregroundHeightRatio > 0.54 && lowerToUpperRatio > 1.14) {
+    womenswearScore += 4;
+  }
+
+  if (foregroundHeightRatio > 0.48 && lowerToWaistRatio > 1.22) {
+    womenswearScore += 3;
+  }
+
+  if (hairVolume === "high" && skinSamples.length >= 48) {
+    womenswearScore += 3;
+  }
+
+  if (faceOnlyPhoto && hairVolume === "high") {
+    womenswearScore += 2;
+  }
+
+  if (upperWidth > 0 && shoulderToLowerRatio > 1.2) {
+    menswearScore += 3;
+  }
+
+  if (hairVolume === "low" && skinSamples.length >= 48) {
+    menswearScore += 1;
+  }
+
+  if (foregroundCoverage > 0.22 && foregroundHeightRatio > 0.42 && shoulderToLowerRatio > 1.08) {
+    menswearScore += 1;
+  }
+
+  if (womenswearScore >= menswearScore + 2 && womenswearScore >= 3) {
+    return "womenswear";
+  }
+
+  if (menswearScore >= womenswearScore + 3 && menswearScore >= 4) {
+    return "menswear";
+  }
+
+  const normalizedFallback = clampDemographic(fallback);
+  return normalizedFallback === "menswear" ? "unisex" : normalizedFallback;
 }
 
 function detectAgeBandFromImageSignal(seed: string): VisionAgeBand {
@@ -594,6 +697,7 @@ function buildVisibleCues(
   dominantPalette: [string, string, string],
   width: number,
   height: number,
+  demographic: VisionDemographic,
   undertone: VisionUndertone,
   fitProfile: VisionFitProfile
 ) {
@@ -610,8 +714,9 @@ function buildVisibleCues(
   const faceCue = skinSamples.length >= 48 ? "face outline detected" : "limited face detail";
   const bodyCue = foregroundRatio > 0.28 ? "fuller body/clothing area visible" : "cropped upper-body signal";
   const colorCue = `dominant colors ${dominantPalette.slice(0, 2).join(" / ")}`;
+  const demographicCue = `${demographic} wardrobe presentation`;
 
-  return [faceCue, colorCue, `${undertone} undertone + ${fitProfile} fit`, bodyCue].slice(0, 3);
+  return [faceCue, demographicCue, colorCue, `${undertone} undertone + ${fitProfile} fit`, bodyCue].slice(0, 3);
 }
 
 export async function analyzeStylistPhoto(
@@ -665,14 +770,14 @@ export async function analyzeStylistPhoto(
   const lightingQuality = detectLightingQuality(samples);
   const wrongPhotoSignal = hasWrongPhotoSignal(skinSamples, foregroundSamples, width, height);
   const fileSignal = `${file.name}-${file.size}-${file.lastModified}`.toLowerCase();
-  const demographic =
-    /(^|[^a-z])(female|woman|women|womens|womenswear|girl)([^a-z]|$)/.test(fileSignal)
-      ? "womenswear"
-      : /(^|[^a-z])(male|man|men|mens|menswear|boy)([^a-z]|$)/.test(fileSignal)
-        ? "menswear"
-        : fileSignal.includes("unisex")
-          ? "unisex"
-          : clampDemographic(fallbackDemographic);
+  const demographic = detectWardrobePresentation(
+    fileSignal,
+    skinSamples,
+    foregroundSamples,
+    width,
+    height,
+    fallbackDemographic
+  );
   const ageBand = detectAgeBandFromImageSignal(fileSignal);
   const buildAndProportion = detectBuildAndProportion(fitProfile);
   const groomingState = detectGroomingStateFromSignal(fileSignal, demographic);
@@ -719,6 +824,7 @@ export async function analyzeStylistPhoto(
       dominantPalette,
       width,
       height,
+      demographic,
       undertone,
       fitProfile
     )

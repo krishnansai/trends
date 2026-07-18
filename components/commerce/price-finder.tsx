@@ -257,8 +257,10 @@ export function PriceFinder() {
   const similarMatches = bestMatch
     ? sortedMatches.filter((match) => match.id !== bestMatch.id).slice(0, 4)
     : [];
+  const matrixMatches = pricedMatches.slice(0, 3);
   const hasProductPageLinks = sortedMatches.some((match) => hasExactProductUrl(match));
   const isSearchOnlyMode = sortedMatches.length > 0 && !hasProductPageLinks;
+  const isEstimatedMatrix = matrixMatches.length > 0 && matrixMatches.every(isEstimatedMatch);
   const highestPrice = pricedMatches.at(-1)?.price ?? null;
   const savings =
     bestMatch?.price !== null && bestMatch?.price !== undefined && highestPrice !== null
@@ -495,13 +497,13 @@ export function PriceFinder() {
           {isLoading ? (
             <div className="mt-6 grid min-h-[420px] place-items-center border border-[#D8CCBB] bg-white/85">
               <div className="flex flex-col items-center gap-4 text-center">
-                <div className="h-px w-40 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent" />
+                <div className="h-px w-40 animate-pulse bg-gradient-to-r from-transparent via-[#7B5637] to-transparent" />
                 <div>
                   <p className="font-mono text-xs uppercase tracking-[0.24em] text-neutral-700">
-                    Scanning retailer catalogs
+                    Scraping Live...
                   </p>
                   <p className="mt-2 text-xs uppercase tracking-[0.18em] text-neutral-500">
-                    Ranking low price and high-rated matches
+                    Comparing live sidecar data with estimated market value
                   </p>
                 </div>
               </div>
@@ -511,6 +513,96 @@ export function PriceFinder() {
               {warning ? (
                 <div className="border border-[#D8CCBB] bg-white/70 px-3 py-2 text-sm text-neutral-600">
                   {warning}
+                </div>
+              ) : null}
+
+              {matrixMatches.length ? (
+                <div className="border border-[#D8CCBB] bg-white/80 p-3 sm:p-4">
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                        Retail Matrix
+                      </p>
+                      <h3 className="mt-1 text-xl font-light text-neutral-950">Compare & Buy</h3>
+                    </div>
+                    <Badge>{isEstimatedMatrix ? "Estimated Value" : "Live Product Links"}</Badge>
+                  </div>
+
+                  {isEstimatedMatrix ? (
+                    <div className="mt-4 border border-[#D8CCBB] bg-[#FBF7F0] p-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+                        Estimated Value
+                      </p>
+                      <div className="mt-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+                        <div className="min-w-0">
+                          <h4 className="break-words text-lg font-medium text-neutral-950">
+                            {bestMatch ? getDisplayTitle(bestMatch) : "Retail search estimate"}
+                          </h4>
+                          <p className="mt-2 text-sm leading-6 text-neutral-600">
+                            Live exact product links were not returned, so this uses ranked retailer result pages.
+                          </p>
+                        </div>
+                        {bestMatch ? (
+                          <div className="shrink-0 sm:text-right">
+                            <p className="text-3xl font-light text-neutral-950">
+                              {formatDisplayPrice(bestMatch)}
+                            </p>
+                            <p className="mt-1 text-xs text-neutral-500">{formatRating(bestMatch)}</p>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                      {matrixMatches.map((match, index) => (
+                        <article
+                          key={`matrix-${match.id}`}
+                          className={cn(
+                            "flex min-w-0 flex-col justify-between border border-[#D8CCBB] bg-[#FBF7F0] p-4",
+                            index === 0 && "border-[#BDAE9A] bg-white"
+                          )}
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span
+                                className="grid size-9 shrink-0 place-items-center text-xs font-semibold text-white"
+                                style={{ backgroundColor: match.logoTone }}
+                              >
+                                {match.logoMark}
+                              </span>
+                              <Badge>{index === 0 ? "Best" : getMatchBasisLabel(match)}</Badge>
+                            </div>
+                            <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
+                              {match.retailer}
+                            </p>
+                            <h4 className="mt-1 break-words text-base font-medium leading-6 text-neutral-950">
+                              {getDisplayTitle(match)}
+                            </h4>
+                            <div className="mt-4">
+                              <p className="text-2xl font-light text-neutral-950">
+                                {formatDisplayPrice(match)}
+                              </p>
+                              {match.originalPrice ? (
+                                <p className="mt-1 text-xs text-neutral-500">
+                                  Market estimate {formatOriginalPrice(match)}
+                                </p>
+                              ) : null}
+                              <p className="mt-2 text-xs text-neutral-500">{formatRating(match)}</p>
+                            </div>
+                          </div>
+                          <a
+                            href={match.buyNowUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={buttonVariants({ className: "mt-5 w-full" })}
+                          >
+                            Buy Now
+                            <ArrowUpRight className="size-4" />
+                          </a>
+                        </article>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : null}
 

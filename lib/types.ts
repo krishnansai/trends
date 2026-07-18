@@ -191,6 +191,41 @@ export function isMenswearSafeCategory(category: GarmentCategory) {
   );
 }
 
+export function isMenswearSafeFootwear(garment: Garment) {
+  if (garment.category !== "footwear") {
+    return true;
+  }
+
+  const searchable = [
+    garment.title,
+    garment.description,
+    ...garment.style_tags,
+    garment.source_url
+  ]
+    .join(" ")
+    .toLowerCase();
+  const blockedFootwear =
+    /ballet|flat|mary jane|slingback|pump|heel|heeled|kitten|stiletto|wedge|mule|platform|jelly|bow|thong-sandal|flip-flop|slipper|sandal|fisherman|espadrille|clog|pedal-pusher|capri|dress formula/.test(
+      searchable
+    );
+
+  if (blockedFootwear) {
+    return false;
+  }
+
+  if (garment.demographic === "menswear") {
+    return true;
+  }
+
+  if (/sandal|fisherman|espadrille|clog/.test(searchable)) {
+    return false;
+  }
+
+  return /sneaker|trainer|runner|loafer|boot|derby|oxford|boat-shoe|boat shoe|trail|hiking/.test(
+    searchable
+  );
+}
+
 export function isAllowedForDemographic(
   garment: Garment,
   demographic: Demographic,
@@ -200,7 +235,11 @@ export function isAllowedForDemographic(
   const matchesDemographic = allowedDemographics.includes(garment.demographic);
 
   if (demographic === "menswear") {
-    return matchesDemographic && isMenswearSafeCategory(garment.category);
+    return (
+      matchesDemographic &&
+      isMenswearSafeCategory(garment.category) &&
+      isMenswearSafeFootwear(garment)
+    );
   }
 
   return matchesDemographic;

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { normalizeClimateContext } from "@/lib/climate";
 import { getGarments, getGroomingTrends } from "@/lib/data";
+import { normalizeStylistPreferences } from "@/lib/stylist-preferences";
 import {
   buildGroomingRecommendations,
   buildStylistRecommendations,
@@ -11,6 +13,11 @@ import {
   type BodyArchitecture,
   type StyleProfileId
 } from "@/lib/stylist";
+import {
+  applyDemographicGarmentGuardrails,
+  applyClimateGarmentGuardrails,
+  applyPreferenceGarmentGuardrails
+} from "@/lib/styling-guardrails";
 import {
   getOccasionMatches,
   getSeasonMatches,
@@ -29,9 +36,11 @@ type RecommendationRequest = {
   adviceMode?: unknown;
   ageBand?: unknown;
   bodyArchitecture?: unknown;
+  climateContext?: unknown;
   demographic?: unknown;
   faceShape?: unknown;
   occasion?: unknown;
+  preferences?: unknown;
   profileId?: unknown;
   season?: unknown;
   suggestedFitProfile?: unknown;
@@ -181,7 +190,7 @@ async function getStrictClothingMatches(
   const strictFitMatches = await getGarments({
     demographic: visionData.demographic,
     fitProfile: visionData.suggested_fit_profile,
-    includeUnisex: true,
+    includeUnisex: false,
     limit: 60,
     occasion,
     season,
@@ -190,7 +199,7 @@ async function getStrictClothingMatches(
 
   const strictContextMatches = await getGarments({
     demographic: visionData.demographic,
-    includeUnisex: true,
+    includeUnisex: false,
     limit: 60,
     occasion,
     season,
@@ -210,12 +219,16 @@ export async function POST(request: Request) {
   const season = normalizeSeason(body.season);
   const bodyArchitecture = normalizeBodyArchitecture(body.bodyArchitecture);
   const adviceMode = normalizeAdviceMode(body.adviceMode);
+  const climateContext = normalizeClimateContext(body.climateContext);
+  const preferences = normalizeStylistPreferences(body.preferences);
 
   console.log("[stylist/recommendations] context", {
     adviceMode,
     bodyArchitecture,
     incomingOccasion: body.occasion,
     incomingSeason: body.season,
+    climateCondition: climateContext?.condition ?? "manual",
+    fitPreference: preferences.completed ? preferences.fitPreference : "not_set",
     normalizedOccasion: occasion,
     normalizedSeason: season
   });
@@ -249,8 +262,15 @@ export async function POST(request: Request) {
         })
       : Promise.resolve([])
   ]);
+  const guardedGarmentMatches = applyPreferenceGarmentGuardrails(
+    applyClimateGarmentGuardrails(
+      applyDemographicGarmentGuardrails(garmentMatches, visionData.demographic),
+      climateContext
+    ),
+    preferences
+  );
   const exactRecommendations = buildStylistRecommendations(
-    garmentMatches,
+    guardedGarmentMatches,
     profileId,
     visionData.demographic,
     {
@@ -262,14 +282,16 @@ export async function POST(request: Request) {
       adviceMode,
       faceShape: visionData.detected_face_shape,
       recommendedColorPalette: visionData.recommended_color_palette,
+      climateContext,
       bodyArchitecture,
+      preferences,
       suggestedFitProfile: visionData.suggested_fit_profile
     }
   );
   const recommendations = exactRecommendations.slice(0, 3);
   const contextWarning =
     recommendations.length === 0
-      ? `No compatible ${occasion} + ${season} garments matched the strict context guardrail.`
+      ? `No compatible ${occasion} + ${season} garments matched the strict context, climate, and preference guardrails.`
       : "";
   const grooming = buildGroomingRecommendations(
     [...hairstyleMatches, ...beardMatches],
@@ -282,8 +304,10 @@ export async function POST(request: Request) {
     bodyArchitecture,
     faceShape: visionData.detected_face_shape,
     grooming,
+    climateContext,
     contextWarning,
     occasion,
+    preferences,
     profile: getStyleProfile(profileId),
     recommendations,
     season,

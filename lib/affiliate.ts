@@ -1,3 +1,5 @@
+import { routeAffiliateLink } from "@/lib/affiliate-router";
+
 export function generateAffiliateLink(searchQuery: string) {
   const baseUrl = process.env.NEXT_PUBLIC_AFFILIATE_SEARCH_URL ?? "https://www.amazon.in/s";
   const affiliateTag = process.env.NEXT_PUBLIC_AFFILIATE_TAG;
@@ -30,19 +32,5 @@ export function generateAffiliateDeepLink(productUrl: string) {
     return url.toString();
   }
 
-  const url = new URL(productUrl);
-  const hostname = url.hostname.toLowerCase();
-
-  if (affiliateTag && (hostname.includes("amazon.") || hostname.includes("amzn."))) {
-    url.searchParams.set("tag", affiliateTag);
-    return url.toString();
-  }
-
-  if (affiliateTag) {
-    url.searchParams.set("utm_source", "atelier_signal");
-    url.searchParams.set("utm_medium", "affiliate");
-    url.searchParams.set("utm_campaign", "price_finder");
-  }
-
-  return url.toString();
+  return routeAffiliateLink(productUrl, { campaign: "price_finder" });
 }

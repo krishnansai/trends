@@ -136,3 +136,20 @@ input[type="range"] {
 .animate-fade-in {
   animation: fade-in 520ms ease-out both;
 }
+
+@keyframes archive-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.archive-marquee-track {
+  animation: archive-marquee 36s linear infinite;
+}
+
+.archive-marquee:hover .archive-marquee-track {
+  animation-play-state: paused;
+}

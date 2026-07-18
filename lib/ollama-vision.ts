@@ -62,6 +62,52 @@ ${JSON.stringify(fallback)}
 Return only strict minified JSON.`;
 }
 
+function reconcileWardrobeDemographic(profile: VisionAnalysis, fallback: VisionAnalysis): VisionAnalysis {
+  const visibleCueText = profile.visible_cues.join(" ").toLowerCase();
+  const hasStrongMenswearCue =
+    visibleCueText.includes("menswear wardrobe") ||
+    visibleCueText.includes("beard") ||
+    profile.grooming_state === "full_beard" ||
+    profile.grooming_state === "stubble_heavy_stubble";
+
+  if (
+    fallback.demographic === "womenswear" &&
+    profile.demographic === "menswear" &&
+    profile.analysis_confidence < 82 &&
+    !hasStrongMenswearCue
+  ) {
+    return createVisionAnalysis({
+      ...profile,
+      demographic: "womenswear",
+      grooming_state: "clean_shaven",
+      grooming_strategy:
+        "Use face-framing hair direction for this womenswear profile instead of beard-based grooming.",
+      visible_cues: [
+        "womenswear wardrobe presentation",
+        ...profile.visible_cues.filter((cue) => !/menswear|beard/i.test(cue))
+      ].slice(0, 3)
+    });
+  }
+
+  if (
+    fallback.demographic === "unisex" &&
+    profile.demographic === "menswear" &&
+    profile.analysis_confidence < 58 &&
+    !hasStrongMenswearCue
+  ) {
+    return createVisionAnalysis({
+      ...profile,
+      demographic: "unisex",
+      visible_cues: [
+        "unisex wardrobe presentation",
+        ...profile.visible_cues.filter((cue) => !/menswear/i.test(cue))
+      ].slice(0, 3)
+    });
+  }
+
+  return profile;
+}
+
 export async function analyzeImageWithOllama(
   file: File,
   fallback: VisionAnalysis
@@ -116,7 +162,10 @@ export async function analyzeImageWithOllama(
 
     return {
       model,
-      profile: parseVisionAnalysis(extractJsonPayload(payload.response), fallback),
+      profile: reconcileWardrobeDemographic(
+        parseVisionAnalysis(extractJsonPayload(payload.response), fallback),
+        fallback
+      ),
       source: "ollama"
     };
   } catch (error) {

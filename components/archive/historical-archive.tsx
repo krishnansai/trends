@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUpRight, Filter, Gauge, ImageOff, Search, TrendingUp, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select } from "@/components/ui/select";
 import { ARCHIVE_END_YEAR, ARCHIVE_START_YEAR } from "@/lib/archive-window";
+import { readStyleVault, type StyleVaultItem } from "@/lib/style-vault";
 import type { Demographic, Garment, Trend } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { filterAndRankGarmentsByVibe, parseVibeSearch } from "@/lib/vibe-search";
@@ -27,6 +28,50 @@ const demographicLabels: Record<Demographic, string> = {
   unisex: "Unisex",
   womenswear: "Womenswear"
 };
+
+function getVaultedGarmentIds(items: StyleVaultItem[]) {
+  const ids = new Set<string>();
+
+  for (const item of items) {
+    const pieces = item.payload.pieces;
+
+    if (!Array.isArray(pieces)) {
+      continue;
+    }
+
+    for (const piece of pieces) {
+      if (
+        piece &&
+        typeof piece === "object" &&
+        "garment" in piece &&
+        piece.garment &&
+        typeof piece.garment === "object" &&
+        "id" in piece.garment &&
+        typeof piece.garment.id === "string"
+      ) {
+        ids.add(piece.garment.id);
+      }
+    }
+  }
+
+  return ids;
+}
+
+function scoreTrendingGarment(garment: Garment, vaultedGarmentIds: Set<string>) {
+  const searchable = [garment.title, garment.description, ...garment.style_tags]
+    .join(" ")
+    .toLowerCase();
+  const recencyScore = (garment.year - ARCHIVE_START_YEAR) * 18;
+  const vaultedScore = vaultedGarmentIds.has(garment.id) ? 180 : 0;
+  const imageScore = garment.image_url ? 20 : 0;
+  const launchSignalScore = /2026|minimal|streetwear|resort|tailor|linen|boxy|oversized|gorp|quiet/.test(
+    searchable
+  )
+    ? 36
+    : 0;
+
+  return vaultedScore + recencyScore + imageScore + launchSignalScore;
+}
 
 function ArchiveImage({
   alt,
@@ -90,6 +135,7 @@ export function HistoricalArchive({
   const [demographic, setDemographic] = useState("all");
   const [vibeQuery, setVibeQuery] = useState("");
   const [selected, setSelected] = useState<Garment | null>(null);
+  const [vaultedGarmentIds, setVaultedGarmentIds] = useState<Set<string>>(new Set());
 
   const categoryOptions = useMemo(
     () => Array.from(new Set(garments.map((garment) => garment.category))).sort(),
@@ -102,6 +148,23 @@ export function HistoricalArchive({
   );
 
   const vibeIntent = useMemo(() => parseVibeSearch(vibeQuery), [vibeQuery]);
+
+  const trendingGarments = useMemo(() => {
+    return garments
+      .filter((garment) => Boolean(garment.image_url))
+      .map((garment) => ({
+        garment,
+        score: scoreTrendingGarment(garment, vaultedGarmentIds)
+      }))
+      .sort(
+        (first, second) =>
+          second.score - first.score ||
+          second.garment.year - first.garment.year ||
+          first.garment.title.localeCompare(second.garment.title)
+      )
+      .slice(0, 10)
+      .map((item) => item.garment);
+  }, [garments, vaultedGarmentIds]);
 
   const filteredGarments = useMemo(() => {
     const lowerYear = Math.min(fromYear, toYear);
@@ -117,6 +180,22 @@ export function HistoricalArchive({
 
     return filterAndRankGarmentsByVibe(baseGarments, vibeIntent);
   }, [category, demographic, fromYear, garments, toYear, vibeIntent]);
+
+  useEffect(() => {
+    function syncVaultSignals() {
+      setVaultedGarmentIds(getVaultedGarmentIds(readStyleVault()));
+    }
+
+    const timeout = window.setTimeout(syncVaultSignals, 0);
+    window.addEventListener("style-vault-updated", syncVaultSignals);
+    window.addEventListener("storage", syncVaultSignals);
+
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener("style-vault-updated", syncVaultSignals);
+      window.removeEventListener("storage", syncVaultSignals);
+    };
+  }, []);
 
   return (
     <section className="mx-auto max-w-7xl animate-fade-in">
@@ -149,6 +228,50 @@ export function HistoricalArchive({
           </div>
         </div>
       </div>
+
+      {trendingGarments.length ? (
+        <div className="mt-6 overflow-hidden border border-[#D8CCBB] bg-white/70 p-4 backdrop-blur-xl">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
+                Global Trending
+              </p>
+              <h2 className="mt-1 text-2xl font-light text-neutral-950">Trending This Week</h2>
+            </div>
+            <Badge>{vaultedGarmentIds.size ? "Vault-weighted" : "Latest archive signals"}</Badge>
+          </div>
+
+          <div className="archive-marquee mt-4 overflow-hidden">
+            <div className="archive-marquee-track flex w-max gap-4">
+              {[...trendingGarments, ...trendingGarments].map((garment, index) => (
+                <button
+                  key={`${garment.id}-${index}`}
+                  type="button"
+                  className="group relative w-44 shrink-0 overflow-hidden border border-[#D8CCBB] bg-[#EEE5D7] text-left transition-colors hover:border-[#AD9C87] sm:w-56"
+                  onClick={() => setSelected(garment)}
+                >
+                  <div className="aspect-[3/4] overflow-hidden">
+                    <ArchiveImage
+                      src={garment.image_url}
+                      alt={garment.title}
+                      label={garment.title}
+                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="absolute inset-x-2 bottom-2 border border-white/50 bg-white/85 p-2 shadow-sm backdrop-blur-xl">
+                    <p className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
+                      {titleCase(garment.category)} · {titleCase(garment.occasion[0] ?? "archive")}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-sm font-medium leading-5 text-neutral-950">
+                      {garment.title}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {view === "archive" ? (
         <>

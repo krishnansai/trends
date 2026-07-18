@@ -7,6 +7,7 @@ import {
   Bookmark,
   Copy,
   Download,
+  MapPin,
   RotateCcw,
   Shuffle,
   Sparkles,
@@ -16,9 +17,24 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  classifyClimate,
+  formatClimateSummary,
+  getClimateDirective,
+  getSeasonFromClimate,
+  type ClimateContext
+} from "@/lib/climate";
 import { analyzeStylistPhoto } from "@/lib/photo-analysis";
 import {
-  adviceModeLabels,
+  budgetTierLabels,
+  defaultStylistPreferences,
+  fitPreferenceLabels,
+  normalizeStylistPreferences,
+  type BudgetTier,
+  type FitPreference,
+  type StylistPreferences
+} from "@/lib/stylist-preferences";
+import {
   bodyArchitectureLabels,
   getStyleProfile,
   type AdviceMode,
@@ -45,6 +61,91 @@ function titleCase(value: string) {
   return value.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function getBrowserPosition() {
+  return new Promise<GeolocationPosition>((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not supported in this browser."));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: false,
+      maximumAge: 1000 * 60 * 15,
+      timeout: 8000
+    });
+  });
+}
+
+function locationLabelFromTimezone(timezone?: string) {
+  const browserTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  const city = browserTimezone.split("/").at(-1)?.replace(/_/g, " ");
+
+  return city || "Local weather";
+}
+
+async function fetchClimateContext(): Promise<ClimateContext> {
+  const position = await getBrowserPosition();
+  const { latitude, longitude } = position.coords;
+  const params = new URLSearchParams({
+    current:
+      "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,snowfall,weather_code",
+    latitude: String(latitude),
+    longitude: String(longitude),
+    timezone: "auto"
+  });
+  const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error("Weather service did not return a usable response.");
+  }
+
+  const data = (await response.json()) as OpenMeteoResponse;
+  const current = data.current;
+  const temperatureC = current?.temperature_2m;
+
+  if (typeof temperatureC !== "number") {
+    throw new Error("Weather response did not include temperature.");
+  }
+
+  const climate: ClimateContext = {
+    apparentTemperatureC: current?.apparent_temperature ?? null,
+    condition: classifyClimate({
+      precipitationMm: current?.precipitation ?? null,
+      rainMm: current?.rain ?? null,
+      snowfallCm: current?.snowfall ?? null,
+      temperatureC,
+      weatherCode: current?.weather_code ?? null
+    }),
+    humidity: current?.relative_humidity_2m ?? null,
+    locationLabel: locationLabelFromTimezone(data.timezone),
+    precipitationMm: current?.precipitation ?? null,
+    rainMm: current?.rain ?? null,
+    snowfallCm: current?.snowfall ?? null,
+    summary: "",
+    temperatureC,
+    updatedAt: current?.time ?? new Date().toISOString(),
+    weatherCode: current?.weather_code ?? null
+  };
+
+  return {
+    ...climate,
+    summary: formatClimateSummary(climate)
+  };
+}
+
+function readStoredStylistPreferences() {
+  try {
+    return normalizeStylistPreferences(
+      window.localStorage.getItem(STYLIST_PREFERENCES_STORAGE_KEY)
+        ? JSON.parse(window.localStorage.getItem(STYLIST_PREFERENCES_STORAGE_KEY) ?? "{}")
+        : defaultStylistPreferences
+    );
+  } catch (error) {
+    console.error(error);
+    return defaultStylistPreferences;
+  }
+}
+
 const demographicLabels: Record<Demographic, string> = {
   menswear: "Menswear",
   womenswear: "Womenswear",
@@ -64,11 +165,6 @@ const seasonOptions: { label: string; value: StylingSeason }[] = [
   { label: "All-Season", value: "all-season" }
 ];
 
-const adviceModeOptions: { label: string; value: AdviceMode }[] = [
-  { label: adviceModeLabels.style_own, value: "style_own" },
-  { label: adviceModeLabels.discover_new, value: "discover_new" }
-];
-
 const scanStatusTexts = [
   "Reading facial geometry...",
   "Extracting color palette...",
@@ -76,17 +172,53 @@ const scanStatusTexts = [
   "Matching archive..."
 ];
 
+const STYLIST_PREFERENCES_STORAGE_KEY = "personal-stylist-preferences-v1";
+
+const fitPreferenceOptions: { label: string; value: FitPreference }[] = [
+  { label: fitPreferenceLabels.tailored_slim, value: "tailored_slim" },
+  { label: fitPreferenceLabels.relaxed_straight, value: "relaxed_straight" },
+  { label: fitPreferenceLabels.boxy_oversized, value: "boxy_oversized" }
+];
+
+const budgetTierOptions: { label: string; value: BudgetTier }[] = [
+  { label: budgetTierLabels.fast_fashion, value: "fast_fashion" },
+  { label: budgetTierLabels.premium_basics, value: "premium_basics" },
+  { label: budgetTierLabels.archive_designer, value: "archive_designer" }
+];
+
+const wardrobeProfileOptions: { label: string; value: VisionDemographic }[] = [
+  { label: "Men", value: "menswear" },
+  { label: "Women", value: "womenswear" },
+  { label: "Unisex", value: "unisex" }
+];
+
 type RecommendationResponse = {
   adviceMode: AdviceMode;
   bodyArchitecture: BodyArchitecture;
+  climateContext?: ClimateContext | null;
   contextWarning?: string;
   demographic: VisionDemographic;
   faceShape: FaceShape;
   grooming: GroomingRecommendationSet;
   occasion: StylingOccasion;
+  preferences?: StylistPreferences;
   recommendations: OutfitRecommendation[];
   season: StylingSeason;
   visionData: VisionAnalysis;
+};
+
+type OpenMeteoResponse = {
+  current?: {
+    apparent_temperature?: number;
+    precipitation?: number;
+    rain?: number;
+    relative_humidity_2m?: number;
+    snowfall?: number;
+    temperature_2m?: number;
+    time?: string;
+    weather_code?: number;
+  };
+  timezone?: string;
 };
 
 type PhotoAnalysisResponse = {
@@ -153,6 +285,38 @@ function pickFeedbackCopy(profile: VisionAnalysis, options: PhotoFeedback[]) {
   return options[index];
 }
 
+function pickFileFeedbackCopy(file: File, options: PhotoFeedback[]) {
+  const seed = `${file.name}|${file.size}|${file.lastModified}`;
+  const index = seed.split("").reduce((total, char) => total + char.charCodeAt(0), 0) % options.length;
+
+  return options[index];
+}
+
+function getUploadReadyFeedback(file: File): PhotoFeedback {
+  return pickFileFeedbackCopy(file, [
+    {
+      message: "Photo is ready. I will read the face, color, and fit cues when you tap Style Me.",
+      title: "Ready for the style read",
+      tone: "positive"
+    },
+    {
+      message: "Nice upload. One clear photo is enough to start building a cleaner personal look.",
+      title: "Good frame selected",
+      tone: "positive"
+    },
+    {
+      message: "Looks ready. I will keep the result simple, flattering, and matched to your photo.",
+      title: "Style check prepared",
+      tone: "positive"
+    },
+    {
+      message: "Photo received. The styling engine is ready to turn this into a complete outfit direction.",
+      title: "Ready to style you",
+      tone: "positive"
+    }
+  ]);
+}
+
 function getPhotoFeedback(profile: VisionAnalysis): PhotoFeedback {
   if (hasWrongImageSignal(profile)) {
     return pickFeedbackCopy(profile, [
@@ -215,33 +379,104 @@ function getPhotoFeedback(profile: VisionAnalysis): PhotoFeedback {
     ]);
   }
 
-  return pickFeedbackCopy(profile, [
+  const visibleCueText = profile.visible_cues.join(" ").toLowerCase();
+  const hasClearFace = visibleCueText.includes("face outline");
+  const hasFullerBody = visibleCueText.includes("fuller body");
+  const hasOptimalLighting = profile.lighting_quality === "optimal";
+  const colorDirection = profile.primary_color_undertone;
+  const wardrobeProfile = demographicLabels[profile.demographic];
+  const faceShape = titleCase(profile.detected_face_shape);
+  const fitDirection = titleCase(profile.suggested_fit_profile);
+  const positiveFeedback: PhotoFeedback[] = [
     {
-      message: `Nice photo. I can read your ${profile.primary_color_undertone} color direction, ${profile.suggested_fit_profile} fit, and ${demographicLabels[profile.demographic]} wardrobe profile.`,
-      title: "Looks ready for styling",
+      message: `Looking impressive. The scan can read your ${colorDirection} color direction, ${fitDirection.toLowerCase()} fit, and ${wardrobeProfile} wardrobe profile clearly.`,
+      title: "Strong first impression",
       tone: "positive"
     },
     {
-      message: `Looks sharp. The scan has enough face, color, and proportion cues for a cleaner ${demographicLabels[profile.demographic]} recommendation.`,
-      title: "Strong profile read",
+      message: `This has a confident presence. Your ${faceShape.toLowerCase()} face structure and color palette give the outfit engine a strong base to work from.`,
+      title: "Confident profile read",
       tone: "positive"
     },
     {
-      message: `Good upload. The stylist can now match color palette, fit profile, and grooming direction with better confidence.`,
-      title: "Profile scan is clean",
+      message: "Nice shot. The visible tones and proportions make it easier to suggest clothes that feel natural, not forced.",
+      title: "Style cues are clear",
       tone: "positive"
     },
     {
-      message: `This works well. The visible tones and proportions are clear enough for a personalized outfit match.`,
-      title: "Style cues detected",
+      message: "Your photo has a clean style energy. A few sharper outfit choices can make the whole look feel even more premium.",
+      title: "Premium direction found",
       tone: "positive"
     },
     {
-      message: `Nice profile shot. The image gives enough detail to filter by wardrobe profile, season, and occasion.`,
+      message: "Good presence in the frame. The scan has enough detail to build a polished look around your natural coloring and fit direction.",
       title: "Ready to style",
       tone: "positive"
     }
-  ]);
+  ];
+
+  if (hasClearFace) {
+    positiveFeedback.push(
+      {
+        message: "Your expression brings warmth to the frame. That approachable energy makes the outfit recommendation feel more personal.",
+        title: "Warm profile energy",
+        tone: "positive"
+      },
+      {
+        message: "Clear face read. A good smile or relaxed expression can make even simple styling feel memorable.",
+        title: "Great camera presence",
+        tone: "positive"
+      }
+    );
+  }
+
+  if (hasFullerBody) {
+    positiveFeedback.push({
+      message: `Strong outfit visibility. The ${fitDirection.toLowerCase()} line is readable, so I can tune the clothes to your real proportions.`,
+      title: "Fuller fit read",
+      tone: "positive"
+    });
+  }
+
+  if (hasOptimalLighting) {
+    positiveFeedback.push({
+      message: "Great lighting. Your colors are coming through cleanly, so the palette match should be more accurate.",
+      title: "Clean color read",
+      tone: "positive"
+    });
+  }
+
+  return pickFeedbackCopy(profile, positiveFeedback);
+}
+
+function applyWardrobeProfileOverride(
+  profile: VisionAnalysis,
+  wardrobeProfile: VisionDemographic
+): VisionAnalysis {
+  if (profile.demographic === wardrobeProfile) {
+    return profile;
+  }
+
+  const wardrobeCue = `${wardrobeProfile} wardrobe selected`;
+
+  return {
+    ...profile,
+    avoid_notes: [
+      `Keep recommendations inside the ${wardrobeProfile} wardrobe selection plus compatible basics only.`,
+      ...profile.avoid_notes.filter((note) => !/menswear|womenswear|unisex|wardrobe/i.test(note))
+    ].slice(0, 2),
+    demographic: wardrobeProfile,
+    grooming_state: wardrobeProfile === "womenswear" ? "clean_shaven" : profile.grooming_state,
+    grooming_strategy:
+      wardrobeProfile === "womenswear"
+        ? `${profile.detected_face_shape} face structure works best with balanced face-framing hair and controlled volume.`
+        : profile.grooming_strategy,
+    outfit_strategy: `Prioritize ${profile.suggested_fit_profile} ${wardrobeProfile} pieces that match the detected photo palette ${profile.extracted_palette.join(", ")}.`,
+    visible_cues: [
+      wardrobeCue,
+      ...profile.visible_cues.filter((cue) => !/menswear|womenswear|unisex|wardrobe/i.test(cue))
+    ].slice(0, 3)
+  };
 }
 
 function inferBodyArchitecture(profile: VisionAnalysis): BodyArchitecture {
@@ -456,13 +691,6 @@ function supportPieceForRole(
     return matchingPiece;
   }
 
-  const fallbackPiece = supportPieces.find((piece) => !usedPieces.has(piece));
-
-  if (fallbackPiece) {
-    usedPieces.add(fallbackPiece);
-    return fallbackPiece;
-  }
-
   const fallbackByRole: Record<OutfitGridPiece["role"], string> = {
     "Bottom": "clean straight-leg bottom",
     "Footwear": "low-profile everyday shoe",
@@ -470,6 +698,22 @@ function supportPieceForRole(
   };
 
   return fallbackByRole[role];
+}
+
+function supportGarmentForRole(
+  supportGarments: Garment[] | undefined,
+  role: OutfitGridPiece["role"],
+  usedGarmentIds: Set<string>
+) {
+  const match = supportGarments?.find((garment) => {
+    return !usedGarmentIds.has(garment.id) && roleForGarment(garment.category) === role;
+  });
+
+  if (match) {
+    usedGarmentIds.add(match.id);
+  }
+
+  return match;
 }
 
 function roleForGarment(category: OutfitRecommendation["garment"]["category"]): OutfitGridPiece["role"] {
@@ -493,6 +737,7 @@ function buildThreePieceOutfit(
 ): ThreePieceOutfit {
   const roles: OutfitGridPiece["role"][] = ["Top / Layer", "Bottom", "Footwear"];
   const usedPieces = new Set<string>();
+  const usedGarmentIds = new Set([recommendation.garment.id]);
   const primaryRole = roleForGarment(recommendation.garment.category);
   const pieces = roles.map((role, roleIndex): OutfitGridPiece => {
     if (role === primaryRole) {
@@ -504,6 +749,24 @@ function buildThreePieceOutfit(
         meta: `${recommendation.garment.year} · ${titleCase(recommendation.garment.fit_profile)}`,
         role,
         title: recommendation.title
+      };
+    }
+
+    const supportGarment = supportGarmentForRole(
+      recommendation.supportGarments,
+      role,
+      usedGarmentIds
+    );
+
+    if (supportGarment) {
+      return {
+        accentColor: supportGarment.color_palette[0] ?? palette[roleIndex % palette.length] ?? "#D8CCBB",
+        garment: supportGarment,
+        id: `${recommendation.id}-${role}-${supportGarment.id}`,
+        imageUrl: supportGarment.image_url,
+        meta: `${supportGarment.year} · ${titleCase(supportGarment.fit_profile)}`,
+        role,
+        title: supportGarment.title
       };
     }
 
@@ -527,6 +790,34 @@ function buildThreePieceOutfit(
   };
 }
 
+function OutfitPieceVisual({ piece }: { piece: OutfitGridPiece }) {
+  const [hasImageError, setHasImageError] = useState(!piece.imageUrl);
+
+  if (piece.imageUrl && !hasImageError) {
+    return (
+      <img
+        src={piece.imageUrl}
+        alt={piece.title}
+        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+        onError={() => setHasImageError(true)}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="flex h-full w-full items-end p-4"
+      style={{
+        background: `linear-gradient(135deg, ${piece.accentColor}, #F8F3EB)`
+      }}
+    >
+      <span className="max-w-[14rem] text-lg font-light leading-tight text-white drop-shadow">
+        {piece.title}
+      </span>
+    </div>
+  );
+}
+
 export function AIPersonalStylist({
   archiveLookCount,
   isUsingSampleData
@@ -539,12 +830,21 @@ export function AIPersonalStylist({
   const [isScanning, setIsScanning] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [profileId, setProfileId] = useState<StyleProfileId>("neutral");
-  const selectedDemographic: VisionDemographic = "menswear";
+  const [selectedWardrobeProfile, setSelectedWardrobeProfile] =
+    useState<VisionDemographic>("unisex");
   const [selectedAdviceMode, setSelectedAdviceMode] = useState<AdviceMode>("discover_new");
   const [selectedOccasion, setSelectedOccasion] = useState<StylingOccasion>("mall");
-  const [selectedSeason, setSelectedSeason] = useState<StylingSeason>("summer");
+  const [selectedSeason, setSelectedSeason] = useState<StylingSeason>("all-season");
   const [selectedBodyArchitecture, setSelectedBodyArchitecture] =
     useState<BodyArchitecture>("athletic_tapered");
+  const [stylistPreferences, setStylistPreferences] =
+    useState<StylistPreferences>(defaultStylistPreferences);
+  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(1);
+  const [showAdvancedInput, setShowAdvancedInput] = useState(false);
+  const [climateContext, setClimateContext] = useState<ClimateContext | null>(null);
+  const [isSyncingClimate, setIsSyncingClimate] = useState(false);
+  const [climateError, setClimateError] = useState("");
   const [detectedDemographic, setDetectedDemographic] = useState<VisionDemographic | null>(null);
   const [detectedFaceShape, setDetectedFaceShape] = useState<FaceShape | null>(null);
   const [visionProfile, setVisionProfile] = useState<VisionAnalysis | null>(null);
@@ -595,6 +895,8 @@ export function AIPersonalStylist({
     seasonOptions.find((option) => option.value === selectedSeason)?.label ??
     titleCase(selectedSeason);
   const selectedBodyArchitectureLabel = bodyArchitectureLabels[selectedBodyArchitecture];
+  const selectedFitPreferenceLabel = fitPreferenceLabels[stylistPreferences.fitPreference];
+  const selectedBudgetTierLabel = budgetTierLabels[stylistPreferences.budgetTier];
   const wardrobeProfileLabel = detectedDemographic
     ? demographicLabels[detectedDemographic]
     : "Unclassified";
@@ -646,6 +948,28 @@ export function AIPersonalStylist({
   }, [isScanning]);
 
   useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      const storedPreferences = readStoredStylistPreferences();
+      setStylistPreferences(storedPreferences);
+      setOnboardingStep(storedPreferences.completed ? 2 : 1);
+      setHasLoadedPreferences(true);
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedPreferences) {
+      return;
+    }
+
+    window.localStorage.setItem(
+      STYLIST_PREFERENCES_STORAGE_KEY,
+      JSON.stringify(stylistPreferences)
+    );
+  }, [hasLoadedPreferences, stylistPreferences]);
+
+  useEffect(() => {
     const syncVaultIds = () => {
       setVaultIds(new Set(readStyleVault().map((item) => item.id)));
     };
@@ -666,7 +990,9 @@ export function AIPersonalStylist({
     nextOccasion = selectedOccasion,
     nextSeason = selectedSeason,
     nextBodyArchitecture = selectedBodyArchitecture,
-    nextAdviceMode = selectedAdviceMode
+    nextAdviceMode = selectedAdviceMode,
+    nextClimateContext = climateContext,
+    nextPreferences = stylistPreferences
   ) {
     setRecommendationError("");
 
@@ -679,7 +1005,9 @@ export function AIPersonalStylist({
         body: JSON.stringify({
           adviceMode: nextAdviceMode,
           bodyArchitecture: nextBodyArchitecture,
+          climateContext: nextClimateContext,
           occasion: nextOccasion,
+          preferences: nextPreferences,
           season: nextSeason,
           visionData: nextVisionProfile
         })
@@ -695,9 +1023,11 @@ export function AIPersonalStylist({
       setShuffleHistory({});
       setShuffleLoadingIds(new Set());
       setContextWarning(data.contextWarning ?? "");
+      setClimateContext(data.climateContext ?? nextClimateContext ?? null);
       setDetectedDemographic(data.demographic);
       setDetectedFaceShape(data.faceShape);
       setGrooming(data.grooming);
+      setStylistPreferences(data.preferences ?? nextPreferences);
       setProfileId(data.visionData.primary_color_undertone);
       setVisionProfile(data.visionData);
       setSelectedAdviceMode(data.adviceMode);
@@ -758,17 +1088,25 @@ export function AIPersonalStylist({
       const data = (await response.json()) as PhotoAnalysisResponse;
 
       return data.visionData;
-    } catch (error) {
-      console.error(error);
+    } catch {
       return fallbackProfile;
     } finally {
       window.clearTimeout(timeout);
     }
   }
 
-  async function startScan(file: File, nextPreviewUrl = previewUrl) {
+  async function startScan(
+    file: File,
+    nextPreviewUrl = previewUrl,
+    stylingContext?: {
+      climateContext?: ClimateContext | null;
+      season?: StylingSeason;
+    }
+  ) {
     const scanRun = scanRunRef.current + 1;
     scanRunRef.current = scanRun;
+    const activeSeason = stylingContext?.season ?? selectedSeason;
+    const activeClimateContext = stylingContext?.climateContext ?? climateContext;
     setRecommendations([]);
     setPieceOverrides({});
     setShuffleHistory({});
@@ -783,7 +1121,10 @@ export function AIPersonalStylist({
     setIsScanning(true);
 
     try {
-      const fallbackVisionProfile = await analyzeStylistPhoto(file, nextPreviewUrl, selectedDemographic);
+      const fallbackVisionProfile = applyWardrobeProfileOverride(
+        await analyzeStylistPhoto(file, nextPreviewUrl, selectedWardrobeProfile),
+        selectedWardrobeProfile
+      );
       const fallbackBodyArchitecture = inferBodyArchitecture(fallbackVisionProfile);
       setProfileId(fallbackVisionProfile.primary_color_undertone);
       setDetectedDemographic(fallbackVisionProfile.demographic);
@@ -791,7 +1132,10 @@ export function AIPersonalStylist({
       setSelectedBodyArchitecture(fallbackBodyArchitecture);
       setVisionProfile(fallbackVisionProfile);
 
-      const nextVisionProfile = await refinePhotoAnalysis(file, fallbackVisionProfile);
+      const nextVisionProfile = applyWardrobeProfileOverride(
+        await refinePhotoAnalysis(file, fallbackVisionProfile),
+        selectedWardrobeProfile
+      );
       const nextBodyArchitecture = inferBodyArchitecture(nextVisionProfile);
 
       if (scanRun !== scanRunRef.current) {
@@ -819,9 +1163,11 @@ export function AIPersonalStylist({
       await loadRecommendations(
         nextVisionProfile,
         selectedOccasion,
-        selectedSeason,
+        activeSeason,
         nextBodyArchitecture,
-        selectedAdviceMode
+        selectedAdviceMode,
+        activeClimateContext,
+        stylistPreferences
       );
     } catch (error) {
       console.error(error);
@@ -869,7 +1215,21 @@ export function AIPersonalStylist({
     setPreviewUrl(nextPreviewUrl);
     setUploadName(file.name);
     photoFileRef.current = file;
-    void startScan(file, nextPreviewUrl);
+    scanRunRef.current += 1;
+    setIsScanning(false);
+    setIsReady(false);
+    setDetectedDemographic(null);
+    setDetectedFaceShape(null);
+    setVisionProfile(null);
+    setRecommendations([]);
+    setPieceOverrides({});
+    setShuffleHistory({});
+    setShuffleLoadingIds(new Set());
+    setContextWarning("");
+    setGrooming({ beard: null, hairstyle: null });
+    setRecommendationError("");
+    setLookcardError("");
+    setPhotoFeedback(getUploadReadyFeedback(file));
   }
 
   function handleUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -902,9 +1262,10 @@ export function AIPersonalStylist({
     setIsScanning(false);
     setIsReady(false);
     setProfileId("neutral");
+    setSelectedWardrobeProfile("unisex");
     setSelectedAdviceMode("discover_new");
     setSelectedOccasion("mall");
-    setSelectedSeason("summer");
+    setSelectedSeason("all-season");
     setSelectedBodyArchitecture("athletic_tapered");
     setDetectedDemographic(null);
     setDetectedFaceShape(null);
@@ -925,8 +1286,107 @@ export function AIPersonalStylist({
     }
   }
 
-  function handleOccasionChange(nextOccasion: StylingOccasion) {
-    setSelectedOccasion(nextOccasion);
+  function handleWardrobeProfileChange(nextWardrobeProfile: VisionDemographic) {
+    setSelectedWardrobeProfile(nextWardrobeProfile);
+
+    if (!visionProfile) {
+      setDetectedDemographic(nextWardrobeProfile);
+      return;
+    }
+
+    const nextVisionProfile = applyWardrobeProfileOverride(visionProfile, nextWardrobeProfile);
+    const nextBodyArchitecture = inferBodyArchitecture(nextVisionProfile);
+    setDetectedDemographic(nextWardrobeProfile);
+    setDetectedFaceShape(nextVisionProfile.detected_face_shape);
+    setSelectedBodyArchitecture(nextBodyArchitecture);
+    setVisionProfile(nextVisionProfile);
+    setRecommendations([]);
+    setContextWarning("");
+    setGrooming({ beard: null, hairstyle: null });
+    setIsReady(false);
+    setIsScanning(true);
+    void loadRecommendations(
+      nextVisionProfile,
+      selectedOccasion,
+      selectedSeason,
+      nextBodyArchitecture,
+      selectedAdviceMode,
+      climateContext,
+      stylistPreferences
+    );
+  }
+
+  async function resolveClimateForStyling() {
+    if (climateContext) {
+      return {
+        climateContext,
+        season: getSeasonFromClimate(climateContext)
+      };
+    }
+
+    setIsSyncingClimate(true);
+    setClimateError("");
+
+    try {
+      const nextClimateContext = await fetchClimateContext();
+      const nextSeason = getSeasonFromClimate(nextClimateContext);
+      setClimateContext(nextClimateContext);
+      setSelectedSeason(nextSeason);
+
+      return {
+        climateContext: nextClimateContext,
+        season: nextSeason
+      };
+    } catch {
+      setClimateError("Weather could not sync, so I used all-season styling.");
+      setClimateContext(null);
+      setSelectedSeason("all-season");
+
+      return {
+        climateContext: null,
+        season: "all-season" as StylingSeason
+      };
+    } finally {
+      setIsSyncingClimate(false);
+    }
+  }
+
+  async function handleStyleMe() {
+    if (!photoFileRef.current) {
+      setPhotoFeedback({
+        message: "Drop one clear portrait or full-body photo first.",
+        title: "Choose a photo",
+        tone: "warning"
+      });
+      return;
+    }
+
+    const stylingContext = await resolveClimateForStyling();
+    await startScan(photoFileRef.current, previewUrl, stylingContext);
+  }
+
+  function handleFitPreferenceChange(fitPreference: FitPreference) {
+    setStylistPreferences((preferences) => ({
+      ...preferences,
+      fitPreference
+    }));
+  }
+
+  function handleBudgetTierChange(budgetTier: BudgetTier) {
+    setStylistPreferences((preferences) => ({
+      ...preferences,
+      budgetTier
+    }));
+  }
+
+  function handlePreferenceSave() {
+    const nextPreferences = {
+      ...stylistPreferences,
+      completed: true
+    };
+
+    setStylistPreferences(nextPreferences);
+    setOnboardingStep(2);
 
     if (!visionProfile) {
       return;
@@ -939,51 +1399,12 @@ export function AIPersonalStylist({
     setIsScanning(true);
     void loadRecommendations(
       visionProfile,
-      nextOccasion,
-      selectedSeason,
-      selectedBodyArchitecture,
-      selectedAdviceMode
-    );
-  }
-
-  function handleSeasonChange(nextSeason: StylingSeason) {
-    setSelectedSeason(nextSeason);
-
-    if (!visionProfile) {
-      return;
-    }
-
-    setRecommendations([]);
-    setGrooming({ beard: null, hairstyle: null });
-    setIsReady(false);
-    setIsScanning(true);
-    void loadRecommendations(
-      visionProfile,
-      selectedOccasion,
-      nextSeason,
-      selectedBodyArchitecture,
-      selectedAdviceMode
-    );
-  }
-
-  function handleAdviceModeChange(nextAdviceMode: AdviceMode) {
-    setSelectedAdviceMode(nextAdviceMode);
-
-    if (!visionProfile) {
-      return;
-    }
-
-    setRecommendations([]);
-    setContextWarning("");
-    setGrooming({ beard: null, hairstyle: null });
-    setIsReady(false);
-    setIsScanning(true);
-    void loadRecommendations(
-      visionProfile,
       selectedOccasion,
       selectedSeason,
       selectedBodyArchitecture,
-      nextAdviceMode
+      selectedAdviceMode,
+      climateContext,
+      nextPreferences
     );
   }
 
@@ -1245,14 +1666,163 @@ export function AIPersonalStylist({
           </div>
 
           <div className="mt-6">
+            <div className="mb-5 rounded-md border border-[#D8CCBB] bg-[#FBF7F0] p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                Wardrobe
+              </p>
+              <div className="mt-3 grid grid-cols-3 gap-2 rounded-sm bg-white/70 p-1">
+                {wardrobeProfileOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={selectedWardrobeProfile === option.value ? "default" : "ghost"}
+                    size="sm"
+                    aria-pressed={selectedWardrobeProfile === option.value}
+                    disabled={isScanning || isSyncingClimate}
+                    className="justify-center"
+                    onClick={() => handleWardrobeProfileChange(option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-5 rounded-md border border-[#D8CCBB] bg-white/70 p-3">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                    Preferences
+                  </p>
+                  <p className="mt-1 truncate text-sm text-neutral-700">
+                    {selectedFitPreferenceLabel} · {selectedBudgetTierLabel}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant={showAdvancedInput ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowAdvancedInput((value) => !value)}
+                >
+                  {showAdvancedInput ? "Done" : "Edit"}
+                </Button>
+              </div>
+              {climateError ? (
+                <p className="mt-2 text-sm leading-6 text-[#6B2A1D]">{climateError}</p>
+              ) : null}
+            </div>
+
+            {showAdvancedInput ? (
+              <div className="mb-5 border border-[#D8CCBB] bg-white/70 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                    Bespoke fitting
+                  </p>
+                  <h3 className="mt-1 text-lg font-light text-neutral-950">
+                    Fit and budget
+                  </h3>
+                </div>
+                <Badge>{stylistPreferences.completed ? "Saved" : `Step ${onboardingStep} / 2`}</Badge>
+              </div>
+
+              {stylistPreferences.completed ? (
+                <div className="mt-4 space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge>{selectedFitPreferenceLabel}</Badge>
+                    <Badge>{selectedBudgetTierLabel}</Badge>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setStylistPreferences((preferences) => ({
+                        ...preferences,
+                        completed: false
+                      }));
+                      setOnboardingStep(1);
+                    }}
+                  >
+                    Edit preferences
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-4">
+                  {onboardingStep === 1 ? (
+                    <div>
+                      <p className="text-sm font-medium text-neutral-950">
+                        How do you prefer your silhouette?
+                      </p>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                        {fitPreferenceOptions.map((option) => (
+                          <Button
+                            key={option.value}
+                            type="button"
+                            variant={
+                              stylistPreferences.fitPreference === option.value ? "default" : "outline"
+                            }
+                            className="h-auto justify-start whitespace-normal py-3 text-left"
+                            onClick={() => handleFitPreferenceChange(option.value)}
+                          >
+                            {option.label}
+                          </Button>
+                        ))}
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="mt-3"
+                        onClick={() => setOnboardingStep(2)}
+                      >
+                        Continue
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  {onboardingStep === 2 ? (
+                    <div>
+                      <p className="text-sm font-medium text-neutral-950">
+                        What is your comfortable price ceiling per item?
+                      </p>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                        {budgetTierOptions.map((option) => (
+                          <Button
+                            key={option.value}
+                            type="button"
+                            variant={
+                              stylistPreferences.budgetTier === option.value ? "default" : "outline"
+                            }
+                            className="h-auto justify-start whitespace-normal py-3 text-left"
+                            onClick={() => handleBudgetTierChange(option.value)}
+                          >
+                            {option.label}
+                          </Button>
+                        ))}
+                      </div>
+                      <div className="mt-3 flex gap-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => setOnboardingStep(1)}>
+                          Back
+                        </Button>
+                        <Button type="button" size="sm" onClick={handlePreferenceSave}>
+                          Save preferences
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+            ) : null}
+
             <div
               className={cn(
                 "relative flex min-h-[500px] w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-md border border-dashed border-[#BDAE9A] bg-[#F8F3EB] p-5 text-center transition-all duration-300 hover:border-[#7B5637] hover:bg-[#F3E8DA] focus-within:outline-none focus-within:ring-2 focus-within:ring-[#8A6A4F]/25",
                 previewUrl ? "border-solid border-[#D8CCBB] bg-white p-3 shadow-sm" : "",
-                isScanning ? "pointer-events-none cursor-wait" : ""
+                isScanning || isSyncingClimate ? "pointer-events-none cursor-wait" : ""
               )}
               aria-label={previewUrl ? "Change styling profile photo" : "Select styling profile photo"}
-              aria-disabled={isScanning}
+              aria-disabled={isScanning || isSyncingClimate}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
             >
@@ -1262,7 +1832,7 @@ export function AIPersonalStylist({
                 accept="image/*"
                 ref={photoInputRef}
                 className="absolute inset-0 z-20 h-full w-full cursor-pointer opacity-0 disabled:cursor-wait"
-                disabled={isScanning}
+                disabled={isScanning || isSyncingClimate}
                 aria-label={previewUrl ? "Change styling profile photo" : "Select styling profile photo"}
                 onClick={(event) => {
                   event.currentTarget.value = "";
@@ -1299,7 +1869,7 @@ export function AIPersonalStylist({
               ) : null}
             </div>
 
-            {previewUrl ? (
+            {previewUrl && visionProfile ? (
               <div className="mt-4 rounded-md border border-[#D8CCBB] bg-white/70 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
@@ -1359,60 +1929,28 @@ export function AIPersonalStylist({
               </div>
             ) : null}
 
-            <div className="mt-5 rounded-md border border-[#D8CCBB] bg-white/60 p-3">
-              <div className="mb-3 grid grid-cols-2 gap-2 rounded-md bg-[#F4EDE2] p-1">
-                {adviceModeOptions.map((option) => (
-                  <Button
-                    key={option.value}
-                    type="button"
-                    variant={selectedAdviceMode === option.value ? "default" : "ghost"}
-                    size="sm"
-                    aria-pressed={selectedAdviceMode === option.value}
-                    onClick={() => handleAdviceModeChange(option.value)}
-                    className="justify-center"
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {occasionOptions.map((option) => (
-                  <Button
-                    key={option.value}
-                    type="button"
-                    variant={selectedOccasion === option.value ? "default" : "outline"}
-                    size="sm"
-                    aria-pressed={selectedOccasion === option.value}
-                    onClick={() => handleOccasionChange(option.value)}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {seasonOptions.map((option) => (
-                  <Button
-                    key={option.value}
-                    type="button"
-                    variant={selectedSeason === option.value ? "default" : "outline"}
-                    size="sm"
-                    aria-pressed={selectedSeason === option.value}
-                    onClick={() => handleSeasonChange(option.value)}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="truncate text-sm text-neutral-500">
                 {uploadName || "Waiting for one clear photo"}
               </p>
-              <Button type="button" variant="outline" onClick={handleReset}>
-                <RotateCcw className="size-4" />
-                Reset
-              </Button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button type="button" variant="outline" onClick={handleReset}>
+                  <RotateCcw className="size-4" />
+                  Reset
+                </Button>
+                <Button
+                  type="button"
+                  disabled={!previewUrl || isScanning || isSyncingClimate}
+                  onClick={() => void handleStyleMe()}
+                >
+                  <Sparkles className={cn("size-4", (isScanning || isSyncingClimate) && "animate-spin")} />
+                  {isScanning
+                    ? "Styling"
+                    : isSyncingClimate
+                      ? "Reading Weather"
+                      : "Style Me"}
+                </Button>
+              </div>
             </div>
 
             {recommendationError ? (
@@ -1432,10 +1970,16 @@ export function AIPersonalStylist({
                   Result
                 </p>
                 <h2 className="mt-2 text-2xl font-light text-neutral-950">
-                  {selectedAdviceMode === "style_own" ? "Closet styling ideas" : "Your style match"}
+                  Your style match
                 </h2>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                {climateContext ? (
+                  <Badge>
+                    <MapPin className="size-3.5" />
+                    {Math.round(climateContext.temperatureC)}C · {getClimateDirective(climateContext)}
+                  </Badge>
+                ) : null}
                 <Badge>{recommendations.length} looks</Badge>
                 <Button
                   type="button"
@@ -1481,16 +2025,13 @@ export function AIPersonalStylist({
               <div className="mt-4 flex flex-wrap gap-2">
                 <Badge>{faceShapeLabel}</Badge>
                 <Badge>{selectedBodyArchitectureLabel}</Badge>
-                <Badge>{selectedOccasionLabel}</Badge>
-                <Badge>{selectedSeasonLabel}</Badge>
+                {climateContext ? <Badge>{climateContext.locationLabel}</Badge> : null}
               </div>
             </div>
 
             <div className="mt-8">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-xl font-light text-neutral-950">
-                  {selectedAdviceMode === "style_own" ? "Use What You Own" : "Trending Matches for You"}
-                </h3>
+                <h3 className="text-xl font-light text-neutral-950">Trending Matches for You</h3>
                 <Badge>{recommendations.length} outfits</Badge>
               </div>
 
@@ -1539,24 +2080,7 @@ export function AIPersonalStylist({
                                 className="group animate-fade-in border-b border-[#D8CCBB] last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0"
                               >
                                 <div className="relative aspect-[4/5] overflow-hidden bg-[#EEE5D7]">
-                                  {piece.imageUrl ? (
-                                    <img
-                                      src={piece.imageUrl}
-                                      alt={piece.title}
-                                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                                    />
-                                  ) : (
-                                    <div
-                                      className="flex h-full w-full items-end p-4"
-                                      style={{
-                                        background: `linear-gradient(135deg, ${piece.accentColor}, #F8F3EB)`
-                                      }}
-                                    >
-                                      <span className="max-w-[14rem] text-lg font-light leading-tight text-white drop-shadow">
-                                        {piece.title}
-                                      </span>
-                                    </div>
-                                  )}
+                                  <OutfitPieceVisual piece={piece} />
                                   <div className="absolute left-3 top-3">
                                     <Badge className="bg-white/90 text-[#3A2A1E]">
                                       {piece.role}

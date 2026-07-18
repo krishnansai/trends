@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Bookmark, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Bookmark, RadarIcon, Trash2 } from "lucide-react";
+import {
+  PolarAngleAxis,
+  PolarGrid,
+  Radar,
+  RadarChart,
+  ResponsiveContainer
+} from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { buildStyleEvolution } from "@/lib/style-evolution";
 import {
   readStyleVault,
   removeStyleVaultItem,
@@ -31,6 +39,8 @@ function formatSavedDate(value: string) {
 
 export function StyleVaultGallery() {
   const [items, setItems] = useState<StyleVaultItem[]>([]);
+  const [view, setView] = useState<"evolution" | "vault">("vault");
+  const evolution = useMemo(() => buildStyleEvolution(items), [items]);
 
   function loadItems() {
     setItems(readStyleVault());
@@ -63,10 +73,93 @@ export function StyleVaultGallery() {
             My Vault
           </h1>
         </div>
-        <Badge>{items.length} saved</Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge>{items.length} saved</Badge>
+          <Button
+            type="button"
+            variant={view === "vault" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setView("vault")}
+          >
+            My Looks
+          </Button>
+          <Button
+            type="button"
+            variant={view === "evolution" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setView("evolution")}
+          >
+            <RadarIcon className="size-4" />
+            Style Evolution
+          </Button>
+        </div>
       </div>
 
-      {items.length ? (
+      {view === "evolution" ? (
+        <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="border border-[#D8CCBB] bg-white/85 p-4 shadow-sm backdrop-blur-xl md:p-5">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
+                  Vibe Signature
+                </p>
+                <h2 className="mt-2 text-2xl font-light text-neutral-950">
+                  {evolution.dominantAxis} leaning profile
+                </h2>
+              </div>
+              <Badge>{evolution.savedCount} vault signals</Badge>
+            </div>
+
+            <div className="mt-5 h-[360px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={evolution.chartData} outerRadius="72%">
+                  <PolarGrid stroke="#D8CCBB" />
+                  <PolarAngleAxis
+                    dataKey="axis"
+                    tick={{ fill: "#6B5A49", fontSize: 12, fontWeight: 600 }}
+                  />
+                  <Radar
+                    dataKey="score"
+                    fill="#7B5637"
+                    fillOpacity={0.24}
+                    stroke="#7B5637"
+                    strokeWidth={2}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <aside className="border border-[#D8CCBB] bg-[#FBF7F0] p-4 md:p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">
+              Progress Tracker
+            </p>
+            <h3 className="mt-2 text-xl font-light text-neutral-950">
+              Your saved looks shape this chart
+            </h3>
+            <p className="mt-3 text-sm leading-6 text-neutral-600">
+              Save more outfit grids and grooming specs to shift your distribution across minimalist,
+              streetwear, formal, gorpcore, and vintage signals.
+            </p>
+            <div className="mt-5 space-y-3">
+              {evolution.chartData.map((point) => (
+                <div key={point.axis}>
+                  <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
+                    <span>{point.axis}</span>
+                    <span>{point.score}</span>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden bg-white">
+                    <div
+                      className="h-full bg-[#7B5637]"
+                      style={{ width: `${point.score}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </aside>
+        </div>
+      ) : items.length ? (
         <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => {
             const summary = getTextPayload(item, "summary") ?? getTextPayload(item, "rationale");

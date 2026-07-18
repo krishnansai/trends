@@ -14,6 +14,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             className
           )}
           ref={ref}
+          suppressHydrationWarning
           {...props}
         >
           {children}

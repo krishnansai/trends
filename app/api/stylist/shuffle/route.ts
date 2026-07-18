@@ -112,7 +112,7 @@ export async function POST(request: Request) {
   const garments = await getGarments({
     categories,
     demographic,
-    includeUnisex: true,
+    includeUnisex: false,
     limit: 350,
     occasion,
     season,

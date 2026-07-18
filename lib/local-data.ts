@@ -138,6 +138,9 @@ export async function getLocalGarments() {
     readJsonArray<Garment>("garments-latest-trends-2026.json"),
     readJsonArray<Garment>("garments-ultra-latest-2026.json"),
     readJsonArray<Garment>("garments-photo-profile-2026.json"),
+    readJsonArray<Garment>("garments-accessories-footwear-2026.json"),
+    readJsonArray<Garment>("garments-youtube-2026.json"),
+    readJsonArray<Garment>("garments-video-trends-2024-2026.json"),
     readGarmentCsv("garments-pro-launch.csv")
   ]);
 
