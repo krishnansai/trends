@@ -832,6 +832,7 @@ export function AIPersonalStylist({
   const [profileId, setProfileId] = useState<StyleProfileId>("neutral");
   const [selectedWardrobeProfile, setSelectedWardrobeProfile] =
     useState<VisionDemographic>("unisex");
+  const [isWardrobePromptOpen, setIsWardrobePromptOpen] = useState(false);
   const [selectedAdviceMode, setSelectedAdviceMode] = useState<AdviceMode>("discover_new");
   const [selectedOccasion, setSelectedOccasion] = useState<StylingOccasion>("mall");
   const [selectedSeason, setSelectedSeason] = useState<StylingSeason>("all-season");
@@ -897,6 +898,9 @@ export function AIPersonalStylist({
   const selectedBodyArchitectureLabel = bodyArchitectureLabels[selectedBodyArchitecture];
   const selectedFitPreferenceLabel = fitPreferenceLabels[stylistPreferences.fitPreference];
   const selectedBudgetTierLabel = budgetTierLabels[stylistPreferences.budgetTier];
+  const selectedWardrobeProfileLabel =
+    wardrobeProfileOptions.find((option) => option.value === selectedWardrobeProfile)?.label ??
+    demographicLabels[selectedWardrobeProfile];
   const wardrobeProfileLabel = detectedDemographic
     ? demographicLabels[detectedDemographic]
     : "Unclassified";
@@ -1203,6 +1207,7 @@ export function AIPersonalStylist({
       setRecommendationError("");
       setIsReady(false);
       setIsScanning(false);
+      setIsWardrobePromptOpen(false);
       return;
     }
 
@@ -1230,6 +1235,7 @@ export function AIPersonalStylist({
     setRecommendationError("");
     setLookcardError("");
     setPhotoFeedback(getUploadReadyFeedback(file));
+    setIsWardrobePromptOpen(true);
   }
 
   function handleUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -1263,6 +1269,7 @@ export function AIPersonalStylist({
     setIsReady(false);
     setProfileId("neutral");
     setSelectedWardrobeProfile("unisex");
+    setIsWardrobePromptOpen(false);
     setSelectedAdviceMode("discover_new");
     setSelectedOccasion("mall");
     setSelectedSeason("all-season");
@@ -1288,6 +1295,7 @@ export function AIPersonalStylist({
 
   function handleWardrobeProfileChange(nextWardrobeProfile: VisionDemographic) {
     setSelectedWardrobeProfile(nextWardrobeProfile);
+    setIsWardrobePromptOpen(false);
 
     if (!visionProfile) {
       setDetectedDemographic(nextWardrobeProfile);
@@ -1667,24 +1675,24 @@ export function AIPersonalStylist({
 
           <div className="mt-6">
             <div className="mb-5 rounded-md border border-[#D8CCBB] bg-[#FBF7F0] p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
-                Wardrobe
-              </p>
-              <div className="mt-3 grid grid-cols-3 gap-2 rounded-sm bg-white/70 p-1">
-                {wardrobeProfileOptions.map((option) => (
-                  <Button
-                    key={option.value}
-                    type="button"
-                    variant={selectedWardrobeProfile === option.value ? "default" : "ghost"}
-                    size="sm"
-                    aria-pressed={selectedWardrobeProfile === option.value}
-                    disabled={isScanning || isSyncingClimate}
-                    className="justify-center"
-                    onClick={() => handleWardrobeProfileChange(option.value)}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                    Wardrobe
+                  </p>
+                  <p className="mt-1 text-sm text-neutral-700">
+                    {selectedWardrobeProfileLabel}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isScanning || isSyncingClimate}
+                  onClick={() => setIsWardrobePromptOpen(true)}
+                >
+                  Change
+                </Button>
               </div>
             </div>
 
@@ -2238,6 +2246,62 @@ export function AIPersonalStylist({
           </section>
         ) : null}
       </div>
+
+      {isWardrobePromptOpen ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/25 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="wardrobe-profile-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 cursor-default"
+            aria-label="Close wardrobe selection"
+            onClick={() => setIsWardrobePromptOpen(false)}
+          />
+          <div className="relative w-full max-w-md border border-[#D8CCBB] bg-[#FBF7F0] p-5 shadow-2xl md:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-500">
+                  Wardrobe
+                </p>
+                <h3
+                  id="wardrobe-profile-title"
+                  className="mt-2 text-2xl font-light text-neutral-950"
+                >
+                  Select section
+                </h3>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Close wardrobe selection"
+                onClick={() => setIsWardrobePromptOpen(false)}
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+
+            <div className="mt-5 grid gap-2">
+              {wardrobeProfileOptions.map((option) => (
+                <Button
+                  key={option.value}
+                  type="button"
+                  variant={selectedWardrobeProfile === option.value ? "default" : "outline"}
+                  className="h-12 justify-between"
+                  aria-pressed={selectedWardrobeProfile === option.value}
+                  onClick={() => handleWardrobeProfileChange(option.value)}
+                >
+                  <span>{option.label}</span>
+                  {selectedWardrobeProfile === option.value ? <span>Selected</span> : null}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isGroomingDrawerOpen ? (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm">
