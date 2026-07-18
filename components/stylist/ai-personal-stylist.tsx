@@ -295,7 +295,7 @@ function pickFileFeedbackCopy(file: File, options: PhotoFeedback[]) {
 function getUploadReadyFeedback(file: File): PhotoFeedback {
   return pickFileFeedbackCopy(file, [
     {
-      message: "Photo is ready. I will read the face, color, and fit cues when you tap Style Me.",
+      message: "Photo is ready. Choose Men, Women, or Unisex and I will start the style read.",
       title: "Ready for the style read",
       tone: "positive"
     },
@@ -831,7 +831,7 @@ export function AIPersonalStylist({
   const [isReady, setIsReady] = useState(false);
   const [profileId, setProfileId] = useState<StyleProfileId>("neutral");
   const [selectedWardrobeProfile, setSelectedWardrobeProfile] =
-    useState<VisionDemographic>("unisex");
+    useState<VisionDemographic>("menswear");
   const [isWardrobePromptOpen, setIsWardrobePromptOpen] = useState(false);
   const [selectedAdviceMode, setSelectedAdviceMode] = useState<AdviceMode>("discover_new");
   const [selectedOccasion, setSelectedOccasion] = useState<StylingOccasion>("mall");
@@ -1105,12 +1105,14 @@ export function AIPersonalStylist({
     stylingContext?: {
       climateContext?: ClimateContext | null;
       season?: StylingSeason;
+      wardrobeProfile?: VisionDemographic;
     }
   ) {
     const scanRun = scanRunRef.current + 1;
     scanRunRef.current = scanRun;
     const activeSeason = stylingContext?.season ?? selectedSeason;
     const activeClimateContext = stylingContext?.climateContext ?? climateContext;
+    const activeWardrobeProfile = stylingContext?.wardrobeProfile ?? selectedWardrobeProfile;
     setRecommendations([]);
     setPieceOverrides({});
     setShuffleHistory({});
@@ -1126,8 +1128,8 @@ export function AIPersonalStylist({
 
     try {
       const fallbackVisionProfile = applyWardrobeProfileOverride(
-        await analyzeStylistPhoto(file, nextPreviewUrl, selectedWardrobeProfile),
-        selectedWardrobeProfile
+        await analyzeStylistPhoto(file, nextPreviewUrl, activeWardrobeProfile),
+        activeWardrobeProfile
       );
       const fallbackBodyArchitecture = inferBodyArchitecture(fallbackVisionProfile);
       setProfileId(fallbackVisionProfile.primary_color_undertone);
@@ -1138,7 +1140,7 @@ export function AIPersonalStylist({
 
       const nextVisionProfile = applyWardrobeProfileOverride(
         await refinePhotoAnalysis(file, fallbackVisionProfile),
-        selectedWardrobeProfile
+        activeWardrobeProfile
       );
       const nextBodyArchitecture = inferBodyArchitecture(nextVisionProfile);
 
@@ -1268,7 +1270,7 @@ export function AIPersonalStylist({
     setIsScanning(false);
     setIsReady(false);
     setProfileId("neutral");
-    setSelectedWardrobeProfile("unisex");
+    setSelectedWardrobeProfile("menswear");
     setIsWardrobePromptOpen(false);
     setSelectedAdviceMode("discover_new");
     setSelectedOccasion("mall");
@@ -1299,6 +1301,18 @@ export function AIPersonalStylist({
 
     if (!visionProfile) {
       setDetectedDemographic(nextWardrobeProfile);
+      const pendingPhoto = photoFileRef.current;
+      const pendingPreviewUrl = previewUrl;
+
+      if (pendingPhoto && pendingPreviewUrl) {
+        void (async () => {
+          const stylingContext = await resolveClimateForStyling();
+          await startScan(pendingPhoto, pendingPreviewUrl, {
+            ...stylingContext,
+            wardrobeProfile: nextWardrobeProfile
+          });
+        })();
+      }
       return;
     }
 
@@ -1357,20 +1371,6 @@ export function AIPersonalStylist({
     } finally {
       setIsSyncingClimate(false);
     }
-  }
-
-  async function handleStyleMe() {
-    if (!photoFileRef.current) {
-      setPhotoFeedback({
-        message: "Drop one clear portrait or full-body photo first.",
-        title: "Choose a photo",
-        tone: "warning"
-      });
-      return;
-    }
-
-    const stylingContext = await resolveClimateForStyling();
-    await startScan(photoFileRef.current, previewUrl, stylingContext);
   }
 
   function handleFitPreferenceChange(fitPreference: FitPreference) {
@@ -1941,24 +1941,10 @@ export function AIPersonalStylist({
               <p className="truncate text-sm text-neutral-500">
                 {uploadName || "Waiting for one clear photo"}
               </p>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button type="button" variant="outline" onClick={handleReset}>
-                  <RotateCcw className="size-4" />
-                  Reset
-                </Button>
-                <Button
-                  type="button"
-                  disabled={!previewUrl || isScanning || isSyncingClimate}
-                  onClick={() => void handleStyleMe()}
-                >
-                  <Sparkles className={cn("size-4", (isScanning || isSyncingClimate) && "animate-spin")} />
-                  {isScanning
-                    ? "Styling"
-                    : isSyncingClimate
-                      ? "Reading Weather"
-                      : "Style Me"}
-                </Button>
-              </div>
+              <Button type="button" variant="outline" onClick={handleReset}>
+                <RotateCcw className="size-4" />
+                Reset
+              </Button>
             </div>
 
             {recommendationError ? (
