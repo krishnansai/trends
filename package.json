@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "validate:data": "node --experimental-strip-types scripts/validate-local-data.ts",
+    "check:links": "node --experimental-strip-types scripts/check-data-links.ts",
     "train:stylist": "node --experimental-strip-types scripts/train-stylist-engine.ts",
     "seed:unsplash": "node scripts/seed-unsplash.mjs",
     "seed:all-trends": "npm run seed:unsplash -- --queries \"minimalist menswear studio|heavyweight oversized streetwear|old money menswear tailoring|japanese workwear aesthetic|2026 minimalist womenswear|monochrome resort wear|tailored women office look|elevated streetwear women|unisex oversized hoodie lookbook|genderless minimalist fashion|classic trench coat street style\" --limit 220 --orientation portrait && npm run validate:data",

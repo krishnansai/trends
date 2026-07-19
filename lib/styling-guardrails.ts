@@ -62,9 +62,27 @@ export function applyPreferenceGarmentGuardrails(
 }
 
 export function applyDemographicGarmentGuardrails(garments: Garment[], demographic: Demographic) {
-  if (demographic !== "menswear") {
-    return garments;
+  if (demographic === "womenswear") {
+    return garments.filter((garment) => {
+      const searchable = [
+        garment.title,
+        garment.description,
+        garment.category,
+        garment.source_url,
+        ...garment.style_tags
+      ]
+        .join(" ")
+        .toLowerCase();
+      const hasMenswearLeak =
+        /\b(menswear|mens|men's|hommes|male model|beard|barber|gentleman)\b/.test(searchable);
+
+      return garment.demographic === "womenswear" && !hasMenswearLeak;
+    });
   }
 
-  return garments.filter(isMenswearSafeFootwear);
+  if (demographic === "unisex") {
+    return garments.filter((garment) => garment.demographic === "unisex");
+  }
+
+  return garments.filter((garment) => garment.demographic === "menswear" && isMenswearSafeFootwear(garment));
 }

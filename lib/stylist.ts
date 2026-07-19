@@ -709,7 +709,7 @@ function pickSupportGarmentsForOutfit<T extends { garment: Garment; score: numbe
         !localUsedIds.has(item.garment.id) &&
         !localUsedKeys.has(identityKey) &&
         Boolean(item.garment.image_url) &&
-        isAllowedForDemographic(item.garment, demographic) &&
+        isAllowedForDemographic(item.garment, demographic, false) &&
         (demographic !== "menswear" || isMenswearSafeFootwear(item.garment)) &&
         roleForRecommendationGarment(item.garment.category) === role
       );
@@ -1029,7 +1029,7 @@ export function buildStylistRecommendations(
 ): OutfitRecommendation[] {
   const profile = getStyleProfile(profileId);
   const scoredGarments = garments
-    .filter((garment) => isAllowedForDemographic(garment, demographic))
+    .filter((garment) => isAllowedForDemographic(garment, demographic, false))
     .map((garment) => ({
       garment,
       score:

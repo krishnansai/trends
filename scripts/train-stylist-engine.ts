@@ -64,6 +64,7 @@ const garmentJsonFiles = [
   "garments-sourced.json",
   "garments-visuals.json",
   "garments-womenswear.json",
+  "garments-womenswear-latest-2026.json",
   "garments-launch-pack.json",
   "garments-context-expansion.json",
   "garments-latest-trends-2026.json",
