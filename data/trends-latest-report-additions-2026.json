@@ -1,0 +1,57 @@
+[
+  {
+    "id": "trend-report-2026-fluid-tailoring",
+    "title": "Menswear Fluidity Replaces Stiff Tailoring",
+    "description": "Spring/Summer 2026 menswear styling shifts from skinny, rigid suits into unstructured blazers, soft drape, lightweight wool, and wide-leg proportion play.",
+    "forecast_year": 2026,
+    "confidence_score": 91,
+    "season": "all-season",
+    "forecast_image_url": "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=900",
+    "source_url": "https://www.youtube.com/results?search_query=2026+menswear+fluidity+relaxed+tailoring+trend",
+    "created_at": "2026-07-20T01:24:00.000Z"
+  },
+  {
+    "id": "trend-report-2026-80s-primary-power",
+    "title": "80s Power Dressing And Primary Color Return",
+    "description": "Womenswear forecasts point to power shoulders, primary red, black power blazers, asymmetric shapes, and dopamine color as stronger formal signals for 2026.",
+    "forecast_year": 2026,
+    "confidence_score": 88,
+    "season": "all-season",
+    "forecast_image_url": "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=900",
+    "source_url": "https://www.youtube.com/results?search_query=2026+womenswear+80s+revival+primary+red+trend",
+    "created_at": "2026-07-20T01:24:00.000Z"
+  },
+  {
+    "id": "trend-report-2026-homemaker-chic",
+    "title": "Homemaker Chic Moves Into Summer Dresses",
+    "description": "Romantic milkmaid dresses, pastel yellow florals, breathable cotton, and vintage domestic references shape a soft Spring/Summer 2026 womenswear direction.",
+    "forecast_year": 2026,
+    "confidence_score": 84,
+    "season": "summer",
+    "forecast_image_url": "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=900",
+    "source_url": "https://www.youtube.com/results?search_query=2026+homemaker+chic+milkmaid+dress+trend",
+    "created_at": "2026-07-20T01:24:00.000Z"
+  },
+  {
+    "id": "trend-report-2026-utilitarian-denim",
+    "title": "Utilitarian Denim Splits Into Cargo Jeans And Deconstructed Skirts",
+    "description": "2026 casual styling keeps denim relevant through practical cargo jeans for menswear and frayed deconstructed skirts for womenswear streetwear.",
+    "forecast_year": 2026,
+    "confidence_score": 86,
+    "season": "all-season",
+    "forecast_image_url": "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=900",
+    "source_url": "https://www.youtube.com/results?search_query=2026+utilitarian+denim+cargo+jeans+skirt+trend",
+    "created_at": "2026-07-20T01:24:00.000Z"
+  },
+  {
+    "id": "trend-report-2026-balletcore-flats",
+    "title": "Balletcore Keeps Low-Effort Elegance Alive",
+    "description": "Soft satin ballet flats remain a useful 2026 womenswear staple because they add polish to mall, formal, and casual outfits without high-heel discomfort.",
+    "forecast_year": 2026,
+    "confidence_score": 85,
+    "season": "all-season",
+    "forecast_image_url": "https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?w=900",
+    "source_url": "https://www.youtube.com/results?search_query=2026+balletcore+satin+flats+trend",
+    "created_at": "2026-07-20T01:24:00.000Z"
+  }
+]

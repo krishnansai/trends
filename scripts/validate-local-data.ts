@@ -23,6 +23,9 @@ const garmentFiles = [
   "garments-photo-profile-2026.json",
   "garments-accessories-footwear-2026.json",
   "garments-youtube-2026.json",
+  "garments-youtube-vaibhav-2026.json",
+  "garments-youtube-latest-collections-2026.json",
+  "garments-latest-report-additions-2026.json",
   "garments-video-trends-2024-2026.json"
 ];
 const garmentCsvFiles = ["garments-pro-launch.csv"];
@@ -33,7 +36,10 @@ const trendFiles = [
   "trends-pro-launch.json",
   "trends-latest-2026.json",
   "trends-ultra-latest-2026.json",
-  "trends-photo-profile-2026.json"
+  "trends-photo-profile-2026.json",
+  "trends-youtube-vaibhav-2026.json",
+  "trends-youtube-latest-collections-2026.json",
+  "trends-latest-report-additions-2026.json"
 ];
 const groomingFiles = [
   "grooming-seed.json",

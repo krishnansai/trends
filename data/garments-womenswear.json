@@ -120,7 +120,7 @@
   },
   {
     "id": "gar-women-2026-008",
-    "image_url": "https://images.unsplash.com/photo-1520975954732-35dd22299614?w=800",
+    "image_url": "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=800",
     "year": 2026,
     "category": "bottoms",
     "demographic": "womenswear",
@@ -132,7 +132,7 @@
     "season": ["all-season"],
     "age_group": "18-44",
     "description": "Straight-leg denim base for easy daily outfits and streetwear layering.",
-    "source_url": "https://images.unsplash.com/photo-1520975954732-35dd22299614",
+    "source_url": "https://images.unsplash.com/photo-1485968579580-b6d095142e6e",
     "created_at": "2026-07-10T00:00:00.000Z"
   },
   {
@@ -392,7 +392,7 @@
   },
   {
     "id": "gar-women-2023-024",
-    "image_url": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800",
+    "image_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800",
     "year": 2023,
     "category": "tops",
     "demographic": "womenswear",
@@ -404,12 +404,12 @@
     "season": ["summer", "all-season"],
     "age_group": "18-40",
     "description": "Graphic tee visual for womenswear streetwear and casual mall outfits.",
-    "source_url": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c",
+    "source_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb",
     "created_at": "2026-07-10T00:00:00.000Z"
   },
   {
     "id": "gar-women-2023-025",
-    "image_url": "https://images.unsplash.com/photo-1512353087810-25dfcd100962?w=800",
+    "image_url": "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=800",
     "year": 2023,
     "category": "outerwear",
     "demographic": "womenswear",
@@ -421,7 +421,7 @@
     "season": ["winter", "all-season"],
     "age_group": "18-44",
     "description": "Denim jacket layer for womenswear street and daily casual styling.",
-    "source_url": "https://images.unsplash.com/photo-1512353087810-25dfcd100962",
+    "source_url": "https://images.unsplash.com/photo-1485968579580-b6d095142e6e",
     "created_at": "2026-07-10T00:00:00.000Z"
   },
   {
@@ -460,7 +460,7 @@
   },
   {
     "id": "gar-women-2022-028",
-    "image_url": "https://images.unsplash.com/photo-1523398002811-999ca8dec234?w=800",
+    "image_url": "https://images.unsplash.com/photo-1524255684952-d7185b509571?w=800",
     "year": 2022,
     "category": "tops",
     "demographic": "womenswear",
@@ -472,7 +472,7 @@
     "season": ["summer", "all-season"],
     "age_group": "18-50",
     "description": "Crisp white shirt with denim for flexible smart-casual womenswear styling.",
-    "source_url": "https://images.unsplash.com/photo-1523398002811-999ca8dec234",
+    "source_url": "https://images.unsplash.com/photo-1524255684952-d7185b509571",
     "created_at": "2026-07-10T00:00:00.000Z"
   },
   {

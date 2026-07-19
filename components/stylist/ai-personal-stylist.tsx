@@ -884,11 +884,16 @@ export function AIPersonalStylist({
   );
   const extractedPalette = visionProfile?.extracted_palette ?? profilePalette;
   const dominantColor = visionProfile?.dominant_color ?? extractedPalette[0];
+  const shouldShowGrooming = detectedDemographic !== "womenswear";
   const groomingCards = useMemo<GroomingRecommendation[]>(() => {
+    if (!shouldShowGrooming) {
+      return [];
+    }
+
     return [grooming.hairstyle, grooming.beard].filter(
       (card): card is GroomingRecommendation => Boolean(card)
     );
-  }, [grooming]);
+  }, [grooming, shouldShowGrooming]);
   const selectedOccasionLabel =
     occasionOptions.find((option) => option.value === selectedOccasion)?.label ??
     titleCase(selectedOccasion);
@@ -1030,7 +1035,8 @@ export function AIPersonalStylist({
       setClimateContext(data.climateContext ?? nextClimateContext ?? null);
       setDetectedDemographic(data.demographic);
       setDetectedFaceShape(data.faceShape);
-      setGrooming(data.grooming);
+      setGrooming(data.demographic === "womenswear" ? { beard: null, hairstyle: null } : data.grooming);
+      setIsGroomingDrawerOpen(false);
       setStylistPreferences(data.preferences ?? nextPreferences);
       setProfileId(data.visionData.primary_color_undertone);
       setVisionProfile(data.visionData);
@@ -2130,6 +2136,7 @@ export function AIPersonalStylist({
               )}
             </div>
 
+            {shouldShowGrooming ? (
             <div className="mt-8">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-xl font-light text-neutral-950">Grooming</h3>
@@ -2221,6 +2228,7 @@ export function AIPersonalStylist({
                 </div>
               )}
             </div>
+            ) : null}
 
             <div className="mt-6 border border-[#D8CCBB] bg-white/70 p-4">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-600">
@@ -2289,7 +2297,7 @@ export function AIPersonalStylist({
         </div>
       ) : null}
 
-      {isGroomingDrawerOpen ? (
+      {isGroomingDrawerOpen && shouldShowGrooming ? (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm">
           <button
             type="button"

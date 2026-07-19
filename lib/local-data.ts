@@ -247,6 +247,9 @@ export async function getLocalGarments() {
     readJsonArray<Garment>("garments-photo-profile-2026.json"),
     readJsonArray<Garment>("garments-accessories-footwear-2026.json"),
     readJsonArray<Garment>("garments-youtube-2026.json"),
+    readJsonArray<Garment>("garments-youtube-vaibhav-2026.json"),
+    readJsonArray<Garment>("garments-youtube-latest-collections-2026.json"),
+    readJsonArray<Garment>("garments-latest-report-additions-2026.json"),
     readJsonArray<Garment>("garments-video-trends-2024-2026.json"),
     readGarmentCsv("garments-pro-launch.csv")
   ]);
@@ -262,7 +265,10 @@ export async function getLocalTrends() {
     readJsonArray<Trend>("trends-pro-launch.json"),
     readJsonArray<Trend>("trends-latest-2026.json"),
     readJsonArray<Trend>("trends-ultra-latest-2026.json"),
-    readJsonArray<Trend>("trends-photo-profile-2026.json")
+    readJsonArray<Trend>("trends-photo-profile-2026.json"),
+    readJsonArray<Trend>("trends-youtube-vaibhav-2026.json"),
+    readJsonArray<Trend>("trends-youtube-latest-collections-2026.json"),
+    readJsonArray<Trend>("trends-latest-report-additions-2026.json")
   ]);
 
   return dedupeTrendsByMedia(trendSets.flat());

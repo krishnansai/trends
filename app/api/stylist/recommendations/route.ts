@@ -245,16 +245,18 @@ export async function POST(request: Request) {
   const profileId: StyleProfileId = isStyleProfileId(visionData.primary_color_undertone)
     ? visionData.primary_color_undertone
     : "neutral";
-  const shouldIncludeBeard = visionData.demographic !== "womenswear";
+  const shouldIncludeGrooming = visionData.demographic !== "womenswear";
 
   const [garmentMatches, hairstyleMatches, beardMatches] = await Promise.all([
     getStrictClothingMatches(visionData, occasion, season),
-    getGroomingTrends({
-      category: "hairstyle",
-      faceShape: visionData.detected_face_shape,
-      limit: 80
-    }),
-    shouldIncludeBeard
+    shouldIncludeGrooming
+      ? getGroomingTrends({
+          category: "hairstyle",
+          faceShape: visionData.detected_face_shape,
+          limit: 80
+        })
+      : Promise.resolve([]),
+    shouldIncludeGrooming
       ? getGroomingTrends({
           category: "beard",
           faceShape: visionData.detected_face_shape,
@@ -293,10 +295,12 @@ export async function POST(request: Request) {
     recommendations.length === 0
       ? `No compatible ${occasion} + ${season} garments matched the strict context, climate, and preference guardrails.`
       : "";
-  const grooming = buildGroomingRecommendations(
-    [...hairstyleMatches, ...beardMatches],
-    visionData.detected_face_shape
-  );
+  const grooming = shouldIncludeGrooming
+    ? buildGroomingRecommendations(
+        [...hairstyleMatches, ...beardMatches],
+        visionData.detected_face_shape
+      )
+    : { beard: null, hairstyle: null };
 
   return NextResponse.json({
     demographic: visionData.demographic,

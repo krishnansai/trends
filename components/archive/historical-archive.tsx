@@ -2,18 +2,14 @@
 
 import {
   ArrowUpRight,
-  ChevronLeft,
-  ChevronRight,
   Filter,
   Gauge,
   ImageOff,
-  Pause,
-  Play,
   Search,
   TrendingUp,
   X
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -148,8 +144,6 @@ export function HistoricalArchive({
   const [vibeQuery, setVibeQuery] = useState("");
   const [selected, setSelected] = useState<Garment | null>(null);
   const [vaultedGarmentIds, setVaultedGarmentIds] = useState<Set<string>>(new Set());
-  const [isTrendingAutoScroll, setIsTrendingAutoScroll] = useState(true);
-  const trendingScrollRef = useRef<HTMLDivElement>(null);
 
   const categoryOptions = useMemo(
     () => Array.from(new Set(garments.map((garment) => garment.category))).sort(),
@@ -165,6 +159,7 @@ export function HistoricalArchive({
 
   const trendingGarments = useMemo(() => {
     return garments
+      .filter((garment) => demographic === "all" || garment.demographic === demographic)
       .filter((garment) => Boolean(garment.image_url))
       .map((garment) => ({
         garment,
@@ -178,7 +173,7 @@ export function HistoricalArchive({
       )
       .slice(0, 10)
       .map((item) => item.garment);
-  }, [garments, vaultedGarmentIds]);
+  }, [demographic, garments, vaultedGarmentIds]);
 
   const filteredGarments = useMemo(() => {
     const lowerYear = Math.min(fromYear, toYear);
@@ -210,14 +205,6 @@ export function HistoricalArchive({
       window.removeEventListener("storage", syncVaultSignals);
     };
   }, []);
-
-  function scrollTrending(direction: -1 | 1) {
-    setIsTrendingAutoScroll(false);
-    trendingScrollRef.current?.scrollBy({
-      behavior: "smooth",
-      left: direction * 320
-    });
-  }
 
   return (
     <section className="mx-auto max-w-7xl animate-fade-in">
@@ -260,49 +247,20 @@ export function HistoricalArchive({
               </p>
               <h2 className="mt-1 text-2xl font-light text-neutral-950">Trending This Week</h2>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge>{vaultedGarmentIds.size ? "Vault-weighted" : "Latest archive signals"}</Badge>
-              <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label="Previous trending look"
-                  onClick={() => scrollTrending(-1)}
-                >
-                  <ChevronLeft className="size-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label={isTrendingAutoScroll ? "Pause trending auto scroll" : "Play trending auto scroll"}
-                  onClick={() => setIsTrendingAutoScroll((value) => !value)}
-                >
-                  {isTrendingAutoScroll ? <Pause className="size-4" /> : <Play className="size-4" />}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label="Next trending look"
-                  onClick={() => scrollTrending(1)}
-                >
-                  <ChevronRight className="size-4" />
-                </Button>
-              </div>
+            <div>
+              <Badge>
+                {demographic === "all"
+                  ? vaultedGarmentIds.size
+                    ? "Vault-weighted"
+                    : "Latest archive signals"
+                  : `${demographicLabels[demographic as Demographic]} signals`}
+              </Badge>
             </div>
           </div>
 
-          <div
-            ref={trendingScrollRef}
-            className={cn(
-              "archive-marquee mt-4",
-              isTrendingAutoScroll ? "overflow-hidden" : "overflow-x-auto pb-2"
-            )}
-          >
-            <div className={cn("flex w-max gap-4", isTrendingAutoScroll ? "archive-marquee-track" : "")}>
-              {(isTrendingAutoScroll ? [...trendingGarments, ...trendingGarments] : trendingGarments).map((garment, index) => (
+          <div className="archive-marquee mt-4 overflow-hidden">
+            <div className="archive-marquee-track flex w-max gap-4">
+              {[...trendingGarments, ...trendingGarments].map((garment, index) => (
                 <button
                   key={`${garment.id}-${index}`}
                   type="button"

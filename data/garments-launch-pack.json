@@ -137,7 +137,7 @@
   },
   {
     "id": "gar-launch-2025-009",
-    "image_url": "https://images.unsplash.com/photo-1523398002811-999ca8dec234?w=800",
+    "image_url": "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=800",
     "year": 2025,
     "category": "tops",
     "demographic": "womenswear",
@@ -149,12 +149,12 @@
     "season": ["summer", "all-season"],
     "age_group": "18-50",
     "description": "Crisp white shirt and denim base for flexible smart-casual outfits.",
-    "source_url": "https://images.unsplash.com/photo-1523398002811-999ca8dec234",
+    "source_url": "https://images.unsplash.com/photo-1485968579580-b6d095142e6e",
     "created_at": "2026-07-12T00:00:00.000Z"
   },
   {
     "id": "gar-launch-2025-010",
-    "image_url": "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=800",
+    "image_url": "https://images.unsplash.com/photo-1594223274512-ad4803739b7c?w=800",
     "year": 2025,
     "category": "accessory_bag",
     "demographic": "womenswear",
@@ -166,7 +166,7 @@
     "season": ["all-season"],
     "age_group": "18-55",
     "description": "Soft leather tote for commute, shopping, and travel outfit contexts.",
-    "source_url": "https://images.unsplash.com/photo-1590874103328-eac38a683ce7",
+    "source_url": "https://images.unsplash.com/photo-1594223274512-ad4803739b7c",
     "created_at": "2026-07-12T00:00:00.000Z"
   },
   {
@@ -307,7 +307,7 @@
   },
   {
     "id": "gar-launch-2024-019",
-    "image_url": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800",
+    "image_url": "https://images.unsplash.com/photo-1554412933-514a83d2f3c8?w=800",
     "year": 2024,
     "category": "tops",
     "demographic": "womenswear",
@@ -319,7 +319,7 @@
     "season": ["summer", "all-season"],
     "age_group": "18-40",
     "description": "Graphic tee for streetwear, mall outings, and casual daily looks.",
-    "source_url": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c",
+    "source_url": "https://images.unsplash.com/photo-1554412933-514a83d2f3c8",
     "created_at": "2026-07-12T00:00:00.000Z"
   },
   {
